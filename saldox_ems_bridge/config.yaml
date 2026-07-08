@@ -21,7 +21,7 @@ ports_description:
   8765/tcp: "Saldox command webhook"
 options:
   modbus:
-    connection_type: "tcp"
+    connection_type: tcp
     host: "192.168.1.50"
     port: 502
     serial_port: "/dev/ttyUSB0"
@@ -31,11 +31,11 @@ options:
     unit_id: 1
     poll_interval_seconds: 10
   ha:
-    device_slug: "sofar_hyd"
+    device_slug: sofar_hyd
     friendly_name: "Sofar HYD"
   prices:
     enabled: true
-    slug: "saldox_price"
+    slug: saldox_price
     friendly_name: "Saldox prijs"
     vat_inclusive: true
     poll_minutes: 15
@@ -45,23 +45,23 @@ options:
 schema:
   modbus:
     connection_type: "list(tcp|serial)"
-    host: "str?"
-    port: "port?"
-    serial_port: "str?"
+    host: str?
+    port: port?
+    serial_port: str?
     baudrate: "list(1200|2400|4800|9600|19200|38400|57600|115200)?"
     parity: "list(N|E|O)?"
     stopbits: "list(1|2)?"
-    unit_id: "int(1,247)?"
-    poll_interval_seconds: "int(5,300)?"
+    unit_id: int(1,247)?
+    poll_interval_seconds: int(5,300)?
   ha:
-    device_slug: "str"
-    friendly_name: "str?"
+    device_slug: str
+    friendly_name: str?
   prices:
-    enabled: "bool?"
-    slug: "str?"
-    friendly_name: "str?"
-    vat_inclusive: "bool?"
-    poll_minutes: "int(5,720)?"
+    enabled: bool?
+    slug: str?
+    friendly_name: str?
+    vat_inclusive: bool?
+    poll_minutes: int(5,720)?
   saldox:
-    callback_url: "str?"
-    api_token: "password?"
+    callback_url: str?
+    api_token: password?
