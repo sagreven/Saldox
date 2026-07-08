@@ -41,6 +41,7 @@ class PlanPoller:
         friendly: str = "Saldox plan",
         poll_minutes: int = 5,
         on_update: Callable[[dict[str, Any]], None] | None = None,
+        get_readings: Callable[[], dict[str, dict]] | None = None,
     ):
         self._ha = ha
         self._api_url = saldox_api_url.rstrip("/")
@@ -50,6 +51,7 @@ class PlanPoller:
         self._poll_seconds = max(60, poll_minutes * 60)
         self._session: aiohttp.ClientSession | None = None
         self._on_update = on_update
+        self._get_readings = get_readings
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -62,19 +64,42 @@ class PlanPoller:
         if self._session and not self._session.closed:
             await self._session.close()
 
+    def _current_soc_params(self) -> dict[str, str]:
+        """Read current battery and EV SoC from Modbus readings to send to the API."""
+        if not self._get_readings:
+            return {}
+        readings = self._get_readings()
+        params: dict[str, str] = {}
+        # Battery SoC from Modbus register "battery_soc_percent"
+        bat = readings.get("battery_soc_percent")
+        if bat and bat.get("value") is not None:
+            params["batterySoCPercent"] = str(bat["value"])
+        # EV SoC — if available from a future Modbus register or HA sensor
+        ev = readings.get("ev_soc_percent")
+        if ev and ev.get("value") is not None:
+            params["evSoCPercent"] = str(ev["value"])
+        return params
+
     async def _fetch_plan(self) -> dict[str, Any] | None:
         """Fetch the 48h EMS plan from the Saldox API.
+
+        Sends current battery/EV SoC as query params so the planner
+        can align the plan with the actual hardware state.
 
         Returns the full plan dict, or None on error.
         """
         session = await self._get_session()
         url = f"{self._api_url}/api/ems/plan"
+        params = self._current_soc_params()
         try:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status != 200:
                     _LOG.warning("Saldox plan API %s -> HTTP %s", url, resp.status)
                     return None
-                return await resp.json()
+                data = await resp.json()
+                if params:
+                    _LOG.info("Plan fetched with live SoC: %s", params)
+                return data
         except aiohttp.ClientError as ex:
             _LOG.warning("Saldox plan API fetch failed: %s", ex)
             return None

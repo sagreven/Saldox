@@ -617,6 +617,7 @@ async def main() -> None:
             friendly=os.environ.get("PLAN_FRIENDLY_NAME", "Saldox plan"),
             poll_minutes=int(os.environ.get("PLAN_POLL_MINUTES", "5")),
             on_update=set_plan,
+            get_readings=lambda: dict(_latest),
         )
         plan_task = asyncio.create_task(plan.run(), name="plan")
         _LOG.info("Saldox plan poller actief")
