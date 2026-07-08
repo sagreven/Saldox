@@ -14,38 +14,38 @@ init: false
 hassio_api: true
 homeassistant_api: true
 host_network: false
-devices: true
+uart: true
 ports:
   8765/tcp: 8765
 ports_description:
   8765/tcp: "Saldox command webhook"
 options:
-  modbus_connection_type: tcp
+  modbus_connection_type: "tcp"
   modbus_host: "192.168.1.50"
   modbus_port: 502
   modbus_serial_port: "/dev/ttyUSB0"
   modbus_baudrate: 9600
   modbus_unit_id: 1
   modbus_poll_interval_seconds: 10
-  ha_device_slug: sofar_hyd
+  ha_device_slug: "sofar_hyd"
   ha_friendly_name: "Sofar HYD"
   prices_enabled: true
-  prices_slug: saldox_price
+  prices_slug: "saldox_price"
   prices_poll_minutes: 15
   saldox_callback_url: ""
   saldox_api_token: ""
 schema:
   modbus_connection_type: "list(tcp|serial)"
-  modbus_host: str?
-  modbus_port: port?
-  modbus_serial_port: str?
-  modbus_baudrate: int?
-  modbus_unit_id: int(1,247)?
-  modbus_poll_interval_seconds: int(5,300)?
-  ha_device_slug: str
-  ha_friendly_name: str?
-  prices_enabled: bool?
-  prices_slug: str?
-  prices_poll_minutes: int(5,720)?
-  saldox_callback_url: str?
-  saldox_api_token: password?
+  modbus_host: "str?"
+  modbus_port: "port?"
+  modbus_serial_port: "str?"
+  modbus_baudrate: "int?"
+  modbus_unit_id: "int(1,247)?"
+  modbus_poll_interval_seconds: "int(5,300)?"
+  ha_device_slug: "str"
+  ha_friendly_name: "str?"
+  prices_enabled: "bool?"
+  prices_slug: "str?"
+  prices_poll_minutes: "int(5,720)?"
+  saldox_callback_url: "str?"
+  saldox_api_token: "password?"
