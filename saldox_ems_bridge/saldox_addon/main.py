@@ -243,14 +243,14 @@ async function poll(){
         const minP=Math.min(...prices);
         const maxP=Math.max(...prices);
         const range=maxP-minP||0.01;
-        html+='<div class="card" style="grid-column:1/-1"><div class="label">Komende 24 uur</div><div style="display:flex;align-items:flex-end;gap:2px;height:140px;margin-top:12px">';
-        for(const h of next24){
-          const pct=((h.price-minP)/range)*90+10;
+        html+='<div class="card" style="grid-column:1/-1"><div class="label">Komende 24 uur</div><div style="display:flex;align-items:flex-end;gap:1px;height:200px;margin-top:12px;padding-bottom:20px;position:relative">';
+        for(let i=0;i<next24.length;i++){
+          const h=next24[i];
+          const pct=((h.price-minP)/range)*80+15;
           const neg=h.price<0;
-          const isNow=h.hour===nowH&&next24.indexOf(h)===0;
+          const isNow=i===0;
           const col=neg?'#ef4444':isNow?'#1a7a2e':'#60a5fa';
-          const lbl=h.hour===0?'0':h.hour;
-          html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="font-size:.55rem;color:#666;margin-bottom:2px">€${h.price.toFixed(2)}</div><div style="background:${col};width:100%;height:${pct}%;border-radius:3px 3px 0 0;min-height:4px" title="${h.hour}:00 — € ${h.price.toFixed(4)}"></div><div style="font-size:.6rem;color:#999;margin-top:2px">${lbl}</div></div>`;
+          html+=`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%"><div style="background:${col};width:90%;height:${pct}%;border-radius:3px 3px 0 0;min-height:4px;position:relative" title="${h.hour}:00 — € ${h.price.toFixed(4)}"><span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:.5rem;color:#555;white-space:nowrap">${h.price.toFixed(2)}</span></div><div style="font-size:.55rem;color:#999;margin-top:3px">${h.hour}</div></div>`;
         }
         html+='</div></div>';
       }
