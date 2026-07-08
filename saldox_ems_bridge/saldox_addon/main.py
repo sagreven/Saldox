@@ -234,17 +234,23 @@ async function poll(){
       html+=`<div class="card ok"><div class="label">Vandaag gem.</div><div class="value">${typeof pv('today_avg')==='number'?'€ '+pv('today_avg').toFixed(4):'—'}</div><div class="unit">${typeof pv('today_min')==='number'?'min € '+pv('today_min').toFixed(4)+' · max € '+pv('today_max').toFixed(4):''}</div></div>`;
       if(pv('tomorrow_avg')!=='—'&&pv('tomorrow_avg')!=null)html+=`<div class="card ok"><div class="label">Morgen gem.</div><div class="value">${'€ '+pv('tomorrow_avg').toFixed(4)}</div><div class="unit">min € ${pv('tomorrow_min').toFixed(4)} · max € ${pv('tomorrow_max').toFixed(4)}</div></div>`;
       if(pv('negative_hours_today')!=='—')html+=`<div class="card ${pv('negative_hours_today')>0?'warn':'off'}"><div class="label">Negatieve uren</div><div class="value">${pv('negative_hours_today')}</div><div class="unit">uren vandaag</div></div>`;
-      const tp=p.prices_today;
-      if(tp&&tp.value&&Array.isArray(tp.value)&&tp.value.length){
-        const maxP=Math.max(...tp.value.map(h=>Math.abs(h.price)));
-        html+='<div class="card" style="grid-column:1/-1"><div class="label">24-uurs prijsprofiel vandaag</div><div style="display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:12px">';
-        for(const h of tp.value){
-          const pct=maxP>0?Math.abs(h.price)/maxP*100:0;
+      const tp=p.prices_today&&p.prices_today.value||[];
+      const tm=p.prices_tomorrow&&p.prices_tomorrow.value||[];
+      const nowH=new Date().getHours();
+      const next24=[...tp.filter(h=>h.hour>=nowH),...tm.filter(h=>h.hour<nowH)].slice(0,24);
+      if(next24.length){
+        const prices=next24.map(h=>h.price);
+        const minP=Math.min(...prices);
+        const maxP=Math.max(...prices);
+        const range=maxP-minP||0.01;
+        html+='<div class="card" style="grid-column:1/-1"><div class="label">Komende 24 uur</div><div style="display:flex;align-items:flex-end;gap:2px;height:140px;margin-top:12px">';
+        for(const h of next24){
+          const pct=((h.price-minP)/range)*90+10;
           const neg=h.price<0;
-          const now=h.hour===pv('rank_now')!==undefined?false:false;
-          const isNow=p.now&&p.now.value!=null&&h.hour===(new Date().getHours());
+          const isNow=h.hour===nowH&&next24.indexOf(h)===0;
           const col=neg?'#ef4444':isNow?'#1a7a2e':'#60a5fa';
-          html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="background:${col};width:100%;height:${Math.max(pct,2)}%;border-radius:3px 3px 0 0;min-height:2px" title="${h.hour}:00 — € ${h.price.toFixed(4)}"></div><div style="font-size:.6rem;color:#999;margin-top:2px">${h.hour}</div></div>`;
+          const lbl=h.hour===0?'0':h.hour;
+          html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="font-size:.55rem;color:#666;margin-bottom:2px">€${h.price.toFixed(2)}</div><div style="background:${col};width:100%;height:${pct}%;border-radius:3px 3px 0 0;min-height:4px" title="${h.hour}:00 — € ${h.price.toFixed(4)}"></div><div style="font-size:.6rem;color:#999;margin-top:2px">${lbl}</div></div>`;
         }
         html+='</div></div>';
       }
