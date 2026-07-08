@@ -296,10 +296,97 @@ function renderPlan(plan){
     h+='</div></div>';
   }
 
+  // Savings history chart
+  const sh=plan.savingsHistory;
+  if(sh&&sh.days&&sh.days.length>1){
+    h+='<div class="section-title">Besparingen per dag</div>';
+    h+='<div class="grid"><div class="card savings"><div class="label">Totaal berekend</div><div class="value">\u20ac '+sh.totalCalculated.toFixed(2)+'</div><div class="unit">'+sh.days.length+' dagen</div></div>';
+    if(sh.totalRealized)h+='<div class="card ok"><div class="label">Totaal gerealiseerd</div><div class="value">\u20ac '+sh.totalRealized.toFixed(2)+'</div><div class="unit">werkelijk bespaard</div></div>';
+    h+='</div>';
+    h+='<div class="card" style="margin-bottom:16px"><div class="label">Dagelijkse besparing — berekend vs. gerealiseerd</div><div class="plan-chart"><canvas id="savingsCanvas"></canvas></div></div>';
+  }
+
   planSection.innerHTML=h;
 
-  // Draw the canvas chart
-  requestAnimationFrame(()=>drawPlanChart(tl,actions,batSoC,evSoC));
+  // Draw the canvas charts
+  requestAnimationFrame(()=>{
+    drawPlanChart(tl,actions,batSoC,evSoC);
+    if(sh&&sh.days&&sh.days.length>1)drawSavingsChart(sh.days);
+  });
+}
+
+function drawSavingsChart(days){
+  const canvas=document.getElementById('savingsCanvas');
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:24,right:20,bottom:40,left:50};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const N=days.length;
+  if(N===0)return;
+  const barW=Math.min(cW/N,40);
+  const groupW=barW;
+
+  // Find max value for scale
+  const allVals=days.flatMap(d=>[d.calculatedSavings||0,d.realizedSavings||0]);
+  const maxV=Math.max(...allVals,0.01);
+  const minV=Math.min(...allVals,0);
+  const range=maxV-minV||0.01;
+
+  // Draw bars
+  for(let i=0;i<N;i++){
+    const d=days[i];
+    const x=pad.left+i*groupW;
+
+    // Calculated savings bar (light green)
+    const calcH=((d.calculatedSavings-minV)/range)*cH*0.85;
+    const calcY=pad.top+cH-calcH;
+    ctx.fillStyle='rgba(34,197,94,0.4)';
+    ctx.fillRect(x+2,calcY,groupW/2-3,calcH);
+
+    // Realized savings bar (solid green, overlaid)
+    if(d.realizedSavings!=null){
+      const realH=((d.realizedSavings-minV)/range)*cH*0.85;
+      const realY=pad.top+cH-realH;
+      ctx.fillStyle='#22c55e';
+      ctx.fillRect(x+groupW/2+1,realY,groupW/2-3,realH);
+    }
+
+    // Day label
+    const label=d.date.substring(5); // MM-DD
+    ctx.fillStyle='#999';ctx.font='8px system-ui';ctx.textAlign='center';
+    ctx.fillText(label,x+groupW/2,pad.top+cH+14);
+
+    // Value label on top of calculated bar
+    if(d.calculatedSavings>0.01){
+      ctx.fillStyle='#888';ctx.font='8px system-ui';ctx.textAlign='center';
+      ctx.fillText('\u20ac'+d.calculatedSavings.toFixed(2),x+groupW/2,calcY-3);
+    }
+  }
+
+  // Y-axis labels
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  const steps=[minV,(minV+maxV)/2,maxV];
+  for(const v of steps){
+    const y=pad.top+cH-((v-minV)/range)*cH*0.85;
+    ctx.fillText('\u20ac'+v.toFixed(2),pad.left-4,y+3);
+    ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+  }
+
+  // Legend
+  ctx.font='9px system-ui';ctx.textAlign='left';
+  ctx.fillStyle='rgba(34,197,94,0.4)';ctx.fillRect(pad.left,pad.top-14,10,8);
+  ctx.fillStyle='#888';ctx.fillText('Berekend',pad.left+14,pad.top-7);
+  ctx.fillStyle='#22c55e';ctx.fillRect(pad.left+80,pad.top-14,10,8);
+  ctx.fillStyle='#888';ctx.fillText('Gerealiseerd',pad.left+94,pad.top-7);
 }
 
 function drawPlanChart(timeline,actions,batSoC,evSoC){

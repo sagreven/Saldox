@@ -104,6 +104,18 @@ class PlanPoller:
             _LOG.warning("Saldox plan API fetch failed: %s", ex)
             return None
 
+    async def _fetch_savings(self) -> dict[str, Any] | None:
+        """Fetch daily savings history from Saldox API."""
+        session = await self._get_session()
+        url = f"{self._api_url}/api/ems/savings"
+        try:
+            async with session.get(url, params={"days": "30"}, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    return None
+                return await resp.json()
+        except aiohttp.ClientError:
+            return None
+
     @staticmethod
     def _find_next_action(actions: list[dict[str, Any]]) -> dict[str, Any] | None:
         """Find the first action that hasn't ended yet."""
@@ -157,7 +169,47 @@ class PlanPoller:
         "RunHeavyLoad": "Zwaar verbruik",
     }
 
+    async def _push_telemetry(self) -> None:
+        """Push current Modbus readings to Saldox API for pattern learning."""
+        if not self._get_readings:
+            return
+        readings = self._get_readings()
+        if not readings:
+            return
+
+        payload: dict[str, float] = {}
+        # Map Modbus register names to telemetry fields.
+        mapping = {
+            "battery_soc_percent": "batterySoCPercent",
+            "battery_power_w": "batteryPowerW",
+            "ev_soc_percent": "evSoCPercent",
+            "pv_total_power_w": "pvPowerW",
+            "ac_active_power_w": "gridPowerW",
+        }
+        for modbus_key, api_key in mapping.items():
+            entry = readings.get(modbus_key)
+            if entry and entry.get("value") is not None:
+                payload[api_key] = float(entry["value"])
+
+        if not payload:
+            return
+
+        session = await self._get_session()
+        url = f"{self._api_url}/api/ha/telemetry"
+        try:
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    _LOG.debug("Telemetry pushed: %d readings stored", data.get("stored", 0))
+                else:
+                    _LOG.warning("Telemetry push HTTP %s", resp.status)
+        except aiohttp.ClientError as ex:
+            _LOG.warning("Telemetry push failed: %s", ex)
+
     async def tick(self) -> None:
+        # Push live readings to Saldox for pattern learning.
+        await self._push_telemetry()
+
         plan = await self._fetch_plan()
         if plan is None:
             return
@@ -255,13 +307,46 @@ class PlanPoller:
             action_text,
         )
 
+        # Fetch savings history and merge into plan data for the dashboard.
+        savings_history = await self._fetch_savings()
+        if savings_history:
+            plan["savingsHistory"] = savings_history
+
         if self._on_update:
             self._on_update(plan)
 
+    # EV charging state detection thresholds.
+    _EV_CHARGING_THRESHOLD_W = 100  # power above this = charging
+    _CHARGING_POLL_SECONDS = 300     # 5 min while charging
+
+    def _is_ev_charging(self) -> bool:
+        """Detect if an EV is currently charging from Modbus power readings."""
+        if not self._get_readings:
+            return False
+        readings = self._get_readings()
+        # Check for dedicated EV power reading or high grid import.
+        ev = readings.get("ev_power_w")
+        if ev and ev.get("value") is not None and float(ev["value"]) > self._EV_CHARGING_THRESHOLD_W:
+            return True
+        # Fallback: check battery_power — large negative = discharge,
+        # but we can't distinguish EV from other loads without a dedicated sensor.
+        return False
+
     async def run(self) -> None:
+        was_charging = False
         while True:
             try:
+                is_charging = self._is_ev_charging()
+
+                # State change: car just connected/started → immediate recalc.
+                if is_charging and not was_charging:
+                    _LOG.info("EV charging detected — forcing immediate plan recalculation")
+
+                was_charging = is_charging
                 await self.tick()
             except Exception as ex:  # noqa: BLE001
                 _LOG.error("Plan poll failed: %s\n%s", ex, traceback.format_exc())
-            await asyncio.sleep(self._poll_seconds)
+
+            # Shorter interval while EV is charging for adaptive control.
+            sleep_seconds = self._CHARGING_POLL_SECONDS if was_charging else self._poll_seconds
+            await asyncio.sleep(sleep_seconds)
