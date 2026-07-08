@@ -174,7 +174,75 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
         return resp
 
+    async def ingress_page(_req: web.Request) -> web.Response:
+        html = """<!DOCTYPE html>
+<html lang="nl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Saldox EMS Bridge</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f4f5f7;color:#333;padding:24px}
+h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
+.subtitle{color:#666;margin-bottom:24px;font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.card .label{font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.card .value{font-size:1.8rem;font-weight:700;margin:8px 0 4px}
+.card .unit{font-size:.85rem;color:#666}
+.card.ok .value{color:#1a7a2e}
+.card.warn .value{color:#d97706}
+.card.off .value{color:#999}
+.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:#22c55e}
+.status-dot.red{background:#ef4444}
+.status-dot.gray{background:#9ca3af}
+#error{color:#ef4444;margin-bottom:16px;display:none}
+</style>
+</head><body>
+<h1>Saldox EMS Bridge</h1>
+<p class="subtitle"><span class="status-dot" id="dot"></span><span id="conn">Verbinden...</span></p>
+<div id="error"></div>
+<div class="grid" id="grid"></div>
+<p style="color:#aaa;font-size:.75rem">Auto-refresh elke 10 seconden</p>
+<script>
+const grid=document.getElementById('grid'),dot=document.getElementById('dot'),
+      conn=document.getElementById('conn'),errEl=document.getElementById('error');
+const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batterij SoC',
+  battery_power:'Batterij vermogen',today_kwh:'Vandaag opgewekt',total_kwh:'Totaal opgewekt',
+  today_import_kwh:'Import vandaag',today_export_kwh:'Export vandaag',
+  temperature:'Temperatuur',status:'Inverter status',battery_voltage:'Batterij spanning'};
+async function poll(){
+  try{
+    const r=await fetch('./status');
+    if(!r.ok)throw new Error(r.status);
+    const d=await r.json();
+    dot.className='status-dot green';
+    conn.textContent='Verbonden — '+new Date(d.timestamp*1000).toLocaleTimeString('nl-NL');
+    errEl.style.display='none';
+    let html='';
+    for(const[k,v]of Object.entries(d.readings||{})){
+      const suffix=k.replace(/^.*?_/,'');
+      const lbl=labels[suffix]||k;
+      const cls=v.value===0?'off':'ok';
+      html+=`<div class="card ${cls}"><div class="label">${lbl}</div><div class="value">${v.value}</div><div class="unit">${v.unit||''}</div></div>`;
+    }
+    if(d.prices&&d.prices.now!==undefined){
+      html+=`<div class="card ok"><div class="label">EPEX nu</div><div class="value">${d.prices.now}</div><div class="unit">EUR/kWh</div></div>`;
+    }
+    grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
+  }catch(e){
+    dot.className='status-dot red';
+    conn.textContent='Geen verbinding';
+    errEl.textContent=e.message;errEl.style.display='block';
+  }
+}
+poll();setInterval(poll,10000);
+</script>
+</body></html>"""
+        return web.Response(text=html, content_type="text/html")
+
     app = web.Application(middlewares=[cors_middleware])
+    app.router.add_get("/", ingress_page)
     app.router.add_get("/healthz", health)
     app.router.add_get("/status", status)
     app.router.add_post("/commands/active-power-limit", set_power_limit)
