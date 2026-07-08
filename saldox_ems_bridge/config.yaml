@@ -2,8 +2,8 @@ name: "Saldox EMS Bridge"
 description: >-
   Brug tussen Saldox en je hardware. Pollt Sofar Solar HYD hybride inverters via
   Modbus-TCP of RS485 (USB-adapter) en exposed ze als Home Assistant sensors.
-  Accepteert commando's vanuit Saldox en stuurt ze door naar het juiste apparaat.
-version: "0.2.0"
+  Haalt EPEX-prijzen op via de Saldox API en toont ze als HA sensors + dashboard.
+version: "0.3.0"
 slug: saldox_ems_bridge
 url: "https://github.com/sagreven/Saldox"
 arch:
@@ -33,10 +33,9 @@ options:
   modbus_poll_interval_seconds: 10
   ha_device_slug: "sofar_hyd"
   ha_friendly_name: "Sofar HYD"
-  prices_enabled: true
   prices_slug: "saldox_price"
   prices_poll_minutes: 15
-  saldox_callback_url: ""
+  saldox_api_url: ""
   saldox_api_token: ""
 schema:
   modbus_connection_type: "list(tcp|serial)"
@@ -48,8 +47,7 @@ schema:
   modbus_poll_interval_seconds: "int(5,300)?"
   ha_device_slug: "str"
   ha_friendly_name: "str?"
-  prices_enabled: "bool?"
   prices_slug: "str?"
   prices_poll_minutes: "int(5,720)?"
-  saldox_callback_url: "str?"
+  saldox_api_url: "url?"
   saldox_api_token: "password?"

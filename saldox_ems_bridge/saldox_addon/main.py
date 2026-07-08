@@ -226,8 +226,28 @@ async function poll(){
       const cls=v.value===0?'off':'ok';
       html+=`<div class="card ${cls}"><div class="label">${lbl}</div><div class="value">${v.value}</div><div class="unit">${v.unit||''}</div></div>`;
     }
-    if(d.prices&&d.prices.now!==undefined){
-      html+=`<div class="card ok"><div class="label">EPEX nu</div><div class="value">${d.prices.now}</div><div class="unit">EUR/kWh</div></div>`;
+    const p=d.prices||{};
+    const pv=(k)=>{const o=p[k];return o&&o.value!=null?o.value:'—';};
+    const pc=(k)=>{const v=pv(k);return typeof v==='number'?(v<0?'warn':'ok'):'off';};
+    if(Object.keys(p).length){
+      html+=`<div class="card ${pc('now')}"><div class="label">Prijs nu</div><div class="value">${typeof pv('now')==='number'?'€ '+pv('now').toFixed(4):'—'}</div><div class="unit">EUR/kWh${pv('rank_now')!=='—'?' · rang '+pv('rank_now')+'/24':''}</div></div>`;
+      html+=`<div class="card ok"><div class="label">Vandaag gem.</div><div class="value">${typeof pv('today_avg')==='number'?'€ '+pv('today_avg').toFixed(4):'—'}</div><div class="unit">${typeof pv('today_min')==='number'?'min € '+pv('today_min').toFixed(4)+' · max € '+pv('today_max').toFixed(4):''}</div></div>`;
+      if(pv('tomorrow_avg')!=='—'&&pv('tomorrow_avg')!=null)html+=`<div class="card ok"><div class="label">Morgen gem.</div><div class="value">${'€ '+pv('tomorrow_avg').toFixed(4)}</div><div class="unit">min € ${pv('tomorrow_min').toFixed(4)} · max € ${pv('tomorrow_max').toFixed(4)}</div></div>`;
+      if(pv('negative_hours_today')!=='—')html+=`<div class="card ${pv('negative_hours_today')>0?'warn':'off'}"><div class="label">Negatieve uren</div><div class="value">${pv('negative_hours_today')}</div><div class="unit">uren vandaag</div></div>`;
+      const tp=p.prices_today;
+      if(tp&&tp.value&&Array.isArray(tp.value)&&tp.value.length){
+        const maxP=Math.max(...tp.value.map(h=>Math.abs(h.price)));
+        html+='<div class="card" style="grid-column:1/-1"><div class="label">24-uurs prijsprofiel vandaag</div><div style="display:flex;align-items:flex-end;gap:2px;height:120px;margin-top:12px">';
+        for(const h of tp.value){
+          const pct=maxP>0?Math.abs(h.price)/maxP*100:0;
+          const neg=h.price<0;
+          const now=h.hour===pv('rank_now')!==undefined?false:false;
+          const isNow=p.now&&p.now.value!=null&&h.hour===(new Date().getHours());
+          const col=neg?'#ef4444':isNow?'#1a7a2e':'#60a5fa';
+          html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="background:${col};width:100%;height:${Math.max(pct,2)}%;border-radius:3px 3px 0 0;min-height:2px" title="${h.hour}:00 — € ${h.price.toFixed(4)}"></div><div style="font-size:.6rem;color:#999;margin-top:2px">${h.hour}</div></div>`;
+        }
+        html+='</div></div>';
+      }
     }
     grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
   }catch(e){
@@ -279,17 +299,20 @@ async def main() -> None:
     poll_task = asyncio.create_task(poll_loop(modbus, ha, slug, friendly, interval), name="poll")
 
     prices_task = None
-    if os.environ.get("PRICES_ENABLED", "true").lower() in ("1", "true", "yes"):
+    saldox_api_url = os.environ.get("SALDOX_API_URL", "").strip()
+    saldox_api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
+    if saldox_api_url:
         prices = PricesPoller(
             ha=ha,
+            saldox_api_url=saldox_api_url,
+            saldox_api_token=saldox_api_token,
             slug=os.environ.get("PRICES_SLUG", "saldox_price"),
             friendly=os.environ.get("PRICES_FRIENDLY_NAME", "Saldox prijs"),
-            vat_inclusive=os.environ.get("PRICES_VAT_INCLUSIVE", "true").lower() in ("1", "true", "yes"),
             poll_minutes=int(os.environ.get("PRICES_POLL_MINUTES", "15")),
             on_update=set_prices,
         )
         prices_task = asyncio.create_task(prices.run(), name="prices")
-        _LOG.info("EPEX prices poller actief")
+        _LOG.info("Saldox prices poller actief (API: %s)", saldox_api_url)
 
     web_app = make_webhook_app(modbus, ha)
     runner = web.AppRunner(web_app)

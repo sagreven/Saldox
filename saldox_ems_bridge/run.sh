@@ -5,27 +5,22 @@ set -e
 
 bashio::log.info "Saldox EMS Bridge starting…"
 
-export MODBUS_CONNECTION_TYPE="$(bashio::config 'modbus.connection_type' 'tcp')"
-export MODBUS_HOST="$(bashio::config 'modbus.host' '192.168.1.50')"
-export MODBUS_PORT="$(bashio::config 'modbus.port' 502)"
-export MODBUS_SERIAL_PORT="$(bashio::config 'modbus.serial_port' '/dev/ttyUSB0')"
-export MODBUS_BAUDRATE="$(bashio::config 'modbus.baudrate' 9600)"
-export MODBUS_PARITY="$(bashio::config 'modbus.parity' 'N')"
-export MODBUS_STOPBITS="$(bashio::config 'modbus.stopbits' 1)"
-export MODBUS_UNIT_ID="$(bashio::config 'modbus.unit_id' 1)"
-export POLL_INTERVAL="$(bashio::config 'modbus.poll_interval_seconds' 10)"
+export MODBUS_CONNECTION_TYPE="$(bashio::config 'modbus_connection_type' 'tcp')"
+export MODBUS_HOST="$(bashio::config 'modbus_host' '192.168.1.50')"
+export MODBUS_PORT="$(bashio::config 'modbus_port' 502)"
+export MODBUS_SERIAL_PORT="$(bashio::config 'modbus_serial_port' '/dev/ttyUSB0')"
+export MODBUS_BAUDRATE="$(bashio::config 'modbus_baudrate' 9600)"
+export MODBUS_UNIT_ID="$(bashio::config 'modbus_unit_id' 1)"
+export POLL_INTERVAL="$(bashio::config 'modbus_poll_interval_seconds' 10)"
 
-export HA_DEVICE_SLUG="$(bashio::config 'ha.device_slug' 'sofar_hyd')"
-export HA_FRIENDLY_NAME="$(bashio::config 'ha.friendly_name' 'Sofar HYD')"
+export HA_DEVICE_SLUG="$(bashio::config 'ha_device_slug' 'sofar_hyd')"
+export HA_FRIENDLY_NAME="$(bashio::config 'ha_friendly_name' 'Sofar HYD')"
 
-export PRICES_ENABLED="$(bashio::config 'prices.enabled' 'true')"
-export PRICES_SLUG="$(bashio::config 'prices.slug' 'saldox_price')"
-export PRICES_FRIENDLY_NAME="$(bashio::config 'prices.friendly_name' 'Saldox prijs')"
-export PRICES_VAT_INCLUSIVE="$(bashio::config 'prices.vat_inclusive' 'true')"
-export PRICES_POLL_MINUTES="$(bashio::config 'prices.poll_minutes' 15)"
+export PRICES_SLUG="$(bashio::config 'prices_slug' 'saldox_price')"
+export PRICES_POLL_MINUTES="$(bashio::config 'prices_poll_minutes' 15)"
 
-export SALDOX_CALLBACK_URL="$(bashio::config 'saldox.callback_url' '')"
-export SALDOX_API_TOKEN="$(bashio::config 'saldox.api_token' '')"
+export SALDOX_API_URL="$(bashio::config 'saldox_api_url' '')"
+export SALDOX_API_TOKEN="$(bashio::config 'saldox_api_token' '')"
 
 # Supervisor levert deze automatisch zodat we naar de HA core API kunnen schrijven.
 # SUPERVISOR_TOKEN is gezet wanneer hassio_api: true / homeassistant_api: true.
@@ -38,8 +33,8 @@ else
   bashio::log.info "Polling ${MODBUS_HOST}:${MODBUS_PORT} (unit ${MODBUS_UNIT_ID}) iedere ${POLL_INTERVAL}s"
 fi
 bashio::log.info "Publishing inverter naar sensor.${HA_DEVICE_SLUG}_* in Home Assistant"
-if [ "${PRICES_ENABLED}" = "true" ]; then
-  bashio::log.info "EPEX prices enabled: sensor.${PRICES_SLUG}_* (iedere ${PRICES_POLL_MINUTES} min, vat_incl=${PRICES_VAT_INCLUSIVE})"
+if [ -n "${SALDOX_API_URL}" ]; then
+  bashio::log.info "Saldox prices via ${SALDOX_API_URL}: sensor.${PRICES_SLUG}_* (iedere ${PRICES_POLL_MINUTES} min)"
 fi
 
 cd /app

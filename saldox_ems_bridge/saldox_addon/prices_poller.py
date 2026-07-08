@@ -1,28 +1,22 @@
-"""EPEX day-ahead prijzen voor Home Assistant.
+"""Saldox API day-ahead prijzen voor Home Assistant.
 
-Haalt NL-prijzen via EnergyZero (dezelfde bron die Saldox zelf gebruikt) en
-publiceert ze als HA sensors. EnergyZero levert all-in tarieven (incl. BTW +
-energiebelasting) wanneer `inclBtw=true` & `usageType=1`. Voor pure groothandel
-zet je `inclBtw=false`.
-
-EnergyZero levert vandaag's prijzen vanaf 00:00 lokaal, en morgen's prijzen
-typisch tussen 13:00-14:00 CET (na de EPEX day-ahead-publicatie). De poller is
-defensief: missen morgen-prijzen, dan blijven die sensors stale.
+Haalt uurprijzen op via de Saldox API en publiceert ze als HA sensors.
+Vandaag's prijzen zijn altijd beschikbaar; morgen's prijzen worden typisch
+na ~13:00 CET gepubliceerd (na de EPEX day-ahead-veiling).
 
 Gepubliceerde entities (slug standaard `saldox_price`):
-  sensor.{slug}_now                — actuele €/kWh (huidige uur)
-  sensor.{slug}_today_avg          — gemiddelde van vandaag
-  sensor.{slug}_today_min          — laagste van vandaag
-  sensor.{slug}_today_max          — hoogste van vandaag
-  sensor.{slug}_tomorrow_avg       — idem voor morgen (na 13:00)
-  sensor.{slug}_tomorrow_min       — idem
-  sensor.{slug}_tomorrow_max       — idem
-  sensor.{slug}_rank_now           — 1..24 (1 = goedkoopste uur van vandaag)
+  sensor.{slug}_now                 — actuele EUR/kWh (huidige uur)
+  sensor.{slug}_today_avg           — gemiddelde van vandaag
+  sensor.{slug}_today_min           — laagste van vandaag
+  sensor.{slug}_today_max           — hoogste van vandaag
+  sensor.{slug}_tomorrow_avg        — idem voor morgen (na ~13:00 CET)
+  sensor.{slug}_tomorrow_min        — idem
+  sensor.{slug}_tomorrow_max        — idem
+  sensor.{slug}_rank_now            — 1..24 (1 = goedkoopste uur van vandaag)
   sensor.{slug}_negative_hours_today — aantal uren met prijs < 0
 
-Elke sensor heeft als attribute `prices_today: [...]` (24 floats) en
-`prices_tomorrow: [...]` (0 of 24 floats) zodat HA-cards (zoals apexcharts-card)
-het volledige profiel kunnen plotten.
+De _now sensor draagt als attributes `today_prices` en `tomorrow_prices`
+arrays van {hour, price} objecten zodat HA-cards het profiel kunnen plotten.
 """
 from __future__ import annotations
 
@@ -36,12 +30,6 @@ import aiohttp
 from .ha_api import HomeAssistantClient
 
 _LOG = logging.getLogger(__name__)
-
-# Lokale tijdzone voor "vandaag" / "morgen" — Saldox-context is altijd NL.
-NL_TZ_OFFSET = timedelta(hours=1)  # CET. DST-correctie: gebruiken UTC offset = 2u tussen mar-okt.
-# Bij gebrek aan tzdata in de add-on container vertrouwen we op een grove
-# CET/CEST-heuristiek: tussen laatste-zondag-maart en laatste-zondag-oktober is
-# het UTC+2. Voor dagprijzen-doeleinden is dat goed genoeg.
 
 
 def _nl_offset_for(now_utc: datetime) -> timedelta:
@@ -60,70 +48,83 @@ def _nl_offset_for(now_utc: datetime) -> timedelta:
 
 
 class PricesPoller:
-    """Pollt EnergyZero (vandaag + morgen) en pusht aggregates naar HA."""
-
-    BASE = "https://api.energyzero.nl/v1/energyprices"
+    """Pollt de Saldox API (vandaag + morgen) en pusht prijzen naar HA."""
 
     def __init__(
         self,
         ha: HomeAssistantClient,
+        saldox_api_url: str,
+        saldox_api_token: str,
         slug: str = "saldox_price",
         friendly: str = "Saldox prijs",
-        vat_inclusive: bool = True,
         poll_minutes: int = 15,
-        on_update: "Callable[[dict[str, dict]], None] | None" = None,
+        on_update: Callable[[dict[str, dict]], None] | None = None,
     ):
         self._ha = ha
+        self._api_url = saldox_api_url.rstrip("/")
+        self._api_token = saldox_api_token
         self._slug = slug
         self._friendly = friendly
-        self._vat = vat_inclusive
         self._poll_seconds = max(60, poll_minutes * 60)
         self._session: aiohttp.ClientSession | None = None
         self._on_update = on_update
 
-    async def _session_get(self) -> aiohttp.ClientSession:
+    async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            self._session = aiohttp.ClientSession(
+                headers={"Authorization": f"Bearer {self._api_token}"}
+            )
         return self._session
 
     async def close(self) -> None:
         if self._session and not self._session.closed:
             await self._session.close()
 
-    async def _fetch_day(self, day_local_midnight_utc: datetime) -> list[float]:
-        """Haalt 24 uur prijzen op vanaf `day_local_midnight_utc`. Lege lijst
-        wanneer EnergyZero nog geen data heeft (typisch morgen vóór 13:00)."""
-        session = await self._session_get()
-        from_iso = day_local_midnight_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        till = (day_local_midnight_utc + timedelta(days=1, seconds=-1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        params = {
-            "fromDate": from_iso,
-            "tillDate": till,
-            "interval": 4,                # 1 = 15-min, 4 = uurlijks
-            "usageType": 1,               # 1 = elektriciteit, 3 = gas
-            "inclBtw": "true" if self._vat else "false",
-        }
+    async def _fetch_hours(self, from_utc: str, to_utc: str) -> list[dict[str, Any]]:
+        """Fetch hourly prices from Saldox API for the given UTC range.
+
+        Returns list of {hour: int, price: float} dicts, or empty list on error.
+        Expected API response: [{"hourUtc":"2026-07-08T14:00:00Z","priceEurKwh":0.08}, ...]
+        """
+        session = await self._get_session()
+        url = f"{self._api_url}/api/prices/hourly"
+        params = {"from": from_utc, "to": to_utc}
         try:
-            async with session.get(self.BASE, params=params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status != 200:
-                    _LOG.warning("EnergyZero %s → HTTP %s", from_iso, resp.status)
+                    _LOG.warning("Saldox API %s -> HTTP %s", url, resp.status)
                     return []
                 data = await resp.json()
         except aiohttp.ClientError as ex:
-            _LOG.warning("EnergyZero fetch faalde: %s", ex)
+            _LOG.warning("Saldox API fetch failed: %s", ex)
             return []
 
-        # Response shape: { "Prices": [ { "price": 0.234, "readingDate": "..." }, ... ] }
-        prices = data.get("Prices") or []
-        out = [float(p.get("price", 0.0)) for p in prices]
-        if len(out) not in (0, 23, 24, 25):
-            _LOG.info("EnergyZero gaf %d punten voor %s (verwacht 24)", len(out), from_iso)
-        return out
+        if not isinstance(data, list):
+            _LOG.warning("Saldox API unexpected response type: %s", type(data).__name__)
+            return []
+
+        now_utc = datetime.now(timezone.utc)
+        offset = _nl_offset_for(now_utc)
+        result = []
+        for entry in data:
+            hour_utc_str = entry.get("hourUtc", "")
+            try:
+                dt_utc = datetime.fromisoformat(hour_utc_str.replace("Z", "+00:00"))
+                dt_local = dt_utc + offset
+                h = dt_local.hour
+            except (ValueError, AttributeError):
+                h = int(entry.get("hour", 0))
+            result.append({
+                "hour": h,
+                "price": float(entry.get("priceEurKwh", entry.get("pricePerKwh", 0.0))),
+            })
+        return result
 
     @staticmethod
-    def _stats(prices: list[float]) -> dict[str, Any]:
-        if not prices:
+    def _stats(hourly: list[dict[str, Any]]) -> dict[str, Any]:
+        if not hourly:
             return {"avg": None, "min": None, "max": None, "negative": 0}
+        prices = [h["price"] for h in hourly]
         return {
             "avg": round(sum(prices) / len(prices), 4),
             "min": round(min(prices), 4),
@@ -134,57 +135,101 @@ class PricesPoller:
     async def tick(self) -> None:
         now_utc = datetime.now(timezone.utc)
         offset = _nl_offset_for(now_utc)
-        # Lokale middernacht vandaag, in UTC uitgedrukt.
+
+        # Local midnight today, expressed in UTC.
         local_now = now_utc + offset
         local_midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
         today_start_utc = local_midnight - offset
         tomorrow_start_utc = today_start_utc + timedelta(days=1)
+        day_after_start_utc = today_start_utc + timedelta(days=2)
 
-        today = await self._fetch_day(today_start_utc.replace(tzinfo=None).replace(tzinfo=timezone.utc))
-        tomorrow = await self._fetch_day(tomorrow_start_utc.replace(tzinfo=None).replace(tzinfo=timezone.utc))
+        today_from = today_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        today_to = tomorrow_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        tomorrow_from = tomorrow_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        tomorrow_to = day_after_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # Huidig uur (lokaal)
+        today_hours = await self._fetch_hours(today_from, today_to)
+        tomorrow_hours = await self._fetch_hours(tomorrow_from, tomorrow_to)
+
+        # Current hour (local) -> find matching price.
         hour_idx = local_now.hour
         price_now: float | None = None
         rank_now: int | None = None
-        if 0 <= hour_idx < len(today):
-            price_now = round(today[hour_idx], 4)
-            ranks = sorted(range(len(today)), key=lambda i: today[i])  # cheapest first
-            rank_now = ranks.index(hour_idx) + 1
 
-        s_today = self._stats(today)
-        s_tomorrow = self._stats(tomorrow)
+        if today_hours:
+            # Find current hour's price.
+            for h in today_hours:
+                if h["hour"] == hour_idx:
+                    price_now = round(h["price"], 4)
+                    break
 
-        attrs_today = {"prices": today, "vat_inclusive": self._vat, "source": "energyzero", "fetched_at_utc": now_utc.isoformat()}
-        attrs_tomorrow = {"prices": tomorrow, "vat_inclusive": self._vat, "source": "energyzero", "fetched_at_utc": now_utc.isoformat()}
+            # Rank: sort all hours by price ascending, find position of current hour.
+            sorted_hours = sorted(today_hours, key=lambda h: h["price"])
+            for i, h in enumerate(sorted_hours):
+                if h["hour"] == hour_idx:
+                    rank_now = i + 1
+                    break
 
-        async def push(suffix: str, value: Any, extra: dict[str, Any] | None = None, unit: str = "EUR/kWh", state_class: str | None = "measurement") -> None:
+        s_today = self._stats(today_hours)
+        s_tomorrow = self._stats(tomorrow_hours)
+
+        fetched_at = now_utc.isoformat()
+
+        async def push(
+            suffix: str,
+            value: Any,
+            extra: dict[str, Any] | None = None,
+            unit: str = "EUR/kWh",
+            device_class: str | None = "monetary",
+            state_class: str | None = "measurement",
+        ) -> None:
             entity = f"sensor.{self._slug}_{suffix}"
             await self._ha.post_state(
                 entity_id=entity,
                 state=value if value is not None else "unknown",
                 unit=unit if value is not None else None,
                 friendly_name=f"{self._friendly} {suffix.replace('_', ' ')}",
-                device_class="monetary" if unit == "EUR/kWh" else None,
+                device_class=device_class if value is not None else None,
                 state_class=state_class,
                 extra_attrs=extra,
             )
 
-        await push("now", price_now, extra={**attrs_today, "hour_of_day_local": hour_idx})
-        await push("today_avg", s_today["avg"], extra=attrs_today)
-        await push("today_min", s_today["min"], extra=attrs_today)
-        await push("today_max", s_today["max"], extra=attrs_today)
-        await push("tomorrow_avg", s_tomorrow["avg"], extra=attrs_tomorrow)
-        await push("tomorrow_min", s_tomorrow["min"], extra=attrs_tomorrow)
-        await push("tomorrow_max", s_tomorrow["max"], extra=attrs_tomorrow)
-        await push("rank_now", rank_now, unit="", state_class=None,
-                   extra={"description": "1 = goedkoopste uur van vandaag, 24 = duurste", **attrs_today})
-        await push("negative_hours_today", s_today["negative"], unit="h", state_class="measurement",
-                   extra=attrs_today)
+        # _now sensor carries the full hourly arrays as attributes.
+        now_attrs = {
+            "today_prices": today_hours,
+            "tomorrow_prices": tomorrow_hours,
+            "hour_of_day_local": hour_idx,
+            "source": "saldox-api",
+            "fetched_at_utc": fetched_at,
+        }
+
+        common_attrs = {"source": "saldox-api", "fetched_at_utc": fetched_at}
+
+        await push("now", price_now, extra=now_attrs)
+        await push("today_avg", s_today["avg"], extra=common_attrs)
+        await push("today_min", s_today["min"], extra=common_attrs)
+        await push("today_max", s_today["max"], extra=common_attrs)
+        await push("tomorrow_avg", s_tomorrow["avg"], extra=common_attrs)
+        await push("tomorrow_min", s_tomorrow["min"], extra=common_attrs)
+        await push("tomorrow_max", s_tomorrow["max"], extra=common_attrs)
+        await push(
+            "rank_now", rank_now,
+            unit="",
+            device_class=None,
+            state_class=None,
+            extra={"description": "1 = goedkoopste uur van vandaag, 24 = duurste", **common_attrs},
+        )
+        await push(
+            "negative_hours_today", s_today["negative"],
+            unit="h",
+            device_class=None,
+            state_class="measurement",
+            extra=common_attrs,
+        )
 
         _LOG.info(
-            "Prices update: now=%s €/kWh (rank %s/%d), today_avg=%s, tomorrow_avg=%s, neg-hours=%s",
-            price_now, rank_now, len(today) or 0, s_today["avg"], s_tomorrow["avg"], s_today["negative"],
+            "Prices update: now=%s EUR/kWh (rank %s/%d), today_avg=%s, tomorrow_avg=%s, neg-hours=%s",
+            price_now, rank_now, len(today_hours) or 0, s_today["avg"], s_tomorrow["avg"], s_today["negative"],
         )
 
         # Share snapshot with webhook /status endpoint.
@@ -199,8 +244,8 @@ class PricesPoller:
                 "tomorrow_max":         {"value": s_tomorrow["max"], "unit": "EUR/kWh"},
                 "rank_now":             {"value": rank_now, "unit": ""},
                 "negative_hours_today": {"value": s_today["negative"], "unit": "h"},
-                "prices_today":         {"value": today, "unit": ""},
-                "prices_tomorrow":      {"value": tomorrow, "unit": ""},
+                "prices_today":         {"value": today_hours, "unit": ""},
+                "prices_tomorrow":      {"value": tomorrow_hours, "unit": ""},
             })
 
     async def run(self) -> None:
@@ -208,5 +253,5 @@ class PricesPoller:
             try:
                 await self.tick()
             except Exception as ex:  # noqa: BLE001
-                _LOG.error("Prices poll faalde: %s", ex)
+                _LOG.error("Prices poll failed: %s", ex)
             await asyncio.sleep(self._poll_seconds)
