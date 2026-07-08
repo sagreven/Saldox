@@ -1,0 +1,86 @@
+# Saldox Home Assistant add-on manifest.
+# Wordt door Supervisor gelezen wanneer de add-on geïnstalleerd wordt vanuit een
+# eigen repository (zie README voor de install-instructies).
+
+name: "Saldox EMS Bridge"
+description: >-
+  Brug tussen Saldox en je hardware. Pollt Sofar Solar HYD hybride inverters via
+  Modbus-TCP of RS485 (USB-adapter) en exposed ze als Home Assistant sensors.
+  Accepteert commando's vanuit Saldox en stuurt ze door naar het juiste apparaat.
+version: "0.1.0"
+slug: saldox_ems_bridge
+url: "https://saldox.nl"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+init: false
+hassio_api: true
+homeassistant_api: true
+host_network: false
+devices: true
+
+ports:
+  8765/tcp: 8765
+ports_description:
+  8765/tcp: "Saldox command webhook (verlaat HA via reverse proxy)"
+
+options:
+  # Modbus-verbinding: "tcp" (via netwerk) of "serial" (USB-RS485 adapter).
+  modbus:
+    connection_type: "tcp"
+    host: "192.168.1.50"
+    port: 502
+    serial_port: "/dev/ttyUSB0"
+    baudrate: 9600
+    parity: "N"
+    stopbits: 1
+    unit_id: 1
+    poll_interval_seconds: 10
+
+  # Onder welke slug worden de HA-sensors gepubliceerd. Saldox leest:
+  #   sensor.{slug}_power, sensor.{slug}_today_kwh, sensor.{slug}_total_kwh
+  ha:
+    device_slug: "sofar_hyd"
+    friendly_name: "Sofar HYD"
+
+  # EPEX day-ahead prijzen als HA sensors — voor dashboards, alerts en
+  # automations ("wasmachine alleen aan als prijs onder X" e.d.). Haalt
+  # NL-prijzen direct van EnergyZero (dezelfde bron die Saldox gebruikt).
+  prices:
+    enabled: true
+    slug: "saldox_price"
+    friendly_name: "Saldox prijs"
+    vat_inclusive: true
+    poll_minutes: 15
+
+  # Optionele Saldox-callback. Wanneer ingevuld pingt de add-on Saldox bij
+  # verandering van inverter-status (battery SOC drempel, fault-events) zodat
+  # de planner kan reageren.
+  saldox:
+    callback_url: ""
+    api_token: ""
+
+schema:
+  modbus:
+    connection_type: "list(tcp|serial)"
+    host: str?
+    port: port?
+    serial_port: str?
+    baudrate: "list(1200|2400|4800|9600|19200|38400|57600|115200)"?
+    parity: "list(N|E|O)"?
+    stopbits: "list(1|2)"?
+    unit_id: int(1,247)?
+    poll_interval_seconds: int(5,300)?
+  ha:
+    device_slug: match(^[a-z0-9_]+$)
+    friendly_name: str?
+  prices:
+    enabled: bool?
+    slug: match(^[a-z0-9_]+$)?
+    friendly_name: str?
+    vat_inclusive: bool?
+    poll_minutes: int(5,720)?
+  saldox:
+    callback_url: str?
+    api_token: password?
