@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
@@ -253,5 +254,5 @@ class PricesPoller:
             try:
                 await self.tick()
             except Exception as ex:  # noqa: BLE001
-                _LOG.error("Prices poll failed: %s", ex)
+                _LOG.error("Prices poll failed: %s\n%s", ex, traceback.format_exc())
             await asyncio.sleep(self._poll_seconds)
