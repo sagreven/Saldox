@@ -15,12 +15,14 @@ import os
 import signal
 import time
 from contextlib import suppress
+from typing import Any
 
 import aiohttp
 from aiohttp import web
 
 from .ha_api import HomeAssistantClient
 from .modbus_client import SofarModbusClient
+from .plan_poller import PlanPoller
 from .prices_poller import PricesPoller
 from .registers import by_name
 
@@ -54,11 +56,20 @@ _latest_ts: float = 0.0
 # Shared state: latest price data, updated by PricesPoller via set_prices().
 _latest_prices: dict[str, dict] = {}
 
+# Shared state: latest EMS plan, updated by PlanPoller via set_plan().
+_latest_plan: dict[str, Any] = {}
+
 
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
     _latest_prices.clear()
     _latest_prices.update(snapshot)
+
+
+def set_plan(plan: dict[str, Any]) -> None:
+    """Called by PlanPoller.tick() to share latest EMS plan with /status."""
+    _latest_plan.clear()
+    _latest_plan.update(plan)
 
 
 async def poll_loop(client: SofarModbusClient, ha: HomeAssistantClient, slug: str, friendly: str, interval: int) -> None:
@@ -114,6 +125,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "timestamp": _latest_ts,
             "readings": _latest,
             "prices": _latest_prices,
+            "plan": _latest_plan,
         })
 
     async def set_power_limit(req: web.Request) -> web.Response:
@@ -192,25 +204,299 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 .card.ok .value{color:#1a7a2e}
 .card.warn .value{color:#d97706}
 .card.off .value{color:#999}
+.card.savings .value{color:#1a7a2e}
 .status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 .status-dot.green{background:#22c55e}
 .status-dot.red{background:#ef4444}
 .status-dot.gray{background:#9ca3af}
 #error{color:#ef4444;margin-bottom:16px;display:none}
+.section-title{font-size:1.1rem;font-weight:600;color:#555;margin:28px 0 12px;padding-top:16px;border-top:1px solid #e5e7eb}
+.action-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;color:#fff;margin-right:4px}
+.action-ChargeBattery{background:#22c55e}
+.action-DischargeBattery{background:#f97316}
+.action-ChargeCar{background:#3b82f6}
+.action-CurtailPv{background:#a855f7}
+.action-RunHeavyLoad{background:#6b7280}
+.plan-chart{position:relative;height:280px;margin-top:12px}
+.plan-chart canvas{width:100%;height:100%}
 </style>
 </head><body>
 <h1>Saldox EMS Bridge</h1>
 <p class="subtitle"><span class="status-dot" id="dot"></span><span id="conn">Verbinden...</span></p>
 <div id="error"></div>
 <div class="grid" id="grid"></div>
-<p style="color:#aaa;font-size:.75rem">Auto-refresh elke 10 seconden</p>
+<div id="plan-section"></div>
+<p style="color:#aaa;font-size:.75rem;margin-top:16px">Auto-refresh elke 10 seconden</p>
 <script>
 const grid=document.getElementById('grid'),dot=document.getElementById('dot'),
-      conn=document.getElementById('conn'),errEl=document.getElementById('error');
+      conn=document.getElementById('conn'),errEl=document.getElementById('error'),
+      planSection=document.getElementById('plan-section');
 const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batterij SoC',
   battery_power:'Batterij vermogen',today_kwh:'Vandaag opgewekt',total_kwh:'Totaal opgewekt',
   today_import_kwh:'Import vandaag',today_export_kwh:'Export vandaag',
   temperature:'Temperatuur',status:'Inverter status',battery_voltage:'Batterij spanning'};
+const actionLabels={ChargeBattery:'Batterij laden',DischargeBattery:'Batterij ontladen',
+  ChargeCar:'Auto laden',CurtailPv:'PV beperken',RunHeavyLoad:'Zwaar verbruik'};
+const actionColors={ChargeBattery:'#22c55e',DischargeBattery:'#f97316',ChargeCar:'#3b82f6',
+  CurtailPv:'#a855f7',RunHeavyLoad:'#6b7280'};
+
+function toLocal(utcStr){
+  if(!utcStr)return null;
+  return new Date(utcStr.endsWith('Z')?utcStr:utcStr+'Z');
+}
+function fmtHour(d){return d?d.getHours()+':00':'?';}
+function fmtTime(d){return d?d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}):'?';}
+
+function renderPlan(plan){
+  if(!plan||!plan.timeline||!plan.timeline.length){planSection.innerHTML='';return;}
+  const tl=plan.timeline;
+  const actions=plan.actions||[];
+  const batSoC=plan.batterySoC||[];
+  const evSoC=plan.evSoC||[];
+  const savings=plan.totalSavingsEur;
+  const naive=plan.naiveCostEur;
+  const optimized=plan.optimizedCostEur;
+  const now=new Date();
+
+  let h='<div class="section-title">48-uur Energieplan</div>';
+  h+='<div class="grid">';
+  if(savings!=null)h+=`<div class="card savings"><div class="label">Besparing</div><div class="value">€ ${savings.toFixed(2)}</div><div class="unit">komende 48 uur</div></div>`;
+  if(optimized!=null&&naive!=null)h+=`<div class="card ok"><div class="label">Kosten</div><div class="value">€ ${optimized.toFixed(2)}</div><div class="unit">i.p.v. € ${naive.toFixed(2)} zonder plan</div></div>`;
+
+  // Next action card
+  const futureActions=actions.filter(a=>{const e=toLocal(a.endUtc);return e&&e>now;}).sort((a,b)=>toLocal(a.startUtc)-toLocal(b.startUtc));
+  if(futureActions.length){
+    const na=futureActions[0];
+    const lbl=actionLabels[na.kind]||na.kind;
+    const st=toLocal(na.startUtc);
+    const active=st&&st<=now;
+    h+=`<div class="card ${active?'warn':'ok'}"><div class="label">${active?'Actie nu':'Volgende actie'}</div><div class="value"><span class="action-badge action-${na.kind}">${lbl}</span></div><div class="unit">${fmtTime(st)} · ${na.kwh!=null?na.kwh.toFixed(1)+' kWh · ':''}\u20ac ${(na.eurSavings||0).toFixed(2)} besparing</div></div>`;
+  }
+  h+='</div>';
+
+  // 48h timeline chart — price bars with action overlays + SoC lines
+  h+='<div class="card" style="grid-column:1/-1;margin-bottom:16px"><div class="label">48-uur tijdlijn — prijs + acties + SoC</div>';
+  h+='<div class="plan-chart"><canvas id="planCanvas"></canvas></div></div>';
+
+  // Action list
+  if(actions.length){
+    h+='<div class="card" style="margin-bottom:16px"><div class="label">Geplande acties</div><div style="margin-top:12px">';
+    for(const a of actions){
+      const lbl=actionLabels[a.kind]||a.kind;
+      const st=toLocal(a.startUtc);
+      const en=toLocal(a.endUtc);
+      const risk=a.risk||'';
+      h+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0">`;
+      h+=`<span class="action-badge action-${a.kind}">${lbl}</span>`;
+      h+=`<span style="font-size:.85rem">${fmtTime(st)} – ${fmtTime(en)}</span>`;
+      h+=`<span style="font-size:.8rem;color:#888">${a.kwh!=null?a.kwh.toFixed(1)+' kWh':''}${a.eurSavings!=null?' · € '+a.eurSavings.toFixed(2):''}${risk?' · '+risk:''}</span>`;
+      if(a.rationale)h+=`<span style="font-size:.75rem;color:#aaa;margin-left:auto" title="${a.rationale}">ℹ</span>`;
+      h+=`</div>`;
+    }
+    h+='</div></div>';
+  }
+
+  planSection.innerHTML=h;
+
+  // Draw the canvas chart
+  requestAnimationFrame(()=>drawPlanChart(tl,actions,batSoC,evSoC));
+}
+
+function drawPlanChart(timeline,actions,batSoC,evSoC){
+  const canvas=document.getElementById('planCanvas');
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:20,right:50,bottom:30,left:45};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const N=timeline.length;
+  if(N===0)return;
+  const barW=cW/N;
+
+  // Price range
+  const prices=timeline.map(s=>s.priceEurKwh);
+  const minP=Math.min(...prices,0);
+  const maxP=Math.max(...prices);
+  const pRange=maxP-minP||0.01;
+
+  // Map timeline slots to start times
+  const slotStarts=timeline.map(s=>toLocal(s.startUtc));
+  const now=new Date();
+
+  // Build action lookup: for each slot index, which action kinds apply?
+  const slotActions=timeline.map((_,i)=>{
+    const slotStart=slotStarts[i];
+    const slotEnd=new Date(slotStart.getTime()+3600000);
+    const kinds=[];
+    for(const a of actions){
+      const as=toLocal(a.startUtc),ae=toLocal(a.endUtc);
+      if(as<slotEnd&&ae>slotStart)kinds.push(a.kind);
+    }
+    return kinds;
+  });
+
+  // Draw price bars
+  for(let i=0;i<N;i++){
+    const x=pad.left+i*barW;
+    const price=prices[i];
+    const pctFromBottom=(price-minP)/pRange;
+    const barH=Math.max(2,pctFromBottom*cH*0.65);
+    const y=pad.top+cH-barH;
+
+    // Bar color: action overlay or default price color
+    const kinds=slotActions[i];
+    let col='#d1d5db'; // default gray
+    if(kinds.length){
+      col=actionColors[kinds[0]]||col;
+    }else if(price<0){
+      col='#ef4444';
+    }else{
+      // Gradient from green (cheap) to blue (mid) to orange (expensive)
+      const t=pctFromBottom;
+      if(t<0.33)col='#22c55e';
+      else if(t<0.66)col='#60a5fa';
+      else col='#f97316';
+    }
+
+    // Highlight current hour
+    const isNow=slotStarts[i]&&slotStarts[i]<=now&&new Date(slotStarts[i].getTime()+3600000)>now;
+    if(isNow){
+      ctx.fillStyle='rgba(26,122,46,0.08)';
+      ctx.fillRect(x,pad.top,barW,cH);
+    }
+
+    ctx.fillStyle=col;
+    ctx.fillRect(x+1,y,barW-2,barH);
+
+    // Hour label every 3 hours
+    if(slotStarts[i]&&slotStarts[i].getHours()%3===0){
+      ctx.fillStyle='#999';
+      ctx.font='9px system-ui';
+      ctx.textAlign='center';
+      ctx.fillText(slotStarts[i].getHours()+':00',x+barW/2,pad.top+cH+14);
+    }
+
+    // Day separator
+    if(i>0&&slotStarts[i]&&slotStarts[i].getHours()===0){
+      ctx.strokeStyle='#ccc';
+      ctx.lineWidth=1;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      ctx.moveTo(x,pad.top);
+      ctx.lineTo(x,pad.top+cH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Day label
+      ctx.fillStyle='#888';
+      ctx.font='bold 9px system-ui';
+      ctx.textAlign='left';
+      ctx.fillText(slotStarts[i].toLocaleDateString('nl-NL',{weekday:'short',day:'numeric'}),x+3,pad.top+cH+26);
+    }
+  }
+
+  // Price Y-axis labels
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  const steps=[minP,minP+pRange*0.33,minP+pRange*0.66,maxP];
+  for(const v of steps){
+    const y=pad.top+cH-(((v-minP)/pRange)*cH*0.65);
+    ctx.fillText('€'+v.toFixed(2),pad.left-4,y+3);
+    ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+  }
+
+  // Battery SoC curve (left axis, 0-100%)
+  if(batSoC.length>1){
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2.5;ctx.setLineDash([]);
+    ctx.beginPath();
+    let first=true;
+    for(const pt of batSoC){
+      const ts=toLocal(pt.timestampUtc);
+      if(!ts)continue;
+      // Find x position by time interpolation
+      const t0=slotStarts[0].getTime(),tEnd=slotStarts[N-1].getTime()+3600000;
+      const frac=(ts.getTime()-t0)/(tEnd-t0);
+      const x=pad.left+frac*cW;
+      const pct=pt.capacityKwh>0?pt.soCKwh/pt.capacityKwh:0;
+      const y=pad.top+cH*(1-pct);
+      if(x<pad.left||x>pad.left+cW)continue;
+      if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // Label
+    ctx.fillStyle='#f59e0b';ctx.font='bold 9px system-ui';ctx.textAlign='left';
+    ctx.fillText('Bat SoC',pad.left+cW+4,pad.top+12);
+  }
+
+  // EV SoC curve (right side label)
+  if(evSoC.length>1){
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+    ctx.beginPath();
+    let first=true;
+    for(const pt of evSoC){
+      const ts=toLocal(pt.timestampUtc);
+      if(!ts)continue;
+      const t0=slotStarts[0].getTime(),tEnd=slotStarts[N-1].getTime()+3600000;
+      const frac=(ts.getTime()-t0)/(tEnd-t0);
+      const x=pad.left+frac*cW;
+      const pct=pt.capacityKwh>0?pt.soCKwh/pt.capacityKwh:0;
+      const y=pad.top+cH*(1-pct);
+      if(x<pad.left||x>pad.left+cW)continue;
+      if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#3b82f6';ctx.font='bold 9px system-ui';
+    ctx.fillText('EV SoC',pad.left+cW+4,pad.top+26);
+  }
+
+  // SoC right axis labels (0%, 50%, 100%)
+  if(batSoC.length>1||evSoC.length>1){
+    ctx.fillStyle='#bbb';ctx.font='9px system-ui';ctx.textAlign='left';
+    ctx.fillText('100%',pad.left+cW+4,pad.top+cH*0+10);
+    ctx.fillText('50%',pad.left+cW+4,pad.top+cH*0.5+3);
+    ctx.fillText('0%',pad.left+cW+4,pad.top+cH);
+  }
+
+  // "Now" line
+  if(slotStarts[0]){
+    const t0=slotStarts[0].getTime(),tEnd=slotStarts[N-1].getTime()+3600000;
+    const frac=(now.getTime()-t0)/(tEnd-t0);
+    if(frac>=0&&frac<=1){
+      const x=pad.left+frac*cW;
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([4,2]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#ef4444';ctx.font='bold 9px system-ui';ctx.textAlign='center';
+      ctx.fillText('nu',x,pad.top-4);
+    }
+  }
+
+  // Legend
+  const legendY=pad.top-8;
+  const legendItems=[
+    {col:'#22c55e',label:'Laden'},{col:'#f97316',label:'Ontladen'},
+    {col:'#3b82f6',label:'Auto'},{col:'#a855f7',label:'Beperken'},
+    {col:'#d1d5db',label:'Geen actie'}
+  ];
+  let lx=pad.left;
+  ctx.font='8px system-ui';
+  for(const li of legendItems){
+    ctx.fillStyle=li.col;
+    ctx.fillRect(lx,legendY-6,10,8);
+    ctx.fillStyle='#888';
+    ctx.textAlign='left';
+    ctx.fillText(li.label,lx+13,legendY+1);
+    lx+=ctx.measureText(li.label).width+22;
+  }
+}
+
 async function poll(){
   try{
     const r=await fetch('./status');
@@ -256,6 +542,8 @@ async function poll(){
       }
     }
     grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
+    // Render EMS plan section
+    renderPlan(d.plan||null);
   }catch(e){
     dot.className='status-dot red';
     conn.textContent='Geen verbinding';
@@ -305,6 +593,7 @@ async def main() -> None:
     poll_task = asyncio.create_task(poll_loop(modbus, ha, slug, friendly, interval), name="poll")
 
     prices_task = None
+    plan_task = None
     saldox_api_url = os.environ.get("SALDOX_API_URL", "").strip()
     saldox_api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
     if saldox_api_url:
@@ -319,6 +608,18 @@ async def main() -> None:
         )
         prices_task = asyncio.create_task(prices.run(), name="prices")
         _LOG.info("Saldox prices poller actief (API: %s)", saldox_api_url)
+
+        plan = PlanPoller(
+            ha=ha,
+            saldox_api_url=saldox_api_url,
+            saldox_api_token=saldox_api_token,
+            slug=os.environ.get("PLAN_SLUG", "saldox_plan"),
+            friendly=os.environ.get("PLAN_FRIENDLY_NAME", "Saldox plan"),
+            poll_minutes=int(os.environ.get("PLAN_POLL_MINUTES", "5")),
+            on_update=set_plan,
+        )
+        plan_task = asyncio.create_task(plan.run(), name="plan")
+        _LOG.info("Saldox plan poller actief")
 
     web_app = make_webhook_app(modbus, ha)
     runner = web.AppRunner(web_app)
@@ -339,11 +640,16 @@ async def main() -> None:
     poll_task.cancel()
     if prices_task:
         prices_task.cancel()
+    if plan_task:
+        plan_task.cancel()
     with suppress(asyncio.CancelledError):
         await poll_task
     if prices_task:
         with suppress(asyncio.CancelledError):
             await prices_task
+    if plan_task:
+        with suppress(asyncio.CancelledError):
+            await plan_task
     await runner.cleanup()
     await modbus.close()
     await ha.close()
