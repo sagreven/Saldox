@@ -142,6 +142,11 @@ async def _run_executor(plan: dict[str, Any]) -> None:
             if result:
                 _executor_status = f"⚡ Handmatig: {result}"
             return
+        elif mode == "charge_solar":
+            result = await _ha_controller.set_solar_charge()
+            if result:
+                _executor_status = f"☀ Handmatig: {result}"
+            return
         elif mode == "discharge":
             result = await _ha_controller.set_discharge(power_w)
             if result:
@@ -152,8 +157,13 @@ async def _run_executor(plan: dict[str, Any]) -> None:
             if result:
                 _executor_status = "⏸ Stand-by (handmatig)"
             return
+        elif mode == "auto_sofar":
+            result = await _ha_controller.set_auto()
+            if result:
+                _executor_status = "🔄 Auto (Sofar Self Use)"
+            return
 
-        # mode == "auto" → follow the plan
+        # mode == "auto" → follow the Saldox plan
         if _executor is not None:
             result = await _executor.execute(plan)
             if result:
@@ -274,8 +284,8 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         """POST /commands/override  body: { "mode": "auto|charge|discharge|standby", "power_pct": 0..100 }"""
         body = await req.json()
         mode = str(body.get("mode", "auto"))
-        if mode not in ("auto", "charge", "discharge", "standby"):
-            return web.json_response({"ok": False, "error": "mode must be auto|charge|discharge|standby"}, status=400)
+        if mode not in ("auto", "auto_sofar", "charge", "charge_solar", "discharge", "standby"):
+            return web.json_response({"ok": False, "error": "mode must be auto|auto_sofar|charge|charge_solar|discharge|standby"}, status=400)
         pct = int(body.get("power_pct", 100))
         if not 0 <= pct <= 100:
             return web.json_response({"ok": False, "error": "power_pct must be 0..100"}, status=400)
@@ -412,9 +422,11 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 <div class="pf-wrap" id="powerflow"></div>
 <div class="card" id="control-panel" style="max-width:480px;margin:0 auto 24px;padding:16px">
   <div class="label" style="margin-bottom:12px">BATTERIJ BESTURING</div>
-  <div style="display:flex;gap:6px;margin-bottom:12px" id="mode-btns">
-    <button class="ctrl-btn active" data-mode="auto">Auto (plan)</button>
-    <button class="ctrl-btn" data-mode="charge">Laden</button>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="mode-btns">
+    <button class="ctrl-btn active" data-mode="auto">Auto (Saldox)</button>
+    <button class="ctrl-btn" data-mode="auto_sofar">Auto (Sofar)</button>
+    <button class="ctrl-btn" data-mode="charge">Laden (grid)</button>
+    <button class="ctrl-btn" data-mode="charge_solar">Laden (zon)</button>
     <button class="ctrl-btn" data-mode="discharge">Ontladen</button>
     <button class="ctrl-btn" data-mode="standby">Stand-by</button>
   </div>
@@ -470,7 +482,7 @@ modeBtns.forEach(btn=>{
     modeBtns.forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     powerWrap.style.display=(mode==='charge'||mode==='discharge')?'block':'none';
-    sendOverride(mode,parseInt(powerSlider.value));
+    sendOverride(mode,mode==='charge'||mode==='discharge'?parseInt(powerSlider.value):100);
   });
 });
 
@@ -484,6 +496,7 @@ function syncControlPanel(override){
   powerSlider.value=pct;
   updatePowerLabel();
 }
+
 
 function renderPowerFlow(readings, executorStatus, prices, plan){
   // Extract values (default 0 if missing)

@@ -182,3 +182,36 @@ class HaBatteryController:
         self._last_mode = "auto"
         _LOG.info("CONTROL: reset to Self Use mode via HA")
         return "Auto modus"
+
+    async def set_solar_charge(self) -> str | None:
+        """Charge battery from solar only — grid power target = 0 (no import/export).
+
+        Sets Passive Mode with desired_grid_power = 0 so the inverter balances:
+        solar → home first, surplus → battery, no grid import.
+        """
+        if self._last_mode == "solar_charge":
+            return None
+
+        await self._ha.call_service("select", "select_option", {
+            "entity_id": _STORAGE_MODE_ENTITY,
+            "option": "Passive Mode",
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": 0,  # no grid import, no export
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": self._max_power_w,  # allow full charge rate from solar
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MIN_BAT_POWER,
+            "value": 0,  # no discharge
+        })
+        await self._ha.call_service("button", "press", {
+            "entity_id": _PASSIVE_UPDATE_BUTTON,
+        })
+
+        self._last_mode = "solar_charge"
+        _LOG.info("CONTROL: solar self-use charge via HA Passive Mode (grid=0)")
+        return "Zonne-laden (grid=0)"
