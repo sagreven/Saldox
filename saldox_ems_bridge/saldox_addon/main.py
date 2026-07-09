@@ -71,6 +71,7 @@ _executor_status: str = "Wachten op plan"
 # Format: {"mode": "auto"|"charge"|"discharge"|"standby", "power_pct": 0-100}
 _manual_override: dict[str, Any] = {"mode": "auto", "power_pct": 100}
 _ha_controller: Any = None  # set by main()
+_plan_poller: Any = None    # set by main() — for forced refreshes
 
 
 def set_prices(snapshot: dict[str, dict]) -> None:
@@ -240,6 +241,10 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             await _run_executor(_latest_plan)
         else:
             await _run_executor({})
+        # Force immediate plan refresh so the plan aligns with the new reality
+        if _plan_poller is not None:
+            asyncio.ensure_future(_plan_poller.tick())
+            _LOG.info("Forced plan refresh after override change")
         return web.json_response({"ok": True, "override": _manual_override, "executor": _executor_status})
 
     async def set_power_limit(req: web.Request) -> web.Response:
@@ -1012,6 +1017,8 @@ async def main() -> None:
             on_update=set_plan,
             get_readings=lambda: dict(_latest),
         )
+        global _plan_poller
+        _plan_poller = plan
         plan_task = asyncio.create_task(plan.run(), name="plan")
         _LOG.info("Saldox plan poller actief")
 
