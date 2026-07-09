@@ -153,6 +153,13 @@ async def _run_executor(plan: dict[str, Any]) -> None:
                     _executor_status = f"☀ Handmatig: {result}"
                 return
             elif mode == "discharge":
+                # Self Use: battery covers home needs, no grid export
+                result = await _ha_controller.set_auto()
+                if result:
+                    _executor_status = "🔋 Ontladen (eigen verbruik)"
+                return
+            elif mode == "export":
+                # Force-discharge to grid at selected power
                 result = await _ha_controller.set_discharge(power_w)
                 if result:
                     _executor_status = f"⚡ Handmatig: {result}"
@@ -288,8 +295,8 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         """POST /commands/override  body: { "mode": "auto|charge|discharge|standby", "power_pct": 0..100 }"""
         body = await req.json()
         mode = str(body.get("mode", "auto"))
-        if mode not in ("auto", "auto_sofar", "charge", "charge_solar", "discharge", "standby"):
-            return web.json_response({"ok": False, "error": "mode must be auto|auto_sofar|charge|charge_solar|discharge|standby"}, status=400)
+        if mode not in ("auto", "auto_sofar", "charge", "charge_solar", "discharge", "export", "standby"):
+            return web.json_response({"ok": False, "error": "mode must be auto|auto_sofar|charge|charge_solar|discharge|export|standby"}, status=400)
         pct = int(body.get("power_pct", 100))
         if not 0 <= pct <= 100:
             return web.json_response({"ok": False, "error": "power_pct must be 0..100"}, status=400)
@@ -393,6 +400,7 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 .action-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;color:#fff;margin-right:4px}
 .action-ChargeBattery{background:#22c55e}
 .action-DischargeBattery{background:#f97316}
+.action-ExportToGrid{background:#dc2626}
 .action-ChargeCar{background:#3b82f6}
 .action-CurtailPv{background:#a855f7}
 .action-RunHeavyLoad{background:#6b7280}
@@ -431,7 +439,8 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
     <button class="ctrl-btn" data-mode="auto_sofar">Auto (Sofar)</button>
     <button class="ctrl-btn" data-mode="charge">Laden (grid)</button>
     <button class="ctrl-btn" data-mode="charge_solar">Laden (zon)</button>
-    <button class="ctrl-btn" data-mode="discharge">Ontladen</button>
+    <button class="ctrl-btn" data-mode="discharge">Ontladen (eigen)</button>
+    <button class="ctrl-btn" data-mode="export">Ontladen (grid)</button>
     <button class="ctrl-btn" data-mode="standby">Stand-by</button>
   </div>
   <div id="power-slider-wrap" style="display:none">
@@ -485,8 +494,8 @@ modeBtns.forEach(btn=>{
     currentMode=mode;
     modeBtns.forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    powerWrap.style.display=(mode==='charge'||mode==='discharge')?'block':'none';
-    sendOverride(mode,mode==='charge'||mode==='discharge'?parseInt(powerSlider.value):100);
+    powerWrap.style.display=(mode==='charge'||mode==='export')?'block':'none';
+    sendOverride(mode,mode==='charge'||mode==='export'?parseInt(powerSlider.value):100);
   });
 });
 
@@ -496,7 +505,7 @@ function syncControlPanel(override){
   const pct=override.power_pct||100;
   currentMode=mode;
   modeBtns.forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);});
-  powerWrap.style.display=(mode==='charge'||mode==='discharge')?'block':'none';
+  powerWrap.style.display=(mode==='charge'||mode==='export')?'block':'none';
   powerSlider.value=pct;
   updatePowerLabel();
 }
@@ -599,10 +608,10 @@ const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batteri
   battery_power:'Batterij vermogen',today_kwh:'Vandaag opgewekt',total_kwh:'Totaal opgewekt',
   today_import_kwh:'Import vandaag',today_export_kwh:'Export vandaag',
   temperature:'Temperatuur',status:'Inverter status',battery_voltage:'Batterij spanning'};
-const actionLabels={ChargeBattery:'Batterij laden',DischargeBattery:'Batterij ontladen',
-  ChargeCar:'Auto laden',CurtailPv:'PV beperken',RunHeavyLoad:'Zwaar verbruik'};
-const actionColors={ChargeBattery:'#22c55e',DischargeBattery:'#f97316',ChargeCar:'#3b82f6',
-  CurtailPv:'#a855f7',RunHeavyLoad:'#6b7280'};
+const actionLabels={ChargeBattery:'Batterij laden',DischargeBattery:'Eigen verbruik',
+  ExportToGrid:'Export naar grid',ChargeCar:'Auto laden',CurtailPv:'PV beperken',RunHeavyLoad:'Zwaar verbruik'};
+const actionColors={ChargeBattery:'#22c55e',DischargeBattery:'#f97316',ExportToGrid:'#dc2626',
+  ChargeCar:'#3b82f6',CurtailPv:'#a855f7',RunHeavyLoad:'#6b7280'};
 
 function toLocal(utcStr){
   if(!utcStr)return null;
@@ -642,6 +651,10 @@ function renderPlan(plan, pvHourly){
   h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x2600; Zonneproductie vandaag &#x2014; forecast vs. werkelijk per string</div>';
   h+='<div class="plan-chart" style="height:220px"><canvas id="solarCanvas"></canvas></div></div>';
 
+  // Power balance chart — consumption vs PV vs battery contribution
+  h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x26A1; Energiebalans &#x2014; verbruik, zon &#x26; batterij</div>';
+  h+='<div class="plan-chart" style="height:220px"><canvas id="balanceCanvas"></canvas></div></div>';
+
   // 48h timeline chart — price bars with action overlays + SoC lines
   h+='<div class="card" style="grid-column:1/-1;margin-bottom:16px"><div class="label">48-uur tijdlijn — prijs + acties + SoC</div>';
   h+='<div class="plan-chart"><canvas id="planCanvas"></canvas></div></div>';
@@ -679,6 +692,7 @@ function renderPlan(plan, pvHourly){
   // Draw the canvas charts
   requestAnimationFrame(()=>{
     drawSolarChart(tl, pvHourly||{});
+    drawBalanceChart(tl);
     drawPlanChart(tl,actions,batSoC,evSoC);
     if(sh&&sh.days&&sh.days.length>1)drawSavingsChart(sh.days);
   });
@@ -902,6 +916,128 @@ function drawSolarChart(timeline, pvHourly){
   // PV2
   ctx.fillStyle='#84cc16';ctx.fillRect(lx,ly-7,10,10);
   ctx.fillStyle='#666';ctx.fillText('String 2',lx+14,ly+1);
+}
+
+function drawBalanceChart(timeline){
+  const canvas=document.getElementById('balanceCanvas');
+  if(!canvas)return;
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const slots=timeline.filter(s=>{const d=toLocal(s.startUtc);return d&&d.toISOString().slice(0,10)===todayStr;});
+  if(slots.length===0)return;
+
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:24,right:16,bottom:30,left:50};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const N=slots.length;
+  const barW=cW/N;
+
+  // Y scale: max of consumption or PV
+  let maxW=0;
+  for(const s of slots){
+    if(s.consumptionWatts>maxW)maxW=s.consumptionWatts;
+    if(s.pvWatts>maxW)maxW=s.pvWatts;
+  }
+  if(maxW<500)maxW=500;
+  maxW=Math.ceil(maxW/500)*500;
+
+  function yPos(w){return pad.top+cH-(w/maxW)*cH;}
+  function bH(w){return Math.max(0,(w/maxW)*cH);}
+  const baseline=yPos(0);
+
+  // Y-axis gridlines
+  const steps=Math.min(6,Math.max(2,Math.floor(maxW/1000)));
+  ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const w=maxW*(i/steps);
+    const y=yPos(w);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+    const label=w>=1000?(w/1000).toFixed(1)+' kW':Math.round(w)+' W';
+    ctx.fillText(label,pad.left-6,y+3);
+  }
+
+  for(let i=0;i<N;i++){
+    const s=slots[i];
+    const x=pad.left+i*barW;
+    const gap=2;
+    const consumption=s.consumptionWatts||0;
+    const pv=s.pvWatts||0;
+    const net=consumption-pv; // positive = deficit (need grid/battery), negative = surplus
+
+    // Consumption bar (red/orange outline)
+    const cH2=bH(consumption);
+    ctx.fillStyle='rgba(239,68,68,0.15)';
+    ctx.fillRect(x+gap,baseline-cH2,barW-2*gap,cH2);
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=0.8;
+    ctx.strokeRect(x+gap,baseline-cH2,barW-2*gap,cH2);
+
+    // PV contribution (yellow fill, stacked from bottom)
+    const pvCover=Math.min(pv,consumption); // PV covering consumption
+    const pvH=bH(pvCover);
+    ctx.fillStyle='rgba(234,179,8,0.5)';
+    ctx.fillRect(x+gap,baseline-pvH,barW-2*gap,pvH);
+
+    // Battery contribution (green, on top of PV if deficit)
+    if(net>0){
+      // Deficit: battery could cover some
+      const batH=bH(Math.min(net,5000)); // cap visual at 5kW
+      ctx.fillStyle='rgba(34,197,94,0.4)';
+      ctx.fillRect(x+gap,baseline-pvH-batH,barW-2*gap,batH);
+    }
+
+    // Surplus indicator (small blue bar above)
+    if(net<0){
+      const surplusH=bH(Math.min(-net,maxW*0.3));
+      ctx.fillStyle='rgba(96,165,250,0.3)';
+      ctx.fillRect(x+gap,baseline-cH2-surplusH,barW-2*gap,surplusH);
+    }
+
+    // Hour label
+    const st=toLocal(s.startUtc);
+    if(st.getHours()%2===0){
+      ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText(st.getHours()+':00',x+barW/2,pad.top+cH+14);
+    }
+  }
+
+  // "Now" line
+  const nowH=now.getHours()+now.getMinutes()/60;
+  for(let i=0;i<N;i++){
+    const st=toLocal(slots[i].startUtc);
+    if(st.getHours()<=nowH&&(i===N-1||toLocal(slots[i+1].startUtc).getHours()>nowH)){
+      const frac=nowH-st.getHours();
+      const x=pad.left+i*barW+frac*barW;
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+  }
+
+  // Legend
+  ctx.font='9px system-ui';ctx.textAlign='left';
+  let lx=pad.left+8;const ly=pad.top+12;
+  ctx.fillStyle='rgba(239,68,68,0.15)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.strokeStyle='#ef4444';ctx.lineWidth=0.8;ctx.strokeRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Verbruik',lx+14,ly+1);
+  lx+=ctx.measureText('Verbruik').width+24;
+  ctx.fillStyle='rgba(234,179,8,0.5)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Zon',lx+14,ly+1);
+  lx+=ctx.measureText('Zon').width+24;
+  ctx.fillStyle='rgba(34,197,94,0.4)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Batterij',lx+14,ly+1);
+  lx+=ctx.measureText('Batterij').width+24;
+  ctx.fillStyle='rgba(96,165,250,0.3)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Overschot',lx+14,ly+1);
 }
 
 function drawPlanChart(timeline,actions,batSoC,evSoC){

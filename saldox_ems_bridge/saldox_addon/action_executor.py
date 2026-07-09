@@ -5,10 +5,15 @@ time window is active. Supports both direct Modbus and HA service call
 control backends.
 
 Action mapping:
-  ChargeBattery     → force-charge at max power
-  DischargeBattery  → force-discharge at max power
-  CurtailPv         → power limit = 0%
-  (others)          → no hardware action (informational only)
+  ChargeBattery     → force-charge at max power (Passive Mode, grid import)
+  DischargeBattery  → Self Use mode (battery covers home deficit naturally)
+  ExportToGrid      → force-discharge to grid (Passive Mode, grid export)
+  CurtailPv         → Self Use (no PV curtailment via HA)
+  (others)          → Self Use (informational only)
+
+Key distinction:
+  DischargeBattery = let battery cover home needs (Self Use, no grid export)
+  ExportToGrid     = actively push power to grid for arbitrage
 
 Safety:
   - Only writes when the desired state differs from the current state (no spam).
@@ -69,10 +74,13 @@ class ActionExecutor:
         if kind == "ChargeBattery":
             return await self._ctrl.set_charge()
         elif kind == "DischargeBattery":
+            # Self Use mode: battery naturally covers home consumption deficit.
+            # Sofar discharges only what the home needs — no grid export.
+            return await self._ctrl.set_auto()
+        elif kind == "ExportToGrid":
+            # Force-discharge to grid for price arbitrage.
             return await self._ctrl.set_discharge()
         elif kind == "CurtailPv":
-            # For curtailment, just stop charging/discharging — the Solax
-            # integration doesn't expose PV curtailment via passive mode.
             return await self._ctrl.set_auto()
         else:
             return await self._ctrl.set_auto()
