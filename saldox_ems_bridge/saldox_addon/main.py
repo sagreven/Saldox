@@ -22,6 +22,7 @@ from aiohttp import web
 
 from .action_executor import ActionExecutor
 from .ha_api import HomeAssistantClient
+from .ha_sensor_reader import HaBatteryController, HaSensorReader
 from .modbus_client import SofarModbusClient
 from .plan_poller import PlanPoller
 from .prices_poller import PricesPoller
@@ -99,32 +100,63 @@ async def _run_executor(plan: dict[str, Any]) -> None:
         _executor_status = f"Fout: {ex}"
 
 
-async def poll_loop(client: SofarModbusClient, ha: HomeAssistantClient, slug: str, friendly: str, interval: int) -> None:
+async def poll_loop(
+    client: SofarModbusClient,
+    ha: HomeAssistantClient,
+    ha_reader: HaSensorReader,
+    slug: str,
+    friendly: str,
+    interval: int,
+) -> None:
     global _latest_ts
+    _modbus_ok = True  # track Modbus availability
     while True:
         try:
-            readings = await client.read_all()
+            # Try direct Modbus first; if it fails, fall back to HA sensors.
+            readings = None
+            source = "modbus"
+            if _modbus_ok:
+                try:
+                    readings = await client.read_all()
+                except Exception:
+                    _modbus_ok = False
+                    _LOG.info("Modbus niet beschikbaar — schakel over naar HA sensor bridge")
+
+            if readings is None:
+                readings = await ha_reader.read_all()
+                source = "ha-sensors"
+                if not readings:
+                    _LOG.warning("Geen readings van HA sensors")
+                    await asyncio.sleep(interval)
+                    continue
+
             snapshot: dict[str, dict] = {}
             for r in readings:
                 snapshot[r.name] = {"value": r.value, "unit": r.unit}
             _latest.clear()
             _latest.update(snapshot)
             _latest_ts = time.time()
-            for r in readings:
-                if r.name not in SENSOR_MAP:
-                    continue
-                suffix, dev_class, state_class = SENSOR_MAP[r.name]
-                entity = f"sensor.{slug}_{suffix}"
-                await ha.post_state(
-                    entity_id=entity,
-                    state=r.value,
-                    unit=r.unit or None,
-                    friendly_name=f"{friendly} {suffix.replace('_', ' ')}",
-                    device_class=dev_class,
-                    state_class=state_class,
-                    extra_attrs={"source": "saldox-ems-bridge", "modbus_register": r.name},
-                )
-            _LOG.info("Poll OK — %d readings naar HA", len(readings))
+
+            # Only push to HA as separate sensors when reading from direct Modbus
+            # (HA sensors already exist from the Solax integration).
+            if source == "modbus":
+                for r in readings:
+                    if r.name not in SENSOR_MAP:
+                        continue
+                    suffix, dev_class, state_class = SENSOR_MAP[r.name]
+                    entity = f"sensor.{slug}_{suffix}"
+                    await ha.post_state(
+                        entity_id=entity,
+                        state=r.value,
+                        unit=r.unit or None,
+                        friendly_name=f"{friendly} {suffix.replace('_', ' ')}",
+                        device_class=dev_class,
+                        state_class=state_class,
+                        extra_attrs={"source": "saldox-ems-bridge", "modbus_register": r.name},
+                    )
+
+            _LOG.info("Poll OK — %d readings via %s", len(readings), source)
+
             # Execute plan actions on every poll cycle for timely transitions.
             if _latest_plan:
                 await _run_executor(_latest_plan)
@@ -818,12 +850,14 @@ async def main() -> None:
         unit_id=int(os.environ.get("MODBUS_UNIT_ID", "1")),
     )
     ha = HomeAssistantClient()
+    ha_reader = HaSensorReader(ha)
+    ha_controller = HaBatteryController(ha)
 
     global _executor
-    _executor = ActionExecutor(client=modbus)
-    _LOG.info("Action executor actief — plan-acties worden automatisch uitgevoerd")
+    _executor = ActionExecutor(controller=ha_controller)
+    _LOG.info("Action executor actief — battery control via HA Solax integration")
 
-    poll_task = asyncio.create_task(poll_loop(modbus, ha, slug, friendly, interval), name="poll")
+    poll_task = asyncio.create_task(poll_loop(modbus, ha, ha_reader, slug, friendly, interval), name="poll")
 
     prices_task = None
     plan_task = None

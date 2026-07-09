@@ -70,3 +70,41 @@ class HomeAssistantClient:
         except aiohttp.ClientError as ex:
             _LOG.warning("HA state-post network error voor %s: %s", entity_id, ex)
             return False
+
+    async def get_state(self, entity_id: str) -> dict[str, Any] | None:
+        """GET /api/states/<entity_id> — returns full state object or None."""
+        session = await self._get_session()
+        url = f"{self.base_url}/api/states/{entity_id}"
+        try:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                return None
+        except aiohttp.ClientError:
+            return None
+
+    async def get_states(self, entity_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """Batch-read multiple entity states. Returns {entity_id: state_obj}."""
+        results: dict[str, dict[str, Any]] = {}
+        for eid in entity_ids:
+            s = await self.get_state(eid)
+            if s is not None:
+                results[eid] = s
+        return results
+
+    async def call_service(
+        self, domain: str, service: str, data: dict[str, Any] | None = None
+    ) -> bool:
+        """POST /api/services/<domain>/<service>."""
+        session = await self._get_session()
+        url = f"{self.base_url}/api/services/{domain}/{service}"
+        try:
+            async with session.post(url, json=data or {}, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status == 200:
+                    return True
+                body = await resp.text()
+                _LOG.warning("HA service %s.%s → HTTP %s: %s", domain, service, resp.status, body[:200])
+                return False
+        except aiohttp.ClientError as ex:
+            _LOG.warning("HA service %s.%s error: %s", domain, service, ex)
+            return False
