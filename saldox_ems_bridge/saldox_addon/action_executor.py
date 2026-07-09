@@ -34,6 +34,7 @@ class BatteryController(Protocol):
     async def set_charge(self, power_w: int | None = None) -> str | None: ...
     async def set_discharge(self, power_w: int | None = None) -> str | None: ...
     async def set_auto(self) -> str | None: ...
+    async def set_solar_charge(self) -> str | None: ...
 
 
 class ActionExecutor:
@@ -80,6 +81,9 @@ class ActionExecutor:
         elif kind == "ExportToGrid":
             # Force-discharge to grid for price arbitrage.
             return await self._ctrl.set_discharge()
+        elif kind == "SolarCharge":
+            # Charge from solar only (grid=0), no grid import.
+            return await self._ctrl.set_solar_charge()
         elif kind == "CurtailPv":
             return await self._ctrl.set_auto()
         else:

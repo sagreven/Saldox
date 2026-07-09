@@ -21,6 +21,7 @@ import aiohttp
 from aiohttp import web
 
 from .action_executor import ActionExecutor
+from .arbitrage_optimizer import ArbitrageConfig, ArbitrageOptimizer
 from .ha_api import HomeAssistantClient
 from .ha_sensor_reader import HaBatteryController, HaSensorReader
 from .modbus_client import SofarModbusClient
@@ -72,6 +73,7 @@ _executor_status: str = "Wachten op plan"
 _manual_override: dict[str, Any] = {"mode": "auto", "power_pct": 100}
 _ha_controller: Any = None  # set by main()
 _plan_poller: Any = None    # set by main() — for forced refreshes
+_arbitrage_optimizer: ArbitrageOptimizer | None = None  # set by main()
 
 # ---------------------------------------------------------------------------
 # Hourly PV accumulator — tracks average power per hour per string (today).
@@ -184,11 +186,41 @@ def set_prices(snapshot: dict[str, dict]) -> None:
     _latest_prices.update(snapshot)
 
 
+def _get_current_soc_kwh() -> float:
+    """Read current battery SoC from latest readings, convert to kWh."""
+    bat_soc = _latest.get("battery_soc_percent", {}).get("value")
+    if bat_soc is not None:
+        return float(bat_soc) / 100.0 * 30.0  # 30 kWh capacity
+    return 15.0  # default 50%
+
+
 def set_plan(plan: dict[str, Any]) -> None:
     """Called by PlanPoller.tick() to share latest EMS plan with /status.
-    Also triggers the action executor to check for active actions.
+    Runs the arbitrage optimizer in auto mode, then triggers executor.
     """
     global _executor_status
+    # Run local arbitrage optimizer when in auto mode
+    mode = _manual_override.get("mode", "auto")
+    if mode == "auto" and _arbitrage_optimizer is not None:
+        try:
+            result = _arbitrage_optimizer.optimize(
+                timeline=plan.get("timeline", []),
+                current_soc_kwh=_get_current_soc_kwh(),
+            )
+            if result and result.actions:
+                plan["actions"] = result.actions
+                plan["batterySoC"] = result.soc_curve
+                plan["arbitrage"] = {
+                    "profitEur": result.projected_profit_eur,
+                    "chargeCostEur": result.charge_cost_eur,
+                    "dischargeRevenueEur": result.discharge_revenue_eur,
+                    "pvSavingsEur": result.pv_savings_eur,
+                    "cycles": result.cycles,
+                    "summary": result.summary,
+                }
+        except Exception as ex:
+            _LOG.error("Arbitrage optimizer failed: %s", ex, exc_info=True)
+
     _latest_plan.clear()
     _latest_plan.update(plan)
     if _executor is not None:
@@ -381,6 +413,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "override": _manual_override,
             "pvHourly": pv_hourly,
             "loadHourly": load_hourly,
+            "arbitrage": _latest_plan.get("arbitrage", {}),
         })
 
     async def set_override(req: web.Request) -> web.Response:
@@ -493,6 +526,7 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 .action-ChargeBattery{background:#22c55e}
 .action-DischargeBattery{background:#f97316}
 .action-ExportToGrid{background:#dc2626}
+.action-SolarCharge{background:#eab308}
 .action-ChargeCar{background:#3b82f6}
 .action-CurtailPv{background:#a855f7}
 .action-RunHeavyLoad{background:#6b7280}
@@ -701,9 +735,9 @@ const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batteri
   today_import_kwh:'Import vandaag',today_export_kwh:'Export vandaag',
   temperature:'Temperatuur',status:'Inverter status',battery_voltage:'Batterij spanning'};
 const actionLabels={ChargeBattery:'Batterij laden',DischargeBattery:'Eigen verbruik',
-  ExportToGrid:'Export naar grid',ChargeCar:'Auto laden',CurtailPv:'PV beperken',RunHeavyLoad:'Zwaar verbruik'};
+  ExportToGrid:'Export naar grid',SolarCharge:'Zonne-laden',ChargeCar:'Auto laden',CurtailPv:'PV beperken',RunHeavyLoad:'Zwaar verbruik'};
 const actionColors={ChargeBattery:'#22c55e',DischargeBattery:'#f97316',ExportToGrid:'#dc2626',
-  ChargeCar:'#3b82f6',CurtailPv:'#a855f7',RunHeavyLoad:'#6b7280'};
+  SolarCharge:'#eab308',ChargeCar:'#3b82f6',CurtailPv:'#a855f7',RunHeavyLoad:'#6b7280'};
 
 function toLocal(utcStr){
   if(!utcStr)return null;
@@ -727,6 +761,8 @@ function renderPlan(plan, pvHourly, loadHourly){
   h+='<div class="grid">';
   if(savings!=null)h+=`<div class="card savings"><div class="label">Besparing</div><div class="value">€ ${savings.toFixed(2)}</div><div class="unit">komende 48 uur</div></div>`;
   if(optimized!=null&&naive!=null)h+=`<div class="card ok"><div class="label">Kosten</div><div class="value">€ ${optimized.toFixed(2)}</div><div class="unit">i.p.v. € ${naive.toFixed(2)} zonder plan</div></div>`;
+  const arb=plan.arbitrage;
+  if(arb&&arb.profitEur>0)h+=`<div class="card savings"><div class="label">Arbitrage winst</div><div class="value">\u20ac ${arb.profitEur.toFixed(2)}</div><div class="unit">${arb.cycles} cyclus(sen) \u00b7 ${arb.summary||''}</div></div>`;
 
   // Next action card
   const futureActions=actions.filter(a=>{const e=toLocal(a.endUtc);return e&&e>now;}).sort((a,b)=>toLocal(a.startUtc)-toLocal(b.startUtc));
@@ -1586,8 +1622,10 @@ async def main() -> None:
             get_readings=lambda: dict(_latest),
         )
         plan.set_hourly_usage_source(get_completed_hourly_usage)
-        global _plan_poller
+        global _plan_poller, _arbitrage_optimizer
         _plan_poller = plan
+        _arbitrage_optimizer = ArbitrageOptimizer(ArbitrageConfig())
+        _LOG.info("Arbitrage optimizer geactiveerd (30 kWh, 15 kW, 90%% eff)")
         plan_task = asyncio.create_task(plan.run(), name="plan")
         _LOG.info("Saldox plan poller actief")
 
