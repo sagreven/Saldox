@@ -180,6 +180,132 @@ def get_completed_hourly_usage() -> list[dict]:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Hourly energy trade accumulator — tracks import/export kWh + costs per hour.
+# Published as HA sensors for financial tracking.
+# ---------------------------------------------------------------------------
+_trade_hourly: dict[int, dict[str, float]] = {}
+_trade_hourly_date: str = ""
+_trade_daily_totals: dict[str, float] = {}
+
+
+def _accumulate_trade(readings: dict[str, dict]) -> None:
+    """Record grid import/export and self-consumption into hourly trade buckets."""
+    global _trade_hourly_date, _trade_daily_totals
+    from datetime import datetime
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    if today != _trade_hourly_date:
+        _trade_hourly.clear()
+        _trade_daily_totals = {
+            "import_kwh": 0, "export_kwh": 0, "self_kwh": 0,
+            "import_cost": 0, "export_rev": 0, "self_value": 0,
+        }
+        _trade_hourly_date = today
+    hour = now.hour
+
+    # Grid power: + = export, − = import (in Watts)
+    grid_w = readings.get("ac_active_power_w", {}).get("value", 0) or 0
+    grid_w = float(grid_w)
+    pv_w = readings.get("pv_total_power_w", {}).get("value", 0) or 0
+    pv_w = float(pv_w)
+    load_w = readings.get("load_power_w", {}).get("value", 0) or 0
+    load_w = float(load_w)
+
+    # Self-consumption = PV directly used by home (not exported, not to battery)
+    # Simplified: min(PV, load) — what PV covers of home consumption
+    self_w = min(pv_w, load_w) if pv_w > 0 else 0
+
+    if hour not in _trade_hourly:
+        _trade_hourly[hour] = {
+            "samples": 0,
+            "import_w": 0, "export_w": 0, "self_w": 0,
+        }
+    bucket = _trade_hourly[hour]
+    bucket["samples"] += 1
+    if grid_w < 0:
+        bucket["import_w"] += abs(grid_w)
+    else:
+        bucket["export_w"] += grid_w
+    bucket["self_w"] += self_w
+
+
+def _get_trade_sensors() -> dict[str, dict]:
+    """Calculate trade sensors from accumulated data + current prices."""
+    result: dict[str, dict] = {}
+
+    # Get current price from prices data
+    from datetime import datetime
+    now = datetime.now()
+    current_price = None
+    today_prices = _latest_prices.get("prices_today", {}).get("value", [])
+    if isinstance(today_prices, list):
+        for h in today_prices:
+            if isinstance(h, dict) and h.get("hour") == now.hour:
+                current_price = h.get("price")
+                break
+
+    avg_price = _latest_prices.get("today_avg", {}).get("value")
+    if avg_price is None:
+        avg_price = current_price or 0.15  # fallback
+
+    # Calculate per-hour kWh and costs
+    total_import_kwh = 0.0
+    total_export_kwh = 0.0
+    total_self_kwh = 0.0
+    total_import_cost = 0.0
+    total_export_rev = 0.0
+    total_self_value = 0.0
+
+    for hour, bucket in _trade_hourly.items():
+        n = bucket["samples"]
+        if n == 0:
+            continue
+        # Average power over samples, convert to kWh (1 hour)
+        import_kwh = (bucket["import_w"] / n) / 1000.0
+        export_kwh = (bucket["export_w"] / n) / 1000.0
+        self_kwh = (bucket["self_w"] / n) / 1000.0
+
+        # Find price for this hour
+        hour_price = avg_price
+        if isinstance(today_prices, list):
+            for h in today_prices:
+                if isinstance(h, dict) and h.get("hour") == hour:
+                    hour_price = h.get("price", avg_price)
+                    break
+
+        total_import_kwh += import_kwh
+        total_export_kwh += export_kwh
+        total_self_kwh += self_kwh
+        total_import_cost += import_kwh * hour_price
+        total_export_rev += export_kwh * hour_price
+        total_self_value += self_kwh * hour_price
+
+    trade_profit = total_export_rev - total_import_cost
+    net_result = trade_profit + total_self_value
+
+    _trade_daily_totals.update({
+        "import_kwh": round(total_import_kwh, 2),
+        "export_kwh": round(total_export_kwh, 2),
+        "self_kwh": round(total_self_kwh, 2),
+        "import_cost": round(total_import_cost, 2),
+        "export_rev": round(total_export_rev, 2),
+        "self_value": round(total_self_value, 2),
+    })
+
+    return {
+        "grid_import_kwh":      {"value": round(total_import_kwh, 2),  "unit": "kWh"},
+        "grid_export_kwh":      {"value": round(total_export_kwh, 2),  "unit": "kWh"},
+        "self_consumption_kwh": {"value": round(total_self_kwh, 2),    "unit": "kWh"},
+        "grid_import_cost":     {"value": round(total_import_cost, 2), "unit": "EUR"},
+        "grid_export_revenue":  {"value": round(total_export_rev, 2),  "unit": "EUR"},
+        "self_consumption_value":{"value": round(total_self_value, 2), "unit": "EUR"},
+        "trade_profit":         {"value": round(trade_profit, 2),      "unit": "EUR"},
+        "net_result":           {"value": round(net_result, 2),        "unit": "EUR"},
+        "avg_price":            {"value": round(avg_price, 4),         "unit": "EUR/kWh"},
+    }
+
+
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
     _latest_prices.clear()
@@ -326,9 +452,10 @@ async def poll_loop(
             _latest.update(snapshot)
             _latest_ts = time.time()
 
-            # Accumulate hourly PV and consumption averages for charts.
+            # Accumulate hourly PV, consumption, and trade averages for charts.
             _accumulate_pv(snapshot)
             _accumulate_load(snapshot)
+            _accumulate_trade(snapshot)
 
             # Read outdoor temperature from HA weather entity.
             try:
@@ -361,6 +488,24 @@ async def poll_loop(
                     )
 
             _LOG.info("Poll OK — %d readings via %s", len(readings), source)
+
+            # Publish trade/financial sensors to HA (every poll cycle).
+            try:
+                trade = _get_trade_sensors()
+                for key, val in trade.items():
+                    entity = f"sensor.saldox_{key}"
+                    dev_class = "monetary" if val["unit"] == "EUR" else "energy" if val["unit"] == "kWh" else None
+                    await ha.post_state(
+                        entity_id=entity,
+                        state=val["value"],
+                        unit=val["unit"],
+                        friendly_name=f"Saldox {key.replace('_', ' ')}",
+                        device_class=dev_class,
+                        state_class="total_increasing" if "kwh" in key else "measurement",
+                        extra_attrs={"source": "saldox-ems-bridge", "updated": time.time()},
+                    )
+            except Exception:
+                pass  # non-critical
 
             # Execute plan actions on every poll cycle for timely transitions.
             if _latest_plan:
@@ -414,6 +559,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "pvHourly": pv_hourly,
             "loadHourly": load_hourly,
             "arbitrage": _latest_plan.get("arbitrage", {}),
+            "trade": _trade_daily_totals,
         })
 
     async def set_override(req: web.Request) -> web.Response:
