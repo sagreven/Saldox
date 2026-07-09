@@ -101,7 +101,7 @@ async def _run_executor(plan: dict[str, Any]) -> None:
     try:
         mode = _manual_override.get("mode", "auto")
         pct = _manual_override.get("power_pct", 100)
-        max_w = 5000  # TODO: make configurable
+        max_w = 10000  # Sofar HYD 15KTL + 2×15kWh batteries
         power_w = int(max_w * pct / 100)
 
         if mode == "charge":
@@ -370,7 +370,7 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
   <div id="power-slider-wrap" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
       <span style="font-size:.8rem;color:#666">Vermogen</span>
-      <span id="power-label" style="font-size:1rem;font-weight:700">100% (5.0 kW)</span>
+      <span id="power-label" style="font-size:1rem;font-weight:700">100% (10.0 kW)</span>
     </div>
     <input type="range" id="power-slider" min="10" max="100" value="100" step="10"
       style="width:100%;accent-color:#1a7a2e">
@@ -396,7 +396,7 @@ let currentMode='auto';
 
 function updatePowerLabel(){
   const pct=powerSlider.value;
-  const kw=(5.0*pct/100).toFixed(1);
+  const kw=(10.0*pct/100).toFixed(1);
   powerLabel.textContent=pct+'% ('+kw+' kW)';
 }
 powerSlider.addEventListener('input',updatePowerLabel);
