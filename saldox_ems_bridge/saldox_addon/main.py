@@ -124,6 +124,8 @@ def set_plan(plan: dict[str, Any]) -> None:
         asyncio.ensure_future(_run_executor(plan))
 
 
+_executor_lock = asyncio.Lock()
+
 async def _run_executor(plan: dict[str, Any]) -> None:
     """Run the action executor and update the shared status string.
     Manual override takes priority over the plan.
@@ -131,47 +133,49 @@ async def _run_executor(plan: dict[str, Any]) -> None:
     global _executor_status
     if _ha_controller is None:
         return
-    try:
-        mode = _manual_override.get("mode", "auto")
-        pct = _manual_override.get("power_pct", 100)
-        max_w = 15000  # Sofar HYD 15KTL rated max — BMS will limit actual rate
-        power_w = int(max_w * pct / 100)
+    if _executor_lock.locked():
+        return  # skip if another executor call is in progress
+    async with _executor_lock:
+        try:
+            mode = _manual_override.get("mode", "auto")
+            pct = _manual_override.get("power_pct", 100)
+            max_w = 15000  # Sofar HYD 15KTL rated max — BMS will limit actual rate
+            power_w = int(max_w * pct / 100)
 
-        if mode == "charge":
-            result = await _ha_controller.set_charge(power_w)
-            if result:
-                _executor_status = f"⚡ Handmatig: {result}"
-            return
-        elif mode == "charge_solar":
-            result = await _ha_controller.set_solar_charge()
-            if result:
-                _executor_status = f"☀ Handmatig: {result}"
-            return
-        elif mode == "discharge":
-            result = await _ha_controller.set_discharge(power_w)
-            if result:
-                _executor_status = f"⚡ Handmatig: {result}"
-            return
-        elif mode == "standby":
-            result = await _ha_controller.set_auto()
-            if result:
-                _executor_status = "⏸ Stand-by (handmatig)"
-            return
-        elif mode == "auto_sofar":
-            result = await _ha_controller.set_auto()
-            if result:
-                _executor_status = "🔄 Auto (Sofar Self Use)"
-            return
+            if mode == "charge":
+                result = await _ha_controller.set_charge(power_w)
+                if result:
+                    _executor_status = f"⚡ Handmatig: {result}"
+                return
+            elif mode == "charge_solar":
+                result = await _ha_controller.set_solar_charge()
+                if result:
+                    _executor_status = f"☀ Handmatig: {result}"
+                return
+            elif mode == "discharge":
+                result = await _ha_controller.set_discharge(power_w)
+                if result:
+                    _executor_status = f"⚡ Handmatig: {result}"
+                return
+            elif mode == "standby":
+                result = await _ha_controller.set_auto()
+                if result:
+                    _executor_status = "⏸ Stand-by (handmatig)"
+                return
+            elif mode == "auto_sofar":
+                result = await _ha_controller.set_auto()
+                if result:
+                    _executor_status = "🔄 Auto (Sofar Self Use)"
+                return
 
-        # mode == "auto" → follow the Saldox plan
-        if _executor is not None:
-            result = await _executor.execute(plan)
-            if result:
-                _executor_status = result
-    except Exception as ex:  # noqa: BLE001
-        _LOG.error("Action executor failed: %s", ex)
-        _executor_status = f"Fout: {ex}"
-        _executor_status = f"Fout: {ex}"
+            # mode == "auto" → follow the Saldox plan
+            if _executor is not None:
+                result = await _executor.execute(plan)
+                if result:
+                    _executor_status = result
+        except Exception as ex:  # noqa: BLE001
+            _LOG.error("Action executor failed: %s", ex, exc_info=True)
+            _executor_status = f"Fout: {ex}"
 
 
 async def poll_loop(
