@@ -43,6 +43,7 @@ SENSOR_MAP = {
     "total_production_kwh":   ("total_kwh",      "energy",          "total_increasing"),
     "today_import_kwh":       ("today_import_kwh","energy",         "total_increasing"),
     "today_export_kwh":       ("today_export_kwh","energy",         "total_increasing"),
+    "today_consumption_kwh":  ("today_consumption_kwh","energy",    "total_increasing"),
     "inverter_temperature_c": ("temperature",    "temperature",     "measurement"),
     "inverter_status":        ("status",         None,              None),
     "battery_voltage_v":      ("battery_voltage","voltage",         "measurement"),
@@ -219,18 +220,104 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 .action-RunHeavyLoad{background:#6b7280}
 .plan-chart{position:relative;height:280px;margin-top:12px}
 .plan-chart canvas{width:100%;height:100%}
+
+/* Power flow diagram */
+.pf-wrap{max-width:480px;margin:0 auto 24px}
+.pf-svg{width:100%;height:auto}
+.pf-node{font-size:11px;font-weight:700;text-anchor:middle}
+.pf-val{font-size:13px;font-weight:700;text-anchor:middle;fill:#333}
+.pf-sub{font-size:9px;fill:#888;text-anchor:middle}
+.pf-icon{font-size:28px;text-anchor:middle;dominant-baseline:central}
+@keyframes flowDash{to{stroke-dashoffset:-20}}
+@keyframes flowDashRev{to{stroke-dashoffset:20}}
+.pf-line{stroke-width:3;fill:none;stroke-linecap:round;stroke-dasharray:8 6}
+.pf-line.active{animation:flowDash .8s linear infinite}
+.pf-line.reverse{animation:flowDashRev .8s linear infinite}
+.pf-line.idle{stroke:#e5e7eb;stroke-dasharray:none;stroke-width:2;animation:none}
 </style>
 </head><body>
 <h1>Saldox EMS Bridge</h1>
 <p class="subtitle"><span class="status-dot" id="dot"></span><span id="conn">Verbinden...</span></p>
 <div id="error"></div>
+<div class="pf-wrap" id="powerflow"></div>
 <div class="grid" id="grid"></div>
 <div id="plan-section"></div>
 <p style="color:#aaa;font-size:.75rem;margin-top:16px">Auto-refresh elke 10 seconden</p>
 <script>
 const grid=document.getElementById('grid'),dot=document.getElementById('dot'),
       conn=document.getElementById('conn'),errEl=document.getElementById('error'),
-      planSection=document.getElementById('plan-section');
+      planSection=document.getElementById('plan-section'),
+      pfEl=document.getElementById('powerflow');
+
+function renderPowerFlow(readings){
+  // Extract values (default 0 if missing)
+  const val=(k)=>{const r=readings[k];return r?Number(r.value)||0:0;};
+  const pvW=val('pv_total_power_w');
+  const gridW=val('ac_active_power_w');   // + export, − import
+  const batW=val('battery_power_w');      // + charge, − discharge
+  const batSoC=val('battery_soc_percent');
+  // Derive home consumption: PV + grid_import + bat_discharge - grid_export - bat_charge
+  // Simplified: homeW = pvW - gridW - batW  (signs work out)
+  const homeW=Math.max(0, pvW - gridW - batW);
+
+  // Flow magnitudes for lines
+  const pvToHome=Math.max(0, pvW - Math.max(0,gridW) - Math.max(0,batW));
+  const pvToGrid=Math.max(0, gridW);   // export
+  const pvToBat=Math.max(0, batW);     // charge from PV
+  const gridToHome=Math.max(0, -gridW); // import
+  const batToHome=Math.max(0, -batW);   // discharge
+
+  // Helper: line class based on power
+  const lc=(w,rev)=>w>10?(rev?'pf-line active reverse':'pf-line active'):'pf-line idle';
+  // Helper: line color
+  const ls=(w,col)=>w>10?col:'#e5e7eb';
+  // Helper: format W/kW
+  const fw=(w)=>{const a=Math.abs(w);return a>=1000?(a/1000).toFixed(1)+' kW':Math.round(a)+' W';};
+
+  // SVG layout: 320×280 viewBox
+  // Positions: Solar(160,30), Grid(40,140), Home(160,250), Battery(280,140)
+  pfEl.innerHTML=`<svg class="pf-svg" viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+    <!-- Flow lines -->
+    <!-- Solar → Home (vertical center) -->
+    <line x1="160" y1="62" x2="160" y2="218" class="${lc(pvToHome,false)}" stroke="${ls(pvToHome,'#22c55e')}"/>
+    <!-- Solar → Grid (top-left diagonal) -->
+    <line x1="132" y1="55" x2="68" y2="118" class="${lc(pvToGrid,false)}" stroke="${ls(pvToGrid,'#22c55e')}"/>
+    <!-- Solar → Battery (top-right diagonal) -->
+    <line x1="188" y1="55" x2="252" y2="118" class="${lc(pvToBat,false)}" stroke="${ls(pvToBat,'#f59e0b')}"/>
+    <!-- Grid → Home (bottom-left diagonal) -->
+    <line x1="68" y1="165" x2="132" y2="225" class="${lc(gridToHome,false)}" stroke="${ls(gridToHome,'#3b82f6')}"/>
+    <!-- Battery → Home (bottom-right diagonal) -->
+    <line x1="252" y1="165" x2="188" y2="225" class="${lc(batToHome,false)}" stroke="${ls(batToHome,'#f59e0b')}"/>
+
+    <!-- Flow labels on lines -->
+    ${pvToHome>10?`<text x="175" y="145" class="pf-sub">${fw(pvToHome)}</text>`:''}
+    ${pvToGrid>10?`<text x="85" y="78" class="pf-sub">${fw(pvToGrid)}</text>`:''}
+    ${pvToBat>10?`<text x="232" y="78" class="pf-sub">${fw(pvToBat)}</text>`:''}
+    ${gridToHome>10?`<text x="85" y="205" class="pf-sub">${fw(gridToHome)}</text>`:''}
+    ${batToHome>10?`<text x="232" y="205" class="pf-sub">${fw(batToHome)}</text>`:''}
+
+    <!-- Solar node -->
+    <text x="160" y="24" class="pf-icon">☀️</text>
+    <text x="160" y="50" class="pf-val" fill="#22c55e">${fw(pvW)}</text>
+    <text x="160" y="62" class="pf-sub">Zonnepanelen</text>
+
+    <!-- Grid node -->
+    <text x="40" y="132" class="pf-icon">⚡</text>
+    <text x="40" y="158" class="pf-val" fill="${gridW>=0?'#22c55e':'#3b82f6'}">${fw(Math.abs(gridW))}</text>
+    <text x="40" y="170" class="pf-sub">${gridW>=0?'Export':'Import'}</text>
+
+    <!-- Battery node -->
+    <text x="280" y="132" class="pf-icon">🔋</text>
+    <text x="280" y="158" class="pf-val" fill="#f59e0b">${batSoC}%</text>
+    <text x="280" y="170" class="pf-sub">${batW>10?'Laden '+fw(batW):batW<-10?'Ontladen '+fw(-batW):'Stand-by'}</text>
+
+    <!-- Home node -->
+    <text x="160" y="238" class="pf-icon">🏠</text>
+    <text x="160" y="262" class="pf-val" fill="#f97316">${fw(homeW)}</text>
+    <text x="160" y="274" class="pf-sub">Verbruik</text>
+  </svg>`;
+}
+
 const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batterij SoC',
   battery_power:'Batterij vermogen',today_kwh:'Vandaag opgewekt',total_kwh:'Totaal opgewekt',
   today_import_kwh:'Import vandaag',today_export_kwh:'Export vandaag',
@@ -592,6 +679,7 @@ async function poll(){
     dot.className='status-dot green';
     conn.textContent='Verbonden — '+new Date(d.timestamp*1000).toLocaleTimeString('nl-NL');
     errEl.style.display='none';
+    renderPowerFlow(d.readings||{});
     let html='';
     for(const[k,v]of Object.entries(d.readings||{})){
       const suffix=k.replace(/^.*?_/,'');
