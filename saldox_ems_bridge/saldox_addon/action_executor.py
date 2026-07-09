@@ -43,10 +43,21 @@ class ActionExecutor:
     def __init__(self, controller: BatteryController):
         self._ctrl = controller
 
+    # Priority order: higher = wins when multiple actions overlap.
+    _KIND_PRIORITY = {
+        "ExportToGrid": 100,
+        "ChargeBattery": 90,
+        "SolarCharge": 50,
+        "DischargeBattery": 40,
+        "ChargeCar": 30,
+        "CurtailPv": 10,
+    }
+
     def _find_active_action(self, plan: dict[str, Any]) -> dict[str, Any] | None:
-        """Find the action whose time window covers 'now'."""
+        """Find the highest-priority action whose time window covers 'now'."""
         actions = plan.get("actions") or []
         now = datetime.now(timezone.utc)
+        candidates = []
         for a in actions:
             try:
                 start = datetime.fromisoformat(a["startUtc"].replace("Z", "+00:00"))
@@ -54,8 +65,11 @@ class ActionExecutor:
             except (KeyError, ValueError):
                 continue
             if start <= now < end:
-                return a
-        return None
+                candidates.append(a)
+        if not candidates:
+            return None
+        # Return the highest-priority action when multiple overlap.
+        return max(candidates, key=lambda a: self._KIND_PRIORITY.get(a.get("kind", ""), 0))
 
     async def execute(self, plan: dict[str, Any]) -> str | None:
         """Check the plan and send commands if needed.

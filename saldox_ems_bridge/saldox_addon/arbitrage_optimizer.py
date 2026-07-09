@@ -176,8 +176,9 @@ class ArbitrageOptimizer:
             })
 
             # 1. PV surplus → free charge (SolarCharge)
+            #    Skip if this slot is reserved for grid export (discharge takes priority).
             free_kwh = min(s["free_charge_kwh"], cfg.capacity_kwh - soc)
-            if free_kwh > 0.1:
+            if free_kwh > 0.1 and s["idx"] not in discharge_set:
                 soc += free_kwh
                 pv_savings += free_kwh * price  # avoided grid cost
                 actions.append(self._make_action(
