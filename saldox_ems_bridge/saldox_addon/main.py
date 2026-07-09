@@ -67,6 +67,11 @@ _executor: ActionExecutor | None = None
 # Last executor action description (for /status).
 _executor_status: str = "Wachten op plan"
 
+# Manual override: when set, executor ignores plan and follows this instead.
+# Format: {"mode": "auto"|"charge"|"discharge"|"standby", "power_pct": 0-100}
+_manual_override: dict[str, Any] = {"mode": "auto", "power_pct": 100}
+_ha_controller: Any = None  # set by main()
+
 
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
@@ -87,16 +92,42 @@ def set_plan(plan: dict[str, Any]) -> None:
 
 
 async def _run_executor(plan: dict[str, Any]) -> None:
-    """Run the action executor and update the shared status string."""
+    """Run the action executor and update the shared status string.
+    Manual override takes priority over the plan.
+    """
     global _executor_status
-    if _executor is None:
+    if _ha_controller is None:
         return
     try:
-        result = await _executor.execute(plan)
-        if result:
-            _executor_status = result
+        mode = _manual_override.get("mode", "auto")
+        pct = _manual_override.get("power_pct", 100)
+        max_w = 5000  # TODO: make configurable
+        power_w = int(max_w * pct / 100)
+
+        if mode == "charge":
+            result = await _ha_controller.set_charge(power_w)
+            if result:
+                _executor_status = f"⚡ Handmatig: {result}"
+            return
+        elif mode == "discharge":
+            result = await _ha_controller.set_discharge(power_w)
+            if result:
+                _executor_status = f"⚡ Handmatig: {result}"
+            return
+        elif mode == "standby":
+            result = await _ha_controller.set_auto()
+            if result:
+                _executor_status = "⏸ Stand-by (handmatig)"
+            return
+
+        # mode == "auto" → follow the plan
+        if _executor is not None:
+            result = await _executor.execute(plan)
+            if result:
+                _executor_status = result
     except Exception as ex:  # noqa: BLE001
         _LOG.error("Action executor failed: %s", ex)
+        _executor_status = f"Fout: {ex}"
         _executor_status = f"Fout: {ex}"
 
 
@@ -189,7 +220,27 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "prices": _latest_prices,
             "plan": _latest_plan,
             "executor": _executor_status,
+            "override": _manual_override,
         })
+
+    async def set_override(req: web.Request) -> web.Response:
+        """POST /commands/override  body: { "mode": "auto|charge|discharge|standby", "power_pct": 0..100 }"""
+        body = await req.json()
+        mode = str(body.get("mode", "auto"))
+        if mode not in ("auto", "charge", "discharge", "standby"):
+            return web.json_response({"ok": False, "error": "mode must be auto|charge|discharge|standby"}, status=400)
+        pct = int(body.get("power_pct", 100))
+        if not 0 <= pct <= 100:
+            return web.json_response({"ok": False, "error": "power_pct must be 0..100"}, status=400)
+        _manual_override["mode"] = mode
+        _manual_override["power_pct"] = pct
+        _LOG.info("Manual override: mode=%s power=%d%%", mode, pct)
+        # Immediately execute the override
+        if _latest_plan:
+            await _run_executor(_latest_plan)
+        else:
+            await _run_executor({})
+        return web.json_response({"ok": True, "override": _manual_override, "executor": _executor_status})
 
     async def set_power_limit(req: web.Request) -> web.Response:
         body = await req.json()
@@ -296,12 +347,36 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 .pf-line.active{animation:flowDash .8s linear infinite}
 .pf-line.reverse{animation:flowDashRev .8s linear infinite}
 .pf-line.idle{stroke:#e5e7eb;stroke-dasharray:none;stroke-width:2;animation:none}
+.ctrl-btn{flex:1;padding:8px 4px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;font-size:.8rem;font-weight:600;color:#666;cursor:pointer;transition:all .2s}
+.ctrl-btn:hover{border-color:#1a7a2e;color:#1a7a2e}
+.ctrl-btn.active{border-color:#1a7a2e;background:#1a7a2e;color:#fff}
+.ctrl-btn[data-mode=charge].active{background:#22c55e;border-color:#22c55e}
+.ctrl-btn[data-mode=discharge].active{background:#f97316;border-color:#f97316}
+.ctrl-btn[data-mode=standby].active{background:#6b7280;border-color:#6b7280}
 </style>
 </head><body>
 <h1>Saldox EMS Bridge</h1>
 <p class="subtitle"><span class="status-dot" id="dot"></span><span id="conn">Verbinden...</span></p>
 <div id="error"></div>
 <div class="pf-wrap" id="powerflow"></div>
+<div class="card" id="control-panel" style="max-width:480px;margin:0 auto 24px;padding:16px">
+  <div class="label" style="margin-bottom:12px">BATTERIJ BESTURING</div>
+  <div style="display:flex;gap:6px;margin-bottom:12px" id="mode-btns">
+    <button class="ctrl-btn active" data-mode="auto">Auto (plan)</button>
+    <button class="ctrl-btn" data-mode="charge">Laden</button>
+    <button class="ctrl-btn" data-mode="discharge">Ontladen</button>
+    <button class="ctrl-btn" data-mode="standby">Stand-by</button>
+  </div>
+  <div id="power-slider-wrap" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:.8rem;color:#666">Vermogen</span>
+      <span id="power-label" style="font-size:1rem;font-weight:700">100% (5.0 kW)</span>
+    </div>
+    <input type="range" id="power-slider" min="10" max="100" value="100" step="10"
+      style="width:100%;accent-color:#1a7a2e">
+  </div>
+  <div id="ctrl-status" style="font-size:.8rem;color:#888;margin-top:8px"></div>
+</div>
 <div class="grid" id="grid"></div>
 <div id="plan-section"></div>
 <p style="color:#aaa;font-size:.75rem;margin-top:16px">Auto-refresh elke 10 seconden</p>
@@ -310,6 +385,54 @@ const grid=document.getElementById('grid'),dot=document.getElementById('dot'),
       conn=document.getElementById('conn'),errEl=document.getElementById('error'),
       planSection=document.getElementById('plan-section'),
       pfEl=document.getElementById('powerflow');
+
+// --- Battery control panel ---
+const modeBtns=document.querySelectorAll('.ctrl-btn');
+const powerSlider=document.getElementById('power-slider');
+const powerLabel=document.getElementById('power-label');
+const powerWrap=document.getElementById('power-slider-wrap');
+const ctrlStatus=document.getElementById('ctrl-status');
+let currentMode='auto';
+
+function updatePowerLabel(){
+  const pct=powerSlider.value;
+  const kw=(5.0*pct/100).toFixed(1);
+  powerLabel.textContent=pct+'% ('+kw+' kW)';
+}
+powerSlider.addEventListener('input',updatePowerLabel);
+powerSlider.addEventListener('change',()=>sendOverride(currentMode,parseInt(powerSlider.value)));
+
+async function sendOverride(mode,pct){
+  ctrlStatus.textContent='Versturen...';
+  try{
+    const r=await fetch('./commands/override',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:mode,power_pct:pct||100})});
+    const d=await r.json();
+    if(d.ok){ctrlStatus.textContent=d.executor||'OK';}
+    else{ctrlStatus.textContent='Fout: '+(d.error||'onbekend');}
+  }catch(e){ctrlStatus.textContent='Fout: '+e.message;}
+}
+
+modeBtns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const mode=btn.dataset.mode;
+    currentMode=mode;
+    modeBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    powerWrap.style.display=(mode==='charge'||mode==='discharge')?'block':'none';
+    sendOverride(mode,parseInt(powerSlider.value));
+  });
+});
+
+function syncControlPanel(override){
+  if(!override)return;
+  const mode=override.mode||'auto';
+  const pct=override.power_pct||100;
+  currentMode=mode;
+  modeBtns.forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);});
+  powerWrap.style.display=(mode==='charge'||mode==='discharge')?'block':'none';
+  powerSlider.value=pct;
+  updatePowerLabel();
+}
 
 function renderPowerFlow(readings, executorStatus, prices, plan){
   // Extract values (default 0 if missing)
@@ -766,6 +889,7 @@ async function poll(){
     conn.textContent='Verbonden — '+new Date(d.timestamp*1000).toLocaleTimeString('nl-NL');
     errEl.style.display='none';
     renderPowerFlow(d.readings||{}, d.executor||'', d.prices||{}, d.plan||null);
+    syncControlPanel(d.override);
     let html='';
     for(const[k,v]of Object.entries(d.readings||{})){
       const suffix=k.replace(/^.*?_/,'');
@@ -824,6 +948,7 @@ poll();setInterval(poll,10000);
     app.router.add_post("/commands/battery-mode", set_battery_mode)
     app.router.add_post("/commands/battery-charge-power", set_battery_charge_power)
     app.router.add_post("/commands/battery-discharge-power", set_battery_discharge_power)
+    app.router.add_post("/commands/override", set_override)
     return app
 
 
@@ -853,7 +978,8 @@ async def main() -> None:
     ha_reader = HaSensorReader(ha)
     ha_controller = HaBatteryController(ha)
 
-    global _executor
+    global _executor, _ha_controller
+    _ha_controller = ha_controller
     _executor = ActionExecutor(controller=ha_controller)
     _LOG.info("Action executor actief — battery control via HA Solax integration")
 
