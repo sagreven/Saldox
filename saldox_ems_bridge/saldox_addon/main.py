@@ -627,7 +627,7 @@ function renderPowerFlow(readings, executorStatus, prices, plan){
   const fw=(w)=>{const a=Math.abs(w);return a>=1000?(a/1000).toFixed(1)+' kW':Math.round(a)+' W';};
 
   // Battery stats calculations
-  const batCapKwh=plan&&plan.batterySoC&&plan.batterySoC.length?plan.batterySoC[0].capacityKwh:10;
+  const batCapKwh=plan&&plan.batterySoC&&plan.batterySoC.length?plan.batterySoC[0].capacityKwh:30;
   const batKwh=batCapKwh*(batSoC/100);
   const batRemKwh=batCapKwh-batKwh;
   const chargeRateKw=Math.abs(batW)/1000;
