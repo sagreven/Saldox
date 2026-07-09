@@ -787,6 +787,10 @@ function renderPlan(plan, pvHourly, loadHourly){
   h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x26A1; Energiebalans &#x2014; verbruik, zon &#x26; batterij</div>';
   h+='<div class="plan-chart" style="height:220px"><canvas id="balanceCanvas"></canvas></div></div>';
 
+  // Trade chart — bought/sold energy with price impact
+  h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x1F4B0; Handel &#x2014; inkoop, verkoop &#x26; opbrengst</div>';
+  h+='<div class="plan-chart" style="height:240px"><canvas id="tradeCanvas"></canvas></div></div>';
+
   // 48h timeline chart — price bars with action overlays + SoC lines
   h+='<div class="card" style="grid-column:1/-1;margin-bottom:16px"><div class="label">48-uur tijdlijn — prijs + acties + SoC</div>';
   h+='<div class="plan-chart"><canvas id="planCanvas"></canvas></div></div>';
@@ -826,6 +830,7 @@ function renderPlan(plan, pvHourly, loadHourly){
     drawSolarChart(tl, pvHourly||{});
     drawConsumptionChart(tl, loadHourly||{});
     drawBalanceChart(tl);
+    drawTradeChart(tl,actions);
     drawPlanChart(tl,actions,batSoC,evSoC);
     if(sh&&sh.days&&sh.days.length>1)drawSavingsChart(sh.days);
   });
@@ -1292,6 +1297,211 @@ function drawBalanceChart(timeline){
   lx+=ctx.measureText('Batterij').width+24;
   ctx.fillStyle='rgba(96,165,250,0.3)';ctx.fillRect(lx,ly-7,10,10);
   ctx.fillStyle='#666';ctx.fillText('Overschot',lx+14,ly+1);
+}
+
+function drawTradeChart(timeline, actions){
+  const canvas=document.getElementById('tradeCanvas');
+  if(!canvas||!actions||!actions.length)return;
+
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:28,right:55,bottom:30,left:50};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const midY=pad.top+cH*0.45; // center line (slightly above center for more sell room)
+
+  // Build per-slot trade data from actions
+  const slotStarts=timeline.map(s=>toLocal(s.startUtc));
+  const N=timeline.length;
+  if(N===0)return;
+  const barW=cW/N;
+
+  // Map actions to slots
+  const slotTrade=timeline.map((_,i)=>{
+    const st=slotStarts[i];
+    if(!st)return {buy:0,sell:0,solar:0,buyCost:0,sellRev:0,solarVal:0,price:0};
+    const slotEnd=new Date(st.getTime()+3600000);
+    let buy=0,sell=0,solar=0,buyCost=0,sellRev=0,solarVal=0;
+    for(const a of actions){
+      const as=toLocal(a.startUtc),ae=toLocal(a.endUtc);
+      if(!as||!ae||as>=slotEnd||ae<=st)continue;
+      if(a.kind==='ChargeBattery'){buy+=a.kwh||0;buyCost+=Math.abs(a.eurSavings||0);}
+      else if(a.kind==='ExportToGrid'){sell+=a.kwh||0;sellRev+=a.eurSavings||0;}
+      else if(a.kind==='SolarCharge'){solar+=a.kwh||0;solarVal+=a.eurSavings||0;}
+    }
+    return {buy,sell,solar,buyCost,sellRev,solarVal,price:timeline[i].priceEurKwh||0};
+  });
+
+  // Y scale: max of buy or sell kWh
+  let maxKwh=1;
+  for(const t of slotTrade){
+    if(t.buy+t.solar>maxKwh)maxKwh=t.buy+t.solar;
+    if(t.sell>maxKwh)maxKwh=t.sell;
+  }
+  maxKwh=Math.ceil(maxKwh/5)*5;
+  if(maxKwh<5)maxKwh=5;
+
+  const topH=midY-pad.top;    // sell goes up
+  const botH=pad.top+cH-midY; // buy goes down
+
+  function sellY(kwh){return midY-kwh/maxKwh*topH;}
+  function buyY(kwh){return midY+kwh/maxKwh*botH;}
+
+  // Center line
+  ctx.strokeStyle='#d1d5db';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(pad.left,midY);ctx.lineTo(pad.left+cW,midY);ctx.stroke();
+
+  // Y-axis gridlines
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  ctx.strokeStyle='#f0f0f0';ctx.lineWidth=0.5;
+  for(let v=0;v<=maxKwh;v+=Math.max(1,Math.ceil(maxKwh/4))){
+    if(v===0)continue;
+    // Sell side (up)
+    const ys=sellY(v);
+    ctx.beginPath();ctx.moveTo(pad.left,ys);ctx.lineTo(pad.left+cW,ys);ctx.stroke();
+    ctx.fillText(v+' kWh',pad.left-4,ys+3);
+    // Buy side (down)
+    const yb=buyY(v);
+    ctx.beginPath();ctx.moveTo(pad.left,yb);ctx.lineTo(pad.left+cW,yb);ctx.stroke();
+    ctx.fillText(v+' kWh',pad.left-4,yb+3);
+  }
+
+  // Labels
+  ctx.fillStyle='#dc2626';ctx.font='bold 9px system-ui';ctx.textAlign='left';
+  ctx.fillText('VERKOOP ↑',pad.left+2,pad.top+10);
+  ctx.fillStyle='#22c55e';
+  ctx.fillText('INKOOP ↓',pad.left+2,pad.top+cH-4);
+
+  // Price scale (right axis)
+  const prices=slotTrade.map(t=>t.price);
+  const pMax=Math.max(0.01,...prices);
+  const pMin=Math.min(0,...prices);
+  const pRange=pMax-pMin||0.01;
+
+  // Draw bars + price line
+  const now=new Date();
+  ctx.setLineDash([]);
+
+  // Price line points
+  const pricePts=[];
+
+  for(let i=0;i<N;i++){
+    const t=slotTrade[i];
+    const x=pad.left+i*barW;
+    const bw=barW-2;
+
+    // Sell bar (above center, red)
+    if(t.sell>0.1){
+      const h=t.sell/maxKwh*topH;
+      ctx.fillStyle='rgba(220,38,38,0.7)';
+      ctx.fillRect(x+1,midY-h,bw,h);
+      // Euro label
+      if(t.sellRev>0.1){
+        ctx.fillStyle='#dc2626';ctx.font='bold 8px system-ui';ctx.textAlign='center';
+        ctx.fillText('+€'+t.sellRev.toFixed(2),x+barW/2,midY-h-3);
+      }
+    }
+
+    // Solar bar (above center, yellow, stacked below sell)
+    if(t.solar>0.1){
+      const h=t.solar/maxKwh*topH;
+      const sellH=t.sell>0?t.sell/maxKwh*topH:0;
+      // Solar doesn't stack with sell (different slots), show as separate yellow bar
+      if(t.sell<0.1){
+        ctx.fillStyle='rgba(234,179,8,0.5)';
+        ctx.fillRect(x+1,midY-h,bw,h);
+      }
+    }
+
+    // Buy bar (below center, green)
+    if(t.buy>0.1){
+      const h=t.buy/maxKwh*botH;
+      ctx.fillStyle='rgba(34,197,94,0.6)';
+      ctx.fillRect(x+1,midY,bw,h);
+      // Euro label
+      ctx.fillStyle='#16a34a';ctx.font='bold 8px system-ui';ctx.textAlign='center';
+      ctx.fillText('-€'+t.buyCost.toFixed(2),x+barW/2,midY+h+10);
+    }
+
+    // Price line point
+    const py=midY-((t.price-pMin)/pRange-0.5)*cH*0.6;
+    pricePts.push({x:x+barW/2,y:py});
+
+    // Hour label
+    if(slotStarts[i]&&slotStarts[i].getHours()%3===0){
+      ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText(slotStarts[i].getHours()+':00',x+barW/2,pad.top+cH+14);
+    }
+
+    // Day separator
+    if(i>0&&slotStarts[i]&&slotStarts[i].getHours()===0){
+      ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#888';ctx.font='bold 9px system-ui';ctx.textAlign='left';
+      ctx.fillText(slotStarts[i].toLocaleDateString('nl-NL',{weekday:'short',day:'numeric'}),x+3,pad.top+cH+26);
+    }
+  }
+
+  // Draw price line
+  if(pricePts.length>1){
+    ctx.beginPath();
+    ctx.strokeStyle='rgba(99,102,241,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+    pricePts.forEach((p,i)=>{if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);});
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Price axis labels (right side)
+  ctx.fillStyle='#6366f1';ctx.font='9px system-ui';ctx.textAlign='left';
+  const priceSteps=[pMin,pMin+(pMax-pMin)*0.5,pMax];
+  priceSteps.forEach(p=>{
+    const py=midY-((p-pMin)/pRange-0.5)*cH*0.6;
+    ctx.fillText('€'+p.toFixed(3),pad.left+cW+4,py+3);
+  });
+
+  // "Now" line
+  for(let i=0;i<N;i++){
+    const st=slotStarts[i];
+    if(st&&st<=now&&new Date(st.getTime()+3600000)>now){
+      const frac=(now-st)/3600000;
+      const x=pad.left+i*barW+frac*barW;
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+  }
+
+  // Legend
+  ctx.font='9px system-ui';ctx.textAlign='left';
+  let lx=pad.left+80;const ly=pad.top+10;
+  ctx.fillStyle='rgba(220,38,38,0.7)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Verkoop',lx+14,ly+1);
+  lx+=ctx.measureText('Verkoop').width+24;
+  ctx.fillStyle='rgba(34,197,94,0.6)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Inkoop',lx+14,ly+1);
+  lx+=ctx.measureText('Inkoop').width+24;
+  ctx.strokeStyle='rgba(99,102,241,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(lx,ly-2);ctx.lineTo(lx+12,ly-2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#666';ctx.fillText('Prijs',lx+16,ly+1);
+
+  // Totals summary at bottom-right
+  const totBuy=slotTrade.reduce((s,t)=>s+t.buyCost,0);
+  const totSell=slotTrade.reduce((s,t)=>s+t.sellRev,0);
+  const totNet=totSell-totBuy;
+  ctx.font='bold 10px system-ui';ctx.textAlign='right';
+  ctx.fillStyle='#dc2626';ctx.fillText('Verkoop: +€'+totSell.toFixed(2),pad.left+cW+pad.right-4,pad.top+cH-18);
+  ctx.fillStyle='#16a34a';ctx.fillText('Inkoop: -€'+totBuy.toFixed(2),pad.left+cW+pad.right-4,pad.top+cH-6);
+  ctx.fillStyle=totNet>=0?'#16a34a':'#dc2626';
+  ctx.fillText('Netto: '+(totNet>=0?'+':'')+' €'+totNet.toFixed(2),pad.left+cW+pad.right-4,pad.top+cH+6);
 }
 
 function drawPlanChart(timeline,actions,batSoC,evSoC){
