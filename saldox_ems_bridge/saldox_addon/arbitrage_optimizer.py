@@ -33,6 +33,9 @@ class ArbitrageConfig:
     night_start_hour: int = 22        # local hour — start of overnight reserve window
     night_end_hour: int = 6           # local hour — end of overnight reserve window
     max_cycles_per_day: int = 2       # limit battery wear
+    grid_export_enabled: bool = False # False = NL saldering strategie:
+    #   Batterij laden in daluren → batterij vol → PV gaat naar grid (saldering)
+    #   Batterij ontlaadt via Self Use in dure uren → vermijdt grid import
 
 
 @dataclass
@@ -97,58 +100,47 @@ class ArbitrageOptimizer:
         if not slots:
             return ArbitrageResult(summary="Geen geldige slots")
 
-        # --- Pass 1: PV surplus → free charge ---
+        # --- Pass 1: PV surplus detection ---
         for s in slots:
             if s["net_w"] > 100:  # >100W surplus threshold
-                surplus_kwh = min(
-                    s["net_w"] / 1000.0,
-                    cfg.max_power_kw,
-                )
-                s["free_charge_kwh"] = surplus_kwh
+                s["free_charge_kwh"] = min(s["net_w"] / 1000.0, cfg.max_power_kw)
             else:
                 s["free_charge_kwh"] = 0.0
 
         # --- Pass 2: Price arbitrage pools ---
-        # Find the median price to split charge vs discharge candidates
         prices = sorted(s["price"] for s in slots)
         median_price = prices[len(prices) // 2]
 
-        # Charge candidates: below median (sorted cheapest first)
+        # Charge candidates: cheapest hours (sorted cheapest first)
         charge_candidates = sorted(
-            [s for s in slots if s["price"] < median_price and s["free_charge_kwh"] < cfg.max_power_kw],
+            [s for s in slots if s["price"] < median_price],
             key=lambda s: s["price"]
         )
 
-        # Discharge candidates: above median (sorted most expensive first)
+        # Discharge/self-use candidates: most expensive hours (sorted most expensive first)
         discharge_candidates = sorted(
             [s for s in slots if s["price"] > median_price],
             key=lambda s: -s["price"]
         )
 
-        # Filter by minimum spread: cheapest charge vs most expensive discharge
-        if charge_candidates and discharge_candidates:
-            cheapest = charge_candidates[0]["price"]
-            spread = discharge_candidates[0]["price"] * cfg.efficiency - cheapest
-            if spread < cfg.min_spread_eur:
-                return ArbitrageResult(
-                    summary=f"Spread te klein ({spread:.3f} €/kWh < {cfg.min_spread_eur})"
-                )
-        else:
+        if not charge_candidates or not discharge_candidates:
             return ArbitrageResult(summary="Geen prijs-spread gevonden")
 
-        # Mark charge and discharge pools (limited by max_cycles_per_day)
-        # Each cycle = ~2 hours charge + ~2 hours discharge (for 30 kWh at 15 kW)
+        cheapest = charge_candidates[0]["price"]
+        most_expensive = discharge_candidates[0]["price"]
+        spread = most_expensive * cfg.efficiency - cheapest
+        if spread < cfg.min_spread_eur:
+            return ArbitrageResult(
+                summary=f"Spread te klein ({spread:.3f} €/kWh < {cfg.min_spread_eur})"
+            )
+
+        # Mark charge and discharge pools
         hours_per_cycle = max(1, int(cfg.capacity_kwh / cfg.max_power_kw))
         max_charge_hours = hours_per_cycle * cfg.max_cycles_per_day
         max_discharge_hours = hours_per_cycle * cfg.max_cycles_per_day
 
-        charge_set = set()
-        for s in charge_candidates[:max_charge_hours]:
-            charge_set.add(s["idx"])
-
-        discharge_set = set()
-        for s in discharge_candidates[:max_discharge_hours]:
-            discharge_set.add(s["idx"])
+        charge_set = {s["idx"] for s in charge_candidates[:max_charge_hours]}
+        discharge_set = {s["idx"] for s in discharge_candidates[:max_discharge_hours]}
 
         # --- Pass 3: Forward SoC simulation ---
         soc = current_soc_kwh
@@ -168,76 +160,135 @@ class ArbitrageOptimizer:
             end_utc = s["end"]
             price = s["price"]
 
-            # Record SoC at start of slot
             soc_curve.append({
                 "timestampUtc": start_utc,
                 "soCKwh": round(soc, 2),
                 "capacityKwh": cfg.capacity_kwh,
             })
 
-            # 1. PV surplus → free charge (SolarCharge)
-            #    Skip if this slot is reserved for grid export (discharge takes priority).
-            free_kwh = min(s["free_charge_kwh"], cfg.capacity_kwh - soc)
-            if free_kwh > 0.1 and s["idx"] not in discharge_set:
-                soc += free_kwh
-                pv_savings += free_kwh * price  # avoided grid cost
-                actions.append(self._make_action(
-                    "SolarCharge", start_utc, end_utc, free_kwh,
-                    free_kwh * price,
-                    f"PV-overschot {free_kwh:.1f} kWh gratis opslaan (€{price:.3f}/kWh vermeden)"
-                ))
+            if cfg.grid_export_enabled:
+                # ===== EXPORT STRATEGIE =====
+                # Batterij exporteert naar grid in dure uren.
 
-            # 2. Grid charge in cheap hours
-            if s["idx"] in charge_set and soc < cfg.capacity_kwh - 0.5:
-                room = cfg.capacity_kwh - soc
-                # Power available for battery (grid feeds house + battery)
-                house_load_kw = max(0, -s["net_w"]) / 1000.0
-                available_kw = cfg.max_power_kw - house_load_kw
-                charge_kwh = min(room, available_kw, cfg.max_power_kw)
-                if charge_kwh > 0.5:
-                    soc += charge_kwh
-                    cost = charge_kwh * price
-                    charge_cost += cost
-                    total_charged += charge_kwh
-                    # Find best paired discharge price for rationale
-                    best_discharge = discharge_candidates[0]["price"] if discharge_candidates else price
-                    est_profit = charge_kwh * (best_discharge * cfg.efficiency - price)
+                # 1. PV surplus → SolarCharge (skip als export-slot)
+                free_kwh = min(s["free_charge_kwh"], cfg.capacity_kwh - soc)
+                if free_kwh > 0.1 and s["idx"] not in discharge_set:
+                    soc += free_kwh
+                    pv_savings += free_kwh * price
                     actions.append(self._make_action(
-                        "ChargeBattery", start_utc, end_utc, charge_kwh,
-                        max(0, est_profit),
-                        f"Laden @ €{price:.3f}/kWh → verkopen @ €{best_discharge:.3f}/kWh "
-                        f"(spread €{best_discharge - price:.3f}, winst €{est_profit:.2f})"
+                        "SolarCharge", start_utc, end_utc, free_kwh,
+                        free_kwh * price,
+                        f"PV-overschot {free_kwh:.1f} kWh opslaan (€{price:.3f}/kWh vermeden)"
                     ))
 
-            # 3. Export to grid in expensive hours
-            elif s["idx"] in discharge_set and not is_night:
-                # Check overnight reserve: don't discharge below min_soc
-                # if night is approaching within 3 hours
-                hours_to_night = self._hours_until_night(hour, cfg)
-                effective_min = min_soc if hours_to_night <= 3 else 0.5
+                # 2. Grid charge in cheap hours
+                if s["idx"] in charge_set and soc < cfg.capacity_kwh - 0.5:
+                    room = cfg.capacity_kwh - soc
+                    charge_kwh = min(room, cfg.max_power_kw)
+                    if charge_kwh > 0.5:
+                        soc += charge_kwh
+                        charge_cost += charge_kwh * price
+                        total_charged += charge_kwh
+                        est_profit = charge_kwh * (most_expensive * cfg.efficiency - price)
+                        actions.append(self._make_action(
+                            "ChargeBattery", start_utc, end_utc, charge_kwh,
+                            max(0, est_profit),
+                            f"Laden @ €{price:.3f}/kWh → export @ €{most_expensive:.3f}/kWh"
+                        ))
 
-                available = soc - effective_min
-                discharge_kwh = min(available, cfg.max_power_kw)
-                if discharge_kwh > 0.5:
-                    soc -= discharge_kwh
-                    revenue = discharge_kwh * price * cfg.efficiency
-                    discharge_revenue += revenue
-                    total_discharged += discharge_kwh
-                    actions.append(self._make_action(
-                        "ExportToGrid", start_utc, end_utc, discharge_kwh,
-                        revenue,
-                        f"Export {discharge_kwh:.1f} kWh @ €{price:.3f}/kWh "
-                        f"(opbrengst €{revenue:.2f} na {cfg.efficiency:.0%} eff)"
-                    ))
+                # 3. Export to grid in expensive hours
+                elif s["idx"] in discharge_set and not is_night:
+                    hours_to_night = self._hours_until_night(hour, cfg)
+                    effective_min = min_soc if hours_to_night <= 3 else 0.5
+                    available = soc - effective_min
+                    discharge_kwh = min(available, cfg.max_power_kw)
+                    if discharge_kwh > 0.5:
+                        soc -= discharge_kwh
+                        revenue = discharge_kwh * price * cfg.efficiency
+                        discharge_revenue += revenue
+                        total_discharged += discharge_kwh
+                        actions.append(self._make_action(
+                            "ExportToGrid", start_utc, end_utc, discharge_kwh,
+                            revenue,
+                            f"Export {discharge_kwh:.1f} kWh @ €{price:.3f}/kWh "
+                            f"(€{revenue:.2f} na {cfg.efficiency:.0%} eff)"
+                        ))
 
-            # 4. Default: Self Use — home consumption drains battery
+                # 4. Default: Self Use
+                else:
+                    deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
+                    if deficit_kwh > 0 and soc > min_soc:
+                        drain = min(deficit_kwh, soc - min_soc, cfg.max_power_kw)
+                        soc -= drain
+                        pv_savings += drain * price
+
             else:
-                deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
-                if deficit_kwh > 0 and soc > min_soc:
-                    drain = min(deficit_kwh, soc - min_soc, cfg.max_power_kw)
-                    soc -= drain
-                    # Self-use savings: avoided grid import at this price
-                    pv_savings += drain * price
+                # ===== SALDERING STRATEGIE (geen grid export) =====
+                # Laden in daluren → batterij vol → PV gaat naar grid (saldering)
+                # Dure uren → Self Use (batterij dekt verbruik, vermijdt dure import)
+
+                # 1. Grid charge in cheapest hours (batterij vol maken vóór zonne-uren)
+                if s["idx"] in charge_set and soc < cfg.capacity_kwh - 0.5:
+                    room = cfg.capacity_kwh - soc
+                    charge_kwh = min(room, cfg.max_power_kw)
+                    if charge_kwh > 0.5:
+                        soc += charge_kwh
+                        charge_cost += charge_kwh * price
+                        total_charged += charge_kwh
+                        actions.append(self._make_action(
+                            "ChargeBattery", start_utc, end_utc, charge_kwh,
+                            charge_kwh * (most_expensive - price),
+                            f"Laden @ €{price:.3f}/kWh — batterij vol → PV gaat naar grid (saldering)"
+                        ))
+
+                # 2. During PV surplus hours: battery is full → PV goes to grid via saldering
+                #    We DON'T charge the battery (it's already full from cheap grid hours).
+                #    Instead we let PV flow to grid = saldering revenue.
+                elif s["free_charge_kwh"] > 0.1 and soc >= cfg.capacity_kwh - 1.0:
+                    # Battery full, PV surplus goes to grid via saldering
+                    surplus = s["free_charge_kwh"]
+                    pv_savings += surplus * price  # saldering: valued at current price
+                    actions.append(self._make_action(
+                        "DischargeBattery", start_utc, end_utc, 0,
+                        surplus * price,
+                        f"Batterij vol → {surplus:.1f} kWh PV naar grid (saldering @ €{price:.3f}/kWh)"
+                    ))
+
+                # 3. PV surplus but battery not full → charge from solar (free)
+                elif s["free_charge_kwh"] > 0.1:
+                    free_kwh = min(s["free_charge_kwh"], cfg.capacity_kwh - soc)
+                    if free_kwh > 0.1:
+                        soc += free_kwh
+                        pv_savings += free_kwh * price
+                        actions.append(self._make_action(
+                            "SolarCharge", start_utc, end_utc, free_kwh,
+                            free_kwh * price,
+                            f"PV-overschot {free_kwh:.1f} kWh opslaan (€{price:.3f}/kWh vermeden)"
+                        ))
+
+                # 4. Expensive hours: Self Use — battery covers home, avoids import
+                elif s["idx"] in discharge_set and soc > min_soc:
+                    deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
+                    if deficit_kwh > 0.1:
+                        drain = min(deficit_kwh, soc - min_soc, cfg.max_power_kw)
+                        soc -= drain
+                        total_discharged += drain
+                        saved = drain * price  # avoided expensive import
+                        discharge_revenue += saved
+                        actions.append(self._make_action(
+                            "DischargeBattery", start_utc, end_utc, drain,
+                            saved,
+                            f"Self Use {drain:.1f} kWh @ €{price:.3f}/kWh "
+                            f"(€{saved:.2f} dure import vermeden)"
+                        ))
+
+                # 5. Default: Self Use for remaining deficit
+                else:
+                    deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
+                    if deficit_kwh > 0 and soc > min_soc:
+                        drain = min(deficit_kwh, soc - min_soc, cfg.max_power_kw)
+                        soc -= drain
+                        pv_savings += drain * price
 
             # Clamp SoC
             soc = max(0, min(cfg.capacity_kwh, soc))
@@ -261,9 +312,14 @@ class ArbitrageOptimizer:
         charge_hours = sum(1 for a in actions if a["kind"] == "ChargeBattery")
         export_hours = sum(1 for a in actions if a["kind"] == "ExportToGrid")
         solar_hours = sum(1 for a in actions if a["kind"] == "SolarCharge")
+        selfuse_hours = sum(1 for a in actions if a["kind"] == "DischargeBattery")
+        strategy = "export" if cfg.grid_export_enabled else "saldering"
         summary = (
-            f"{cycles} cyclus(sen), {charge_hours}u laden, {export_hours}u export, "
-            f"{solar_hours}u zon · winst €{profit:.2f}"
+            f"{strategy}: {cycles} cyclus, {charge_hours}u laden"
+            + (f", {export_hours}u export" if export_hours else "")
+            + (f", {selfuse_hours}u self-use" if selfuse_hours else "")
+            + (f", {solar_hours}u zon" if solar_hours else "")
+            + f" · winst €{profit:.2f}"
         )
 
         _LOG.info("Arbitrage optimizer: %s", summary)
