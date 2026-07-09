@@ -126,10 +126,56 @@ def _accumulate_load(readings: dict[str, dict]) -> None:
     load = readings.get("load_power_w", {}).get("value", 0) or 0
     load = float(load)
     if hour not in _load_hourly:
-        _load_hourly[hour] = {"samples": 0, "total": 0.0}
+        _load_hourly[hour] = {"samples": 0, "total": 0.0, "temp_sum": 0.0, "temp_n": 0}
     bucket = _load_hourly[hour]
     bucket["samples"] += 1
     bucket["total"] += load
+
+
+# Outdoor temperature from HA weather entity, updated by poll loop.
+_outdoor_temp: float | None = None
+
+
+def _update_outdoor_temp(temp: float | None) -> None:
+    """Update the current outdoor temperature (from weather entity)."""
+    global _outdoor_temp
+    _outdoor_temp = temp
+
+
+def _record_temp_in_load() -> None:
+    """Record current outdoor temp in the load accumulator for this hour."""
+    from datetime import datetime
+    hour = datetime.now().hour
+    if hour in _load_hourly and _outdoor_temp is not None:
+        _load_hourly[hour]["temp_sum"] += _outdoor_temp
+        _load_hourly[hour]["temp_n"] += 1
+
+
+def get_completed_hourly_usage() -> list[dict]:
+    """Return completed hours' consumption + temperature for telemetry.
+    Only returns hours before the current hour (completed data)."""
+    from datetime import datetime, timezone
+    now = datetime.now()
+    result = []
+    for hour, bucket in _load_hourly.items():
+        if hour >= now.hour:
+            continue  # skip current/future hours
+        n = bucket["samples"]
+        if n == 0:
+            continue
+        avg_load = bucket["total"] / n
+        # Build UTC timestamp for this hour today
+        local_dt = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        utc_dt = local_dt.astimezone(timezone.utc)
+        entry: dict = {
+            "timestampUtc": utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "consumptionW": round(avg_load, 1),
+        }
+        temp_n = bucket.get("temp_n", 0)
+        if temp_n > 0:
+            entry["temperatureC"] = round(bucket["temp_sum"] / temp_n, 1)
+        result.append(entry)
+    return result
 
 
 def set_prices(snapshot: dict[str, dict]) -> None:
@@ -251,6 +297,18 @@ async def poll_loop(
             # Accumulate hourly PV and consumption averages for charts.
             _accumulate_pv(snapshot)
             _accumulate_load(snapshot)
+
+            # Read outdoor temperature from HA weather entity.
+            try:
+                weather = await ha.get_state("weather.forecast_thuis")
+                if weather:
+                    attrs = weather.get("attributes", {})
+                    temp = attrs.get("temperature")
+                    if temp is not None:
+                        _update_outdoor_temp(float(temp))
+                        _record_temp_in_load()
+            except Exception:
+                pass  # non-critical
 
             # Only push to HA as separate sensors when reading from direct Modbus
             # (HA sensors already exist from the Solax integration).
@@ -1527,6 +1585,7 @@ async def main() -> None:
             on_update=set_plan,
             get_readings=lambda: dict(_latest),
         )
+        plan.set_hourly_usage_source(get_completed_hourly_usage)
         global _plan_poller
         _plan_poller = plan
         plan_task = asyncio.create_task(plan.run(), name="plan")

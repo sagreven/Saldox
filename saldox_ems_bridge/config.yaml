@@ -3,7 +3,7 @@ description: >-
   Brug tussen Saldox en je hardware. Pollt Sofar Solar HYD hybride inverters via
   Modbus-TCP of RS485 (USB-adapter) en exposed ze als Home Assistant sensors.
   Haalt EPEX-prijzen op via de Saldox API en toont ze als HA sensors + dashboard.
-version: "0.13.0"
+version: "0.14.0"
 slug: saldox_ems_bridge
 url: "https://github.com/sagreven/Saldox"
 arch:

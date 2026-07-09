@@ -52,6 +52,11 @@ class PlanPoller:
         self._session: aiohttp.ClientSession | None = None
         self._on_update = on_update
         self._get_readings = get_readings
+        self._get_hourly_usage: Callable[[], list[dict]] | None = None
+
+    def set_hourly_usage_source(self, fn: Callable[[], list[dict]]) -> None:
+        """Set callback that returns completed hourly usage entries."""
+        self._get_hourly_usage = fn
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -194,10 +199,17 @@ class PlanPoller:
         if not payload:
             return
 
+        # Include completed hourly usage data if available.
+        if self._get_hourly_usage:
+            hourly = self._get_hourly_usage()
+            if hourly:
+                payload["hourlyUsage"] = hourly
+                _LOG.info("Telemetry includes %d hourly usage entries", len(hourly))
+
         session = await self._get_session()
         url = f"{self._api_url}/api/ha/telemetry"
         try:
-            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     _LOG.debug("Telemetry pushed: %d readings stored", data.get("stored", 0))
