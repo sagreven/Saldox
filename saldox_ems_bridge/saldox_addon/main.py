@@ -106,6 +106,32 @@ def _accumulate_pv(readings: dict[str, dict]) -> None:
     bucket["pv2"] += pv2
 
 
+# ---------------------------------------------------------------------------
+# Hourly consumption accumulator — tracks average load power per hour (today).
+# ---------------------------------------------------------------------------
+_load_hourly: dict[int, dict[str, float]] = {}
+_load_hourly_date: str = ""
+
+
+def _accumulate_load(readings: dict[str, dict]) -> None:
+    """Record a load/consumption snapshot into the hourly accumulator."""
+    global _load_hourly_date
+    from datetime import datetime
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    if today != _load_hourly_date:
+        _load_hourly.clear()
+        _load_hourly_date = today
+    hour = now.hour
+    load = readings.get("load_power_w", {}).get("value", 0) or 0
+    load = float(load)
+    if hour not in _load_hourly:
+        _load_hourly[hour] = {"samples": 0, "total": 0.0}
+    bucket = _load_hourly[hour]
+    bucket["samples"] += 1
+    bucket["total"] += load
+
+
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
     _latest_prices.clear()
@@ -222,8 +248,9 @@ async def poll_loop(
             _latest.update(snapshot)
             _latest_ts = time.time()
 
-            # Accumulate hourly PV averages for the solar chart.
+            # Accumulate hourly PV and consumption averages for charts.
             _accumulate_pv(snapshot)
+            _accumulate_load(snapshot)
 
             # Only push to HA as separate sensors when reading from direct Modbus
             # (HA sensors already exist from the Solax integration).
@@ -280,6 +307,12 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
                     "pv1": round(b["pv1"] / n, 1),
                     "pv2": round(b["pv2"] / n, 1),
                 }
+        # Build hourly load averages for the consumption chart.
+        load_hourly = {}
+        for h, b in _load_hourly.items():
+            n = b["samples"]
+            if n > 0:
+                load_hourly[str(h)] = {"total": round(b["total"] / n, 1)}
         return web.json_response({
             "ok": True,
             "timestamp": _latest_ts,
@@ -289,6 +322,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "executor": _executor_status,
             "override": _manual_override,
             "pvHourly": pv_hourly,
+            "loadHourly": load_hourly,
         })
 
     async def set_override(req: web.Request) -> web.Response:
@@ -620,7 +654,7 @@ function toLocal(utcStr){
 function fmtHour(d){return d?d.getHours()+':00':'?';}
 function fmtTime(d){return d?d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}):'?';}
 
-function renderPlan(plan, pvHourly){
+function renderPlan(plan, pvHourly, loadHourly){
   if(!plan||!plan.timeline||!plan.timeline.length){planSection.innerHTML='';return;}
   const tl=plan.timeline;
   const actions=plan.actions||[];
@@ -650,6 +684,10 @@ function renderPlan(plan, pvHourly){
   // Solar forecast vs actual chart — today only, with string breakdown
   h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x2600; Zonneproductie vandaag &#x2014; forecast vs. werkelijk per string</div>';
   h+='<div class="plan-chart" style="height:220px"><canvas id="solarCanvas"></canvas></div></div>';
+
+  // Consumption chart — expected vs actual
+  h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x1F3E0; Verbruik &#x2014; verwacht vs. werkelijk</div>';
+  h+='<div class="plan-chart" style="height:220px"><canvas id="consumptionCanvas"></canvas></div></div>';
 
   // Power balance chart — consumption vs PV vs battery contribution
   h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x26A1; Energiebalans &#x2014; verbruik, zon &#x26; batterij</div>';
@@ -692,6 +730,7 @@ function renderPlan(plan, pvHourly){
   // Draw the canvas charts
   requestAnimationFrame(()=>{
     drawSolarChart(tl, pvHourly||{});
+    drawConsumptionChart(tl, loadHourly||{});
     drawBalanceChart(tl);
     drawPlanChart(tl,actions,batSoC,evSoC);
     if(sh&&sh.days&&sh.days.length>1)drawSavingsChart(sh.days);
@@ -916,6 +955,127 @@ function drawSolarChart(timeline, pvHourly){
   // PV2
   ctx.fillStyle='#84cc16';ctx.fillRect(lx,ly-7,10,10);
   ctx.fillStyle='#666';ctx.fillText('String 2',lx+14,ly+1);
+}
+
+function drawConsumptionChart(timeline, loadHourly){
+  const canvas=document.getElementById('consumptionCanvas');
+  if(!canvas)return;
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  const slots=timeline.filter(s=>{const d=toLocal(s.startUtc);return d&&d.toISOString().slice(0,10)===todayStr;});
+  if(slots.length===0)return;
+
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:24,right:16,bottom:30,left:50};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const N=slots.length;
+  const groupW=cW/N;
+  const barW=groupW*0.38;
+
+  // Build per-hour data
+  const hours=[];
+  for(let i=0;i<N;i++){
+    const st=toLocal(slots[i].startUtc);
+    const h=st.getHours();
+    const expected=slots[i].consumptionWatts||0;
+    const actual=loadHourly[String(h)];
+    hours.push({
+      hour:h,
+      expected:expected,
+      actual:actual?actual.total:0,
+      hasActual:!!actual
+    });
+  }
+
+  // Y scale
+  let maxW=0;
+  for(const h of hours){
+    if(h.expected>maxW)maxW=h.expected;
+    if(h.actual>maxW)maxW=h.actual;
+  }
+  if(maxW<500)maxW=500;
+  maxW=Math.ceil(maxW/500)*500;
+
+  function yPos(w){return pad.top+cH-(w/maxW)*cH;}
+  function barH(w){return Math.max(0,(w/maxW)*cH);}
+  const baseline=yPos(0);
+
+  // Y-axis gridlines
+  const steps=Math.min(6,Math.max(2,Math.floor(maxW/1000)));
+  ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const w=maxW*(i/steps);
+    const y=yPos(w);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+    const label=w>=1000?(w/1000).toFixed(1)+' kW':Math.round(w)+' W';
+    ctx.fillText(label,pad.left-6,y+3);
+  }
+
+  for(let i=0;i<N;i++){
+    const h=hours[i];
+    const gx=pad.left+i*groupW;
+    const gap=groupW*0.06;
+
+    // Left bar: Expected (blue outline, semi-transparent)
+    const eH=barH(h.expected);
+    const ex=gx+gap;
+    ctx.fillStyle='rgba(59,130,246,0.15)';
+    ctx.fillRect(ex,baseline-eH,barW,eH);
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=1;ctx.setLineDash([]);
+    ctx.strokeRect(ex,baseline-eH,barW,eH);
+
+    // Right bar: Actual (solid red/orange)
+    if(h.hasActual&&h.actual>0){
+      const ax=ex+barW+gap;
+      const aH=barH(h.actual);
+      // Color: green if below expected, orange if above
+      ctx.fillStyle=h.actual<=h.expected*1.1?'rgba(34,197,94,0.6)':'rgba(249,115,22,0.6)';
+      ctx.fillRect(ax,baseline-aH,barW,aH);
+      ctx.strokeStyle='#a3a3a3';ctx.lineWidth=0.5;
+      ctx.strokeRect(ax,baseline-aH,barW,aH);
+    }
+
+    // Hour label
+    if(h.hour%2===0){
+      ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText(h.hour+':00',gx+groupW/2,pad.top+cH+14);
+    }
+  }
+
+  // "Now" line
+  const nowH=now.getHours()+now.getMinutes()/60;
+  for(let i=0;i<N;i++){
+    if(hours[i].hour<=nowH&&(i===N-1||hours[i+1].hour>nowH)){
+      const frac=nowH-hours[i].hour;
+      const x=pad.left+i*groupW+frac*groupW;
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+  }
+
+  // Legend
+  ctx.font='9px system-ui';ctx.textAlign='left';
+  let lx=pad.left+8;const ly=pad.top+12;
+  ctx.fillStyle='rgba(59,130,246,0.15)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.strokeStyle='#3b82f6';ctx.lineWidth=1;ctx.strokeRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Verwacht',lx+14,ly+1);
+  lx+=ctx.measureText('Verwacht').width+24;
+  ctx.fillStyle='rgba(34,197,94,0.6)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Werkelijk',lx+14,ly+1);
+  lx+=ctx.measureText('Werkelijk').width+24;
+  ctx.fillStyle='rgba(249,115,22,0.6)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Boven verwacht',lx+14,ly+1);
 }
 
 function drawBalanceChart(timeline){
@@ -1283,7 +1443,7 @@ async function poll(){
     }
     grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
     // Render EMS plan section
-    renderPlan(d.plan||null, d.pvHourly||{});
+    renderPlan(d.plan||null, d.pvHourly||{}, d.loadHourly||{});
   }catch(e){
     dot.className='status-dot red';
     conn.textContent='Geen verbinding';
