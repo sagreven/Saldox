@@ -363,10 +363,10 @@ function renderPowerFlow(readings, executorStatus, prices, plan){
     <text x="40" y="132" class="pf-icon">\u26a1</text>
     <text x="40" y="158" class="pf-val" fill="${gridW>=0?'#22c55e':'#3b82f6'}">${fw(Math.abs(gridW))}</text>
     <text x="40" y="170" class="pf-sub">${gridW>=0?'Export':'Import'}</text>
-    <text x="280" y="132" class="pf-icon">\ud83d\udd0b</text>
+    <text x="280" y="132" class="pf-icon">&#x1F50B;</text>
     <text x="280" y="158" class="pf-val" fill="#f59e0b">${batSoC}%</text>
     <text x="280" y="170" class="pf-sub">${batW>10?'Laden '+fw(batW):batW<-10?'Ontladen '+fw(-batW):'Stand-by'}</text>
-    <text x="160" y="238" class="pf-icon">\ud83c\udfe0</text>
+    <text x="160" y="238" class="pf-icon">&#x1F3E0;</text>
     <text x="160" y="262" class="pf-val" fill="#f97316">${fw(homeW)}</text>
     <text x="160" y="274" class="pf-sub">Verbruik</text>
   </svg>${batStats}`;
