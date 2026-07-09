@@ -103,7 +103,7 @@ class HaBatteryController:
     power limits instead of direct Modbus writes.
     """
 
-    def __init__(self, ha: HomeAssistantClient, max_power_w: int = 10000):
+    def __init__(self, ha: HomeAssistantClient, max_power_w: int = 15000):
         self._ha = ha
         self._max_power_w = max_power_w
         self._last_mode: str | None = None
