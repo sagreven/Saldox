@@ -73,6 +73,38 @@ _manual_override: dict[str, Any] = {"mode": "auto", "power_pct": 100}
 _ha_controller: Any = None  # set by main()
 _plan_poller: Any = None    # set by main() — for forced refreshes
 
+# ---------------------------------------------------------------------------
+# Hourly PV accumulator — tracks average power per hour per string (today).
+# Resets at midnight. Each entry: {hour: {samples: N, total: W, pv1: W, pv2: W}}
+# ---------------------------------------------------------------------------
+_pv_hourly: dict[int, dict[str, float]] = {}
+_pv_hourly_date: str = ""  # ISO date string for reset detection
+
+
+def _accumulate_pv(readings: dict[str, dict]) -> None:
+    """Record a PV snapshot into the hourly accumulator."""
+    global _pv_hourly_date
+    from datetime import datetime
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    if today != _pv_hourly_date:
+        _pv_hourly.clear()
+        _pv_hourly_date = today
+    hour = now.hour
+    total = readings.get("pv_total_power_w", {}).get("value", 0) or 0
+    pv1 = readings.get("pv1_power_w", {}).get("value", 0) or 0
+    pv2 = readings.get("pv2_power_w", {}).get("value", 0) or 0
+    total = float(total)
+    pv1 = float(pv1)
+    pv2 = float(pv2)
+    if hour not in _pv_hourly:
+        _pv_hourly[hour] = {"samples": 0, "total": 0.0, "pv1": 0.0, "pv2": 0.0}
+    bucket = _pv_hourly[hour]
+    bucket["samples"] += 1
+    bucket["total"] += total
+    bucket["pv1"] += pv1
+    bucket["pv2"] += pv2
+
 
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
@@ -169,6 +201,9 @@ async def poll_loop(
             _latest.update(snapshot)
             _latest_ts = time.time()
 
+            # Accumulate hourly PV averages for the solar chart.
+            _accumulate_pv(snapshot)
+
             # Only push to HA as separate sensors when reading from direct Modbus
             # (HA sensors already exist from the Solax integration).
             if source == "modbus":
@@ -214,6 +249,16 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         return web.json_response({"ok": True, "addon": "saldox-ems-bridge"})
 
     async def status(_req: web.Request) -> web.Response:
+        # Build hourly PV averages for the solar chart.
+        pv_hourly = {}
+        for h, b in _pv_hourly.items():
+            n = b["samples"]
+            if n > 0:
+                pv_hourly[str(h)] = {
+                    "total": round(b["total"] / n, 1),
+                    "pv1": round(b["pv1"] / n, 1),
+                    "pv2": round(b["pv2"] / n, 1),
+                }
         return web.json_response({
             "ok": True,
             "timestamp": _latest_ts,
@@ -222,6 +267,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "plan": _latest_plan,
             "executor": _executor_status,
             "override": _manual_override,
+            "pvHourly": pv_hourly,
         })
 
     async def set_override(req: web.Request) -> web.Response:
@@ -548,7 +594,7 @@ function toLocal(utcStr){
 function fmtHour(d){return d?d.getHours()+':00':'?';}
 function fmtTime(d){return d?d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}):'?';}
 
-function renderPlan(plan){
+function renderPlan(plan, pvHourly){
   if(!plan||!plan.timeline||!plan.timeline.length){planSection.innerHTML='';return;}
   const tl=plan.timeline;
   const actions=plan.actions||[];
@@ -574,6 +620,10 @@ function renderPlan(plan){
     h+=`<div class="card ${active?'warn':'ok'}"><div class="label">${active?'Actie nu':'Volgende actie'}</div><div class="value"><span class="action-badge action-${na.kind}">${lbl}</span></div><div class="unit">${fmtTime(st)} · ${na.kwh!=null?na.kwh.toFixed(1)+' kWh · ':''}\u20ac ${(na.eurSavings||0).toFixed(2)} besparing</div></div>`;
   }
   h+='</div>';
+
+  // Solar forecast vs actual chart — today only, with string breakdown
+  h+='<div class="card" style="margin-bottom:16px"><div class="label">&#x2600; Zonneproductie vandaag &#x2014; forecast vs. werkelijk per string</div>';
+  h+='<div class="plan-chart" style="height:220px"><canvas id="solarCanvas"></canvas></div></div>';
 
   // 48h timeline chart — price bars with action overlays + SoC lines
   h+='<div class="card" style="grid-column:1/-1;margin-bottom:16px"><div class="label">48-uur tijdlijn — prijs + acties + SoC</div>';
@@ -611,6 +661,7 @@ function renderPlan(plan){
 
   // Draw the canvas charts
   requestAnimationFrame(()=>{
+    drawSolarChart(tl, pvHourly||{});
     drawPlanChart(tl,actions,batSoC,evSoC);
     if(sh&&sh.days&&sh.days.length>1)drawSavingsChart(sh.days);
   });
@@ -688,6 +739,152 @@ function drawSavingsChart(days){
   ctx.fillStyle='#888';ctx.fillText('Berekend',pad.left+14,pad.top-7);
   ctx.fillStyle='#22c55e';ctx.fillRect(pad.left+80,pad.top-14,10,8);
   ctx.fillStyle='#888';ctx.fillText('Gerealiseerd',pad.left+94,pad.top-7);
+}
+
+function drawSolarChart(timeline, pvHourly){
+  const canvas=document.getElementById('solarCanvas');
+  if(!canvas)return;
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  // Filter to today's slots
+  const slots=timeline.filter(s=>{const d=toLocal(s.startUtc);return d&&d.toISOString().slice(0,10)===todayStr;});
+  if(slots.length===0)return;
+
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.parentElement.getBoundingClientRect();
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  canvas.style.width=rect.width+'px';
+  canvas.style.height=rect.height+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=rect.height;
+  const pad={top:24,right:16,bottom:30,left:50};
+  const cW=W-pad.left-pad.right,cH=H-pad.top-pad.bottom;
+  const N=slots.length;
+  const groupW=cW/N;
+  const barW=groupW*0.38; // each bar takes ~38% of group width, 2 bars + gap
+
+  // Build per-hour data: forecast (from plan) + actual (from pvHourly accumulator)
+  const hours=[];
+  for(let i=0;i<N;i++){
+    const st=toLocal(slots[i].startUtc);
+    const h=st.getHours();
+    const forecast=slots[i].pvForecastWatts!=null?slots[i].pvForecastWatts:slots[i].pvWatts;
+    const actual=pvHourly[String(h)];
+    hours.push({
+      hour:h, forecast:forecast,
+      actualTotal:actual?actual.total:0,
+      pv1:actual?actual.pv1:0,
+      pv2:actual?actual.pv2:0,
+      hasActual:!!actual,
+      shadowFactor:slots[i].shadowFactor
+    });
+  }
+
+  // Y scale
+  let maxW=0;
+  for(const h of hours){
+    if(h.forecast>maxW)maxW=h.forecast;
+    if(h.actualTotal>maxW)maxW=h.actualTotal;
+  }
+  if(maxW<100)maxW=100;
+  maxW=Math.ceil(maxW/500)*500;
+
+  function yPos(w){return pad.top+cH-(w/maxW)*cH;}
+  function barH(w){return Math.max(0,(w/maxW)*cH);}
+
+  // Y-axis gridlines + labels
+  const steps=Math.min(6,Math.max(2,Math.floor(maxW/1000)));
+  ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='right';
+  for(let i=0;i<=steps;i++){
+    const w=maxW*(i/steps);
+    const y=yPos(w);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+cW,y);ctx.stroke();
+    const label=w>=1000?(w/1000).toFixed(1)+' kW':Math.round(w)+' W';
+    ctx.fillText(label,pad.left-6,y+3);
+  }
+
+  const baseline=yPos(0);
+  for(let i=0;i<N;i++){
+    const h=hours[i];
+    const gx=pad.left+i*groupW;
+    const gap=groupW*0.06;
+
+    // Left bar: Forecast (orange outline, semi-transparent fill)
+    const fH=barH(h.forecast);
+    const fx=gx+gap;
+    ctx.fillStyle='rgba(249,115,22,0.2)';
+    ctx.fillRect(fx,baseline-fH,barW,fH);
+    ctx.strokeStyle='#f97316';ctx.lineWidth=1;ctx.setLineDash([]);
+    ctx.strokeRect(fx,baseline-fH,barW,fH);
+
+    // Right bar: Actual — stacked PV strings
+    if(h.hasActual&&h.actualTotal>0){
+      const ax=fx+barW+gap;
+      // PV1 (bottom, darker yellow)
+      const pv1H=barH(h.pv1);
+      ctx.fillStyle='#eab308';
+      ctx.fillRect(ax,baseline-pv1H,barW,pv1H);
+      // PV2 (stacked on top, lighter yellow-green)
+      const pv2H=barH(h.pv2);
+      ctx.fillStyle='#84cc16';
+      ctx.fillRect(ax,baseline-pv1H-pv2H,barW,pv2H);
+      // If there's more than pv1+pv2 (other strings), fill the remainder
+      const rest=h.actualTotal-h.pv1-h.pv2;
+      if(rest>1){
+        const restH=barH(rest);
+        ctx.fillStyle='#22d3ee';
+        ctx.fillRect(ax,baseline-pv1H-pv2H-restH,barW,restH);
+      }
+      // Outline the total actual bar
+      const totalH=barH(h.actualTotal);
+      ctx.strokeStyle='#a3a3a3';ctx.lineWidth=0.5;
+      ctx.strokeRect(ax,baseline-totalH,barW,totalH);
+    }
+
+    // Shadow factor label (above forecast bar, where it deviates from 1.0)
+    if(h.shadowFactor!=null&&Math.abs(h.shadowFactor-1.0)>0.02){
+      ctx.fillStyle='#888';ctx.font='7px system-ui';ctx.textAlign='center';
+      ctx.fillText((h.shadowFactor*100).toFixed(0)+'%',gx+groupW/2,baseline-barH(Math.max(h.forecast,h.actualTotal))-3);
+    }
+
+    // Hour label
+    if(h.hour%2===0){
+      ctx.fillStyle='#999';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText(h.hour+':00',gx+groupW/2,pad.top+cH+14);
+    }
+  }
+
+  // "Now" vertical line
+  const nowH=now.getHours()+now.getMinutes()/60;
+  for(let i=0;i<N;i++){
+    if(hours[i].hour<=nowH&&(i===N-1||hours[i+1].hour>nowH)){
+      const frac=nowH-hours[i].hour;
+      const x=pad.left+i*groupW+frac*groupW;
+      ctx.strokeStyle='#ef4444';ctx.lineWidth=1.5;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+cH);ctx.stroke();
+      ctx.setLineDash([]);
+      break;
+    }
+  }
+
+  // Legend
+  ctx.font='9px system-ui';ctx.textAlign='left';
+  let lx=pad.left+8;const ly=pad.top+12;
+  // Forecast
+  ctx.fillStyle='rgba(249,115,22,0.2)';ctx.fillRect(lx,ly-7,10,10);
+  ctx.strokeStyle='#f97316';ctx.lineWidth=1;ctx.strokeRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('Forecast',lx+14,ly+1);
+  lx+=ctx.measureText('Forecast').width+24;
+  // PV1
+  ctx.fillStyle='#eab308';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('String 1',lx+14,ly+1);
+  lx+=ctx.measureText('String 1').width+24;
+  // PV2
+  ctx.fillStyle='#84cc16';ctx.fillRect(lx,ly-7,10,10);
+  ctx.fillStyle='#666';ctx.fillText('String 2',lx+14,ly+1);
 }
 
 function drawPlanChart(timeline,actions,batSoC,evSoC){
@@ -933,7 +1130,7 @@ async function poll(){
     }
     grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
     // Render EMS plan section
-    renderPlan(d.plan||null);
+    renderPlan(d.plan||null, d.pvHourly||{});
   }catch(e){
     dot.className='status-dot red';
     conn.textContent='Geen verbinding';
