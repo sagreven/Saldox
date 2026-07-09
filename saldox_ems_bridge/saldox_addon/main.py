@@ -20,6 +20,7 @@ from typing import Any
 import aiohttp
 from aiohttp import web
 
+from .action_executor import ActionExecutor
 from .ha_api import HomeAssistantClient
 from .modbus_client import SofarModbusClient
 from .plan_poller import PlanPoller
@@ -60,6 +61,11 @@ _latest_prices: dict[str, dict] = {}
 # Shared state: latest EMS plan, updated by PlanPoller via set_plan().
 _latest_plan: dict[str, Any] = {}
 
+# Action executor: set by main() once Modbus client is ready.
+_executor: ActionExecutor | None = None
+# Last executor action description (for /status).
+_executor_status: str = "Wachten op plan"
+
 
 def set_prices(snapshot: dict[str, dict]) -> None:
     """Called by PricesPoller.tick() to share latest prices with /status."""
@@ -68,9 +74,29 @@ def set_prices(snapshot: dict[str, dict]) -> None:
 
 
 def set_plan(plan: dict[str, Any]) -> None:
-    """Called by PlanPoller.tick() to share latest EMS plan with /status."""
+    """Called by PlanPoller.tick() to share latest EMS plan with /status.
+    Also triggers the action executor to check for active actions.
+    """
+    global _executor_status
     _latest_plan.clear()
     _latest_plan.update(plan)
+    if _executor is not None:
+        import asyncio
+        asyncio.ensure_future(_run_executor(plan))
+
+
+async def _run_executor(plan: dict[str, Any]) -> None:
+    """Run the action executor and update the shared status string."""
+    global _executor_status
+    if _executor is None:
+        return
+    try:
+        result = await _executor.execute(plan)
+        if result:
+            _executor_status = result
+    except Exception as ex:  # noqa: BLE001
+        _LOG.error("Action executor failed: %s", ex)
+        _executor_status = f"Fout: {ex}"
 
 
 async def poll_loop(client: SofarModbusClient, ha: HomeAssistantClient, slug: str, friendly: str, interval: int) -> None:
@@ -99,6 +125,9 @@ async def poll_loop(client: SofarModbusClient, ha: HomeAssistantClient, slug: st
                     extra_attrs={"source": "saldox-ems-bridge", "modbus_register": r.name},
                 )
             _LOG.info("Poll OK — %d readings naar HA", len(readings))
+            # Execute plan actions on every poll cycle for timely transitions.
+            if _latest_plan:
+                await _run_executor(_latest_plan)
         except Exception as ex:  # noqa: BLE001
             _LOG.error("Poll-iteratie faalde: %s", ex)
         await asyncio.sleep(interval)
@@ -127,6 +156,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "readings": _latest,
             "prices": _latest_prices,
             "plan": _latest_plan,
+            "executor": _executor_status,
         })
 
     async def set_power_limit(req: web.Request) -> web.Response:
@@ -249,73 +279,97 @@ const grid=document.getElementById('grid'),dot=document.getElementById('dot'),
       planSection=document.getElementById('plan-section'),
       pfEl=document.getElementById('powerflow');
 
-function renderPowerFlow(readings){
+function renderPowerFlow(readings, executorStatus, prices, plan){
   // Extract values (default 0 if missing)
   const val=(k)=>{const r=readings[k];return r?Number(r.value)||0:0;};
   const pvW=val('pv_total_power_w');
   const gridW=val('ac_active_power_w');   // + export, − import
   const batW=val('battery_power_w');      // + charge, − discharge
   const batSoC=val('battery_soc_percent');
+  const batV=val('battery_voltage_v');
+  const batTemp=val('battery_temperature_c');
   // Derive home consumption: PV + grid_import + bat_discharge - grid_export - bat_charge
-  // Simplified: homeW = pvW - gridW - batW  (signs work out)
   const homeW=Math.max(0, pvW - gridW - batW);
 
   // Flow magnitudes for lines
   const pvToHome=Math.max(0, pvW - Math.max(0,gridW) - Math.max(0,batW));
-  const pvToGrid=Math.max(0, gridW);   // export
-  const pvToBat=Math.max(0, batW);     // charge from PV
-  const gridToHome=Math.max(0, -gridW); // import
-  const batToHome=Math.max(0, -batW);   // discharge
+  const pvToGrid=Math.max(0, gridW);
+  const pvToBat=Math.max(0, batW);
+  const gridToHome=Math.max(0, -gridW);
+  const batToHome=Math.max(0, -batW);
 
-  // Helper: line class based on power
   const lc=(w,rev)=>w>10?(rev?'pf-line active reverse':'pf-line active'):'pf-line idle';
-  // Helper: line color
   const ls=(w,col)=>w>10?col:'#e5e7eb';
-  // Helper: format W/kW
   const fw=(w)=>{const a=Math.abs(w);return a>=1000?(a/1000).toFixed(1)+' kW':Math.round(a)+' W';};
 
-  // SVG layout: 320×280 viewBox
-  // Positions: Solar(160,30), Grid(40,140), Home(160,250), Battery(280,140)
-  pfEl.innerHTML=`<svg class="pf-svg" viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
-    <!-- Flow lines -->
-    <!-- Solar → Home (vertical center) -->
-    <line x1="160" y1="62" x2="160" y2="218" class="${lc(pvToHome,false)}" stroke="${ls(pvToHome,'#22c55e')}"/>
-    <!-- Solar → Grid (top-left diagonal) -->
-    <line x1="132" y1="55" x2="68" y2="118" class="${lc(pvToGrid,false)}" stroke="${ls(pvToGrid,'#22c55e')}"/>
-    <!-- Solar → Battery (top-right diagonal) -->
-    <line x1="188" y1="55" x2="252" y2="118" class="${lc(pvToBat,false)}" stroke="${ls(pvToBat,'#f59e0b')}"/>
-    <!-- Grid → Home (bottom-left diagonal) -->
-    <line x1="68" y1="165" x2="132" y2="225" class="${lc(gridToHome,false)}" stroke="${ls(gridToHome,'#3b82f6')}"/>
-    <!-- Battery → Home (bottom-right diagonal) -->
-    <line x1="252" y1="165" x2="188" y2="225" class="${lc(batToHome,false)}" stroke="${ls(batToHome,'#f59e0b')}"/>
+  // Battery stats calculations
+  const batCapKwh=plan&&plan.batterySoC&&plan.batterySoC.length?plan.batterySoC[0].capacityKwh:10;
+  const batKwh=batCapKwh*(batSoC/100);
+  const batRemKwh=batCapKwh-batKwh;
+  const chargeRateKw=Math.abs(batW)/1000;
+  let timeEst='';
+  if(batW>100){
+    const hrsToFull=batRemKwh/chargeRateKw;
+    timeEst=hrsToFull<1?Math.round(hrsToFull*60)+'m vol':hrsToFull.toFixed(1)+'u vol';
+  }else if(batW<-100){
+    const hrsToEmpty=batKwh/chargeRateKw;
+    timeEst=hrsToEmpty<1?Math.round(hrsToEmpty*60)+'m leeg':hrsToEmpty.toFixed(1)+'u leeg';
+  }
 
-    <!-- Flow labels on lines -->
+  // Price comparison for battery insight
+  const pNow=prices.now&&prices.now.value;
+  const pAvg=prices.today_avg&&prices.today_avg.value;
+  const pMax=prices.today_max&&prices.today_max.value;
+  let priceInsight='';
+  if(typeof pNow==='number'&&typeof pAvg==='number'){
+    if(pNow<pAvg*0.7)priceInsight='Goedkoop — ideaal om te laden!';
+    else if(pNow>pAvg*1.3)priceInsight='Duur — beter ontladen';
+    else priceInsight='Gemiddelde prijs';
+  }
+  // Potential savings: charge now at pNow, sell/avoid at pMax
+  let potentialSavings='';
+  if(typeof pNow==='number'&&typeof pMax==='number'&&batRemKwh>0.5){
+    const saving=(pMax-pNow)*batRemKwh;
+    if(saving>0.01)potentialSavings=`Laden nu bespaart € ${saving.toFixed(2)} vs. piekprijs`;
+  }
+
+  // Executor status badge
+  const exBadge=executorStatus?`<div style="text-align:center;margin:8px 0">
+    <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:.8rem;font-weight:600;background:${executorStatus.includes('Laden')?'#22c55e':executorStatus.includes('Ontladen')?'#f97316':executorStatus.includes('beperkt')?'#a855f7':'#e5e7eb'};color:${executorStatus.includes('Wachten')||executorStatus.includes('Auto')?'#666':'#fff'}">${executorStatus}</span>
+  </div>`:'';
+
+  // Battery stats panel
+  const batStats=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:8px">
+    <div class="card" style="padding:12px"><div class="label">Capaciteit</div><div style="font-size:1.1rem;font-weight:700;color:#f59e0b">${batKwh.toFixed(1)} / ${batCapKwh.toFixed(1)} kWh</div></div>
+    <div class="card" style="padding:12px"><div class="label">Laadsnelheid</div><div style="font-size:1.1rem;font-weight:700">${chargeRateKw.toFixed(1)} kW</div>${timeEst?`<div class="unit">${timeEst}</div>`:''}</div>
+    ${batV?`<div class="card" style="padding:12px"><div class="label">Spanning / Temp</div><div style="font-size:1.1rem;font-weight:700">${batV} V</div>${batTemp?`<div class="unit">${batTemp} °C</div>`:''}</div>`:''}
+    ${priceInsight?`<div class="card" style="padding:12px"><div class="label">Prijsinzicht</div><div style="font-size:.9rem;font-weight:600;color:${priceInsight.includes('Goedkoop')?'#22c55e':priceInsight.includes('Duur')?'#ef4444':'#888'}">${priceInsight}</div>${potentialSavings?`<div class="unit">${potentialSavings}</div>`:''}</div>`:''}
+  </div>`;
+
+  pfEl.innerHTML=`${exBadge}<svg class="pf-svg" viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+    <line x1="160" y1="62" x2="160" y2="218" class="${lc(pvToHome,false)}" stroke="${ls(pvToHome,'#22c55e')}"/>
+    <line x1="132" y1="55" x2="68" y2="118" class="${lc(pvToGrid,false)}" stroke="${ls(pvToGrid,'#22c55e')}"/>
+    <line x1="188" y1="55" x2="252" y2="118" class="${lc(pvToBat,false)}" stroke="${ls(pvToBat,'#f59e0b')}"/>
+    <line x1="68" y1="165" x2="132" y2="225" class="${lc(gridToHome,false)}" stroke="${ls(gridToHome,'#3b82f6')}"/>
+    <line x1="252" y1="165" x2="188" y2="225" class="${lc(batToHome,false)}" stroke="${ls(batToHome,'#f59e0b')}"/>
     ${pvToHome>10?`<text x="175" y="145" class="pf-sub">${fw(pvToHome)}</text>`:''}
     ${pvToGrid>10?`<text x="85" y="78" class="pf-sub">${fw(pvToGrid)}</text>`:''}
     ${pvToBat>10?`<text x="232" y="78" class="pf-sub">${fw(pvToBat)}</text>`:''}
     ${gridToHome>10?`<text x="85" y="205" class="pf-sub">${fw(gridToHome)}</text>`:''}
     ${batToHome>10?`<text x="232" y="205" class="pf-sub">${fw(batToHome)}</text>`:''}
-
-    <!-- Solar node -->
-    <text x="160" y="24" class="pf-icon">☀️</text>
+    <text x="160" y="24" class="pf-icon">\u2600\ufe0f</text>
     <text x="160" y="50" class="pf-val" fill="#22c55e">${fw(pvW)}</text>
     <text x="160" y="62" class="pf-sub">Zonnepanelen</text>
-
-    <!-- Grid node -->
-    <text x="40" y="132" class="pf-icon">⚡</text>
+    <text x="40" y="132" class="pf-icon">\u26a1</text>
     <text x="40" y="158" class="pf-val" fill="${gridW>=0?'#22c55e':'#3b82f6'}">${fw(Math.abs(gridW))}</text>
     <text x="40" y="170" class="pf-sub">${gridW>=0?'Export':'Import'}</text>
-
-    <!-- Battery node -->
-    <text x="280" y="132" class="pf-icon">🔋</text>
+    <text x="280" y="132" class="pf-icon">\ud83d\udd0b</text>
     <text x="280" y="158" class="pf-val" fill="#f59e0b">${batSoC}%</text>
     <text x="280" y="170" class="pf-sub">${batW>10?'Laden '+fw(batW):batW<-10?'Ontladen '+fw(-batW):'Stand-by'}</text>
-
-    <!-- Home node -->
-    <text x="160" y="238" class="pf-icon">🏠</text>
+    <text x="160" y="238" class="pf-icon">\ud83c\udfe0</text>
     <text x="160" y="262" class="pf-val" fill="#f97316">${fw(homeW)}</text>
     <text x="160" y="274" class="pf-sub">Verbruik</text>
-  </svg>`;
+  </svg>${batStats}`;
 }
 
 const labels={power:'PV vermogen',grid_power:'Net vermogen',battery_soc:'Batterij SoC',
@@ -679,7 +733,7 @@ async function poll(){
     dot.className='status-dot green';
     conn.textContent='Verbonden — '+new Date(d.timestamp*1000).toLocaleTimeString('nl-NL');
     errEl.style.display='none';
-    renderPowerFlow(d.readings||{});
+    renderPowerFlow(d.readings||{}, d.executor||'', d.prices||{}, d.plan||null);
     let html='';
     for(const[k,v]of Object.entries(d.readings||{})){
       const suffix=k.replace(/^.*?_/,'');
@@ -764,6 +818,10 @@ async def main() -> None:
         unit_id=int(os.environ.get("MODBUS_UNIT_ID", "1")),
     )
     ha = HomeAssistantClient()
+
+    global _executor
+    _executor = ActionExecutor(client=modbus)
+    _LOG.info("Action executor actief — plan-acties worden automatisch uitgevoerd")
 
     poll_task = asyncio.create_task(poll_loop(modbus, ha, slug, friendly, interval), name="poll")
 
