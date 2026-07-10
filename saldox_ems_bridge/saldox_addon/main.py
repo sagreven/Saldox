@@ -22,6 +22,12 @@ from aiohttp import web
 
 from .action_executor import ActionExecutor
 from .arbitrage_optimizer import ArbitrageConfig, ArbitrageOptimizer
+from .arbitrage_simulator import (
+    HourSlot, enrich_slots_with_profiles, generate_synthetic_dataset,
+    run_full_simulation, parameter_sweep,
+    format_comparison_table, format_daily_breakdown, format_sweep_table,
+    fetch_prices_from_api, parse_api_prices,
+)
 from .ha_api import HomeAssistantClient
 from .ha_sensor_reader import HaBatteryController, HaSensorReader
 from .modbus_client import SofarModbusClient
@@ -383,8 +389,9 @@ async def _run_executor(plan: dict[str, Any]) -> None:
                     _executor_status = f"☀ Handmatig: {result}"
                 return
             elif mode == "discharge":
-                # Self Use: battery covers home needs, no grid export
-                result = await _ha_controller.set_auto()
+                # Battery covers home load — Passive Mode with grid_power = 0
+                # (battery + PV cover home, no grid import, PV surplus → grid)
+                result = await _ha_controller.set_discharge_selfuse()
                 if result:
                     _executor_status = "🔋 Ontladen (eigen verbruik)"
                 return
@@ -1901,14 +1908,111 @@ async function poll(){
   }
 }
 poll();setInterval(poll,10000);
+
+// --- Simulator ---
+async function runSim(){
+  const btn=document.getElementById('sim-btn');
+  const out=document.getElementById('sim-out');
+  if(!btn)return;
+  btn.disabled=true;btn.textContent='Berekenen...';
+  out.textContent='';
+  try{
+    const days=document.getElementById('sim-days')?.value||7;
+    const sweep=document.getElementById('sim-sweep')?.checked?'true':'false';
+    const r=await fetch(`./simulate?days=${days}&sweep=${sweep}`);
+    const d=await r.json();
+    let txt=d.comparison||'';
+    if(d.daily_breakdown)txt+='\\n'+d.daily_breakdown;
+    if(d.sweep)txt+='\\n'+d.sweep;
+    if(d.optimal_params)txt+='\\nOptimale params: '+JSON.stringify(d.optimal_params);
+    out.textContent=txt;
+  }catch(e){out.textContent='Error: '+e.message;}
+  btn.disabled=false;btn.textContent='Simulatie starten';
+}
 </script>
+<div class="section-title">Arbitrage Simulator</div>
+<div class="card" style="margin-bottom:16px">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:.85rem">Dagen: <input id="sim-days" type="number" value="7" min="1" max="365" style="width:60px;padding:4px;border:1px solid #ccc;border-radius:4px"></label>
+    <label style="font-size:.85rem"><input id="sim-sweep" type="checkbox"> Parameter sweep</label>
+    <button id="sim-btn" onclick="runSim()" class="ctrl-btn" style="flex:none;padding:8px 16px;max-width:200px">Simulatie starten</button>
+  </div>
+  <pre id="sim-out" style="font-size:.75rem;line-height:1.4;overflow-x:auto;max-height:500px;white-space:pre;background:#f8f9fa;padding:12px;border-radius:8px;color:#333"></pre>
+</div>
 </body></html>"""
         return web.Response(text=html, content_type="text/html")
+
+    async def simulate(req: web.Request) -> web.Response:
+        """GET /simulate?days=7&sweep=false&strategy=saldering
+
+        Runs the arbitrage simulator on historical or synthetic data.
+        If SALDOX_API_URL is set, fetches real prices; otherwise uses synthetic.
+        """
+        from datetime import datetime as dt, timedelta as td, timezone as tz
+
+        days = int(req.query.get("days", "7"))
+        do_sweep = req.query.get("sweep", "false").lower() in ("true", "1")
+        strategy_filter = req.query.get("strategy", "")  # empty = all
+
+        # Try real prices from API
+        slots: list[HourSlot] = []
+        api_url = os.environ.get("SALDOX_API_URL", "").strip()
+        api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
+        data_source = "synthetic"
+
+        if api_url and api_token:
+            to_utc = dt.now(tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            from_utc = to_utc - td(days=days)
+            raw = await fetch_prices_from_api(api_url, api_token, from_utc, to_utc)
+            if raw:
+                slots = parse_api_prices(raw)
+                data_source = "saldox-api"
+
+        if not slots:
+            slots = generate_synthetic_dataset(days)
+            data_source = "synthetic"
+
+        slots = enrich_slots_with_profiles(slots, pv_peak_kw=10.0, base_consumption_w=800.0)
+
+        config = ArbitrageConfig()
+        strategies = None
+        if strategy_filter:
+            strategies = [s.strip() for s in strategy_filter.split(",")]
+
+        results = run_full_simulation(slots, config, strategies)
+        output = {
+            "data_source": data_source,
+            "days": days,
+            "slots_count": len(slots),
+            "comparison": format_comparison_table(results),
+            "daily_breakdown": format_daily_breakdown(results),
+            "results": [
+                {
+                    "strategy": r.strategy,
+                    "total_profit_eur": r.total_profit_eur,
+                    "total_naive_cost_eur": r.total_naive_cost_eur,
+                    "total_savings_eur": r.total_savings_eur,
+                    "avg_daily_profit_eur": r.avg_daily_profit_eur,
+                    "total_cycles": r.total_cycles,
+                }
+                for r in results
+            ],
+        }
+
+        if do_sweep:
+            sweep_strategy = strategy_filter.split(",")[0] if strategy_filter else "saldering"
+            sweep = parameter_sweep(slots, strategy=sweep_strategy)
+            output["sweep"] = format_sweep_table(sweep)
+            output["optimal_params"] = sweep[0].params if sweep else {}
+            output["optimal_profit"] = sweep[0].profit_eur if sweep else 0
+
+        return web.json_response(output)
 
     app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/", ingress_page)
     app.router.add_get("/healthz", health)
     app.router.add_get("/status", status)
+    app.router.add_get("/simulate", simulate)
     app.router.add_post("/commands/active-power-limit", set_power_limit)
     app.router.add_post("/commands/battery-mode", set_battery_mode)
     app.router.add_post("/commands/battery-charge-power", set_battery_charge_power)

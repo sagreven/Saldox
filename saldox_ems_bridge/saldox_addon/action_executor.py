@@ -6,13 +6,13 @@ control backends.
 
 Action mapping:
   ChargeBattery     → force-charge at max power (Passive Mode, grid import)
-  DischargeBattery  → Self Use mode (battery covers home deficit naturally)
+  DischargeBattery  → Passive Mode (battery covers deficit, PV surplus → grid)
   ExportToGrid      → force-discharge to grid (Passive Mode, grid export)
   CurtailPv         → Self Use (no PV curtailment via HA)
   (others)          → Self Use (informational only)
 
 Key distinction:
-  DischargeBattery = let battery cover home needs (Self Use, no grid export)
+  DischargeBattery = battery covers home deficit, PV surplus → grid (saldering)
   ExportToGrid     = actively push power to grid for arbitrage
 
 Safety:
@@ -33,6 +33,7 @@ class BatteryController(Protocol):
     """Abstract interface for battery control backends."""
     async def set_charge(self, power_w: int | None = None) -> str | None: ...
     async def set_discharge(self, power_w: int | None = None) -> str | None: ...
+    async def set_discharge_selfuse(self) -> str | None: ...
     async def set_auto(self) -> str | None: ...
     async def set_solar_charge(self) -> str | None: ...
 
@@ -89,9 +90,9 @@ class ActionExecutor:
         if kind == "ChargeBattery":
             return await self._ctrl.set_charge()
         elif kind == "DischargeBattery":
-            # Self Use mode: battery naturally covers home consumption deficit.
-            # Sofar discharges only what the home needs — no grid export.
-            return await self._ctrl.set_auto()
+            # Passive Mode (grid=0): battery covers home deficit,
+            # PV surplus goes to grid for saldering instead of charging battery.
+            return await self._ctrl.set_discharge_selfuse()
         elif kind == "ExportToGrid":
             # Force-discharge to grid for price arbitrage.
             return await self._ctrl.set_discharge()

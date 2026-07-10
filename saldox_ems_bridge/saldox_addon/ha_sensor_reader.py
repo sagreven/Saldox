@@ -169,6 +169,44 @@ class HaBatteryController:
         _LOG.info("CONTROL: force-discharge @ %d W via HA Passive Mode", watts)
         return f"Ontladen {watts} W"
 
+    async def set_discharge_selfuse(self) -> str | None:
+        """Discharge battery to cover home load — PV surplus goes to grid.
+
+        Uses Passive Mode with desired_grid_power = 0:
+          - Battery discharges to cover home deficit (load - PV)
+          - When PV > load: surplus goes to grid (saldering) instead of charging battery
+          - No grid import — home runs on battery + PV only
+
+        This is better than Self Use when prices are high because Self Use
+        charges the battery from PV surplus (wasting a saldering opportunity).
+        """
+        if self._last_mode == "discharge_selfuse":
+            return None
+
+        await self._ha.call_service("select", "select_option", {
+            "entity_id": _STORAGE_MODE_ENTITY,
+            "option": "Passive Mode",
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": 0,  # target zero grid = battery + PV cover home
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MIN_BAT_POWER,
+            "value": self._max_power_w,  # allow full discharge
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": 0,  # no grid charging
+        })
+        await self._ha.call_service("button", "press", {
+            "entity_id": _PASSIVE_UPDATE_BUTTON,
+        })
+
+        self._last_mode = "discharge_selfuse"
+        _LOG.info("CONTROL: discharge self-use via Passive Mode (grid=0, PV→grid)")
+        return "Ontladen (eigen, PV→grid)"
+
     async def set_auto(self) -> str | None:
         """Return to Self Use (auto) mode."""
         if self._last_mode == "auto":
