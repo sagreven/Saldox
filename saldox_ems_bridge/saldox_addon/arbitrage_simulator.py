@@ -549,6 +549,8 @@ def schedule_load(
 ) -> ScheduleResult | None:
     """Find the cheapest contiguous window to run an appliance.
 
+    Only considers FUTURE hours (slots with hour_utc > now).
+
     Considers:
       - Electricity spot price per hour
       - PV production (free energy reduces effective cost)
@@ -561,16 +563,22 @@ def schedule_load(
     if not slots:
         return None
 
+    # Filter to future slots only
+    now_utc = datetime.now(timezone.utc)
+    future_slots = [s for s in slots if s.hour_utc >= now_utc.replace(minute=0, second=0, microsecond=0)]
+    if not future_slots:
+        future_slots = slots  # fallback if all slots are "past" (synthetic data)
+
     dur_slots = max(1, round(load.duration_hours))  # round to whole hours
-    if len(slots) < dur_slots:
+    if len(future_slots) < dur_slots:
         return None
 
     best_cost = float("inf")
     worst_cost = float("-inf")
     best_start_idx = 0
 
-    for i in range(len(slots) - dur_slots + 1):
-        window = slots[i:i + dur_slots]
+    for i in range(len(future_slots) - dur_slots + 1):
+        window = future_slots[i:i + dur_slots]
 
         # Check time constraints (local hours)
         local_start = (window[0].hour_utc + timedelta(hours=nl_offset_hours)).hour
@@ -610,7 +618,7 @@ def schedule_load(
             worst_cost = window_cost
 
     # Build result
-    best_window = slots[best_start_idx:best_start_idx + dur_slots]
+    best_window = future_slots[best_start_idx:best_start_idx + dur_slots]
     local_start = (best_window[0].hour_utc + timedelta(hours=nl_offset_hours)).hour
     local_end = local_start + dur_slots
     if local_end >= 24:
