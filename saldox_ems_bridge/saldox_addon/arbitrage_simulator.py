@@ -485,6 +485,253 @@ def parameter_sweep(
 
 
 # ---------------------------------------------------------------------------
+# Planned load scheduler — find optimal start times for appliances
+# ---------------------------------------------------------------------------
+
+# Common NL household appliance profiles (average watts, duration hours)
+APPLIANCE_PROFILES: dict[str, tuple[float, float]] = {
+    "wasmachine":    (2000, 2.5),   # 2000W avg, 2.5h cycle = 5.0 kWh
+    "droger":        (3000, 2.0),   # 3000W avg, 2.0h cycle = 6.0 kWh
+    "vaatwasser":    (1800, 2.5),   # 1800W avg, 2.5h cycle = 4.5 kWh
+    "oven":          (2500, 1.5),   # 2500W avg, 1.5h cycle = 3.75 kWh
+    "ev_laden":      (7400, 4.0),   # 7.4kW (32A 1-fase), 4h = 29.6 kWh
+    "warmtepomp":    (1500, 3.0),   # 1500W avg, 3h cycle = 4.5 kWh
+    "airco":         (1200, 2.0),   # 1200W avg, 2h = 2.4 kWh
+    "boiler":        (2000, 1.0),   # 2000W, 1h = 2.0 kWh
+}
+
+
+@dataclass
+class PlannedLoad:
+    """A flexible load that can be scheduled at the optimal time."""
+    name: str
+    avg_watts: float
+    duration_hours: float
+    # Optional constraints
+    earliest_hour: int = 0      # local hour — don't start before this
+    latest_hour: int = 24       # local hour — must finish before this
+    allow_overnight: bool = True
+
+    @property
+    def kwh(self) -> float:
+        return self.avg_watts * self.duration_hours / 1000.0
+
+    @classmethod
+    def from_profile(cls, name: str, **overrides) -> "PlannedLoad":
+        """Create from a known appliance profile."""
+        key = name.lower().replace(" ", "_")
+        if key in APPLIANCE_PROFILES:
+            watts, hours = APPLIANCE_PROFILES[key]
+            return cls(name=name, avg_watts=watts, duration_hours=hours, **overrides)
+        raise ValueError(f"Onbekend apparaat '{name}'. Keuze: {', '.join(APPLIANCE_PROFILES)}")
+
+
+@dataclass
+class ScheduleResult:
+    """Optimal schedule for one appliance."""
+    name: str
+    best_start_hour: int        # local hour
+    best_start_utc: str         # ISO timestamp
+    end_hour: int               # local hour
+    duration_hours: float
+    kwh: float
+    cost_eur: float             # cost at optimal time
+    worst_cost_eur: float       # cost at most expensive time
+    savings_eur: float          # savings vs worst time
+    avg_price_eur: float        # average price during run
+    pv_coverage_pct: float      # % of load covered by PV
+
+
+def schedule_load(
+    load: PlannedLoad,
+    slots: list[HourSlot],
+    nl_offset_hours: int = 2,
+) -> ScheduleResult | None:
+    """Find the cheapest contiguous window to run an appliance.
+
+    Considers:
+      - Electricity spot price per hour
+      - PV production (free energy reduces effective cost)
+      - Duration constraint (must fit in contiguous hours)
+      - Time window constraints (earliest/latest hour)
+
+    The effective cost per hour = max(0, load_watts - pv_surplus) × price / 1000
+    PV surplus that exceeds load is "free" — reduces the cost of running.
+    """
+    if not slots:
+        return None
+
+    dur_slots = max(1, round(load.duration_hours))  # round to whole hours
+    if len(slots) < dur_slots:
+        return None
+
+    best_cost = float("inf")
+    worst_cost = float("-inf")
+    best_start_idx = 0
+
+    for i in range(len(slots) - dur_slots + 1):
+        window = slots[i:i + dur_slots]
+
+        # Check time constraints (local hours)
+        local_start = (window[0].hour_utc + timedelta(hours=nl_offset_hours)).hour
+        local_end = (window[-1].hour_utc + timedelta(hours=nl_offset_hours)).hour + 1
+        if local_end > 24:
+            local_end -= 24
+
+        if load.earliest_hour <= load.latest_hour:
+            # Normal range (e.g., 6-22)
+            if local_start < load.earliest_hour:
+                continue
+            if local_end > load.latest_hour and not load.allow_overnight:
+                continue
+        else:
+            # Overnight range (e.g., 22-6) — skip for now
+            pass
+
+        # Calculate effective cost: load minus PV surplus = net grid import
+        window_cost = 0.0
+        for s in window:
+            # PV surplus available (after baseline home consumption)
+            pv_surplus_w = max(0, s.pv_watts - s.consumption_watts)
+            # Net power from grid needed for this appliance
+            net_grid_w = max(0, load.avg_watts - pv_surplus_w)
+            # Cost for this hour (fractional if duration is not whole hours)
+            window_cost += net_grid_w * s.price_eur_kwh / 1000.0
+
+        # Adjust for fractional hours
+        fraction = load.duration_hours / dur_slots
+        window_cost *= fraction
+
+        if window_cost < best_cost:
+            best_cost = window_cost
+            best_start_idx = i
+
+        if window_cost > worst_cost:
+            worst_cost = window_cost
+
+    # Build result
+    best_window = slots[best_start_idx:best_start_idx + dur_slots]
+    local_start = (best_window[0].hour_utc + timedelta(hours=nl_offset_hours)).hour
+    local_end = local_start + dur_slots
+    if local_end >= 24:
+        local_end -= 24
+
+    # PV coverage
+    total_pv_cover = 0.0
+    total_load = load.avg_watts * load.duration_hours  # Wh
+    for s in best_window:
+        pv_surplus_w = max(0, s.pv_watts - s.consumption_watts)
+        covered = min(load.avg_watts, pv_surplus_w)
+        total_pv_cover += covered  # Wh per hour
+    pv_pct = (total_pv_cover / total_load * 100) if total_load > 0 else 0
+
+    avg_price = sum(s.price_eur_kwh for s in best_window) / len(best_window)
+
+    return ScheduleResult(
+        name=load.name,
+        best_start_hour=local_start,
+        best_start_utc=best_window[0].hour_utc.isoformat(),
+        end_hour=local_end,
+        duration_hours=load.duration_hours,
+        kwh=round(load.kwh, 1),
+        cost_eur=round(best_cost, 2),
+        worst_cost_eur=round(worst_cost, 2),
+        savings_eur=round(worst_cost - best_cost, 2),
+        avg_price_eur=round(avg_price, 4),
+        pv_coverage_pct=round(pv_pct, 0),
+    )
+
+
+def schedule_multiple_loads(
+    loads: list[PlannedLoad],
+    slots: list[HourSlot],
+    nl_offset_hours: int = 2,
+) -> list[ScheduleResult]:
+    """Schedule multiple appliances, avoiding overlap where possible.
+
+    Greedy approach: schedule highest-kWh loads first (they benefit most
+    from cheap hours), then remaining loads avoid already-claimed hours.
+    """
+    # Sort by kWh descending (biggest loads get priority for cheapest slots)
+    sorted_loads = sorted(loads, key=lambda l: l.kwh, reverse=True)
+    results: list[ScheduleResult] = []
+    claimed_hours: set[int] = set()  # indices into slots that are "taken"
+
+    for load in sorted_loads:
+        # Filter out claimed hours by increasing their effective price
+        adjusted_slots = []
+        for i, s in enumerate(slots):
+            if i in claimed_hours:
+                # Penalize already-claimed hours (another appliance runs here)
+                # Add the load's power to consumption so PV surplus shrinks
+                adjusted = HourSlot(
+                    hour_utc=s.hour_utc,
+                    price_eur_kwh=s.price_eur_kwh,
+                    pv_watts=s.pv_watts,
+                    consumption_watts=s.consumption_watts + 2000,  # penalty
+                )
+                adjusted_slots.append(adjusted)
+            else:
+                adjusted_slots.append(s)
+
+        result = schedule_load(load, adjusted_slots, nl_offset_hours)
+        if result:
+            results.append(result)
+            # Claim the hours
+            dur = max(1, round(load.duration_hours))
+            start_idx = next(
+                (i for i, s in enumerate(slots) if s.hour_utc.isoformat() == result.best_start_utc),
+                None,
+            )
+            if start_idx is not None:
+                for j in range(dur):
+                    claimed_hours.add(start_idx + j)
+
+    # Sort results by start hour for display
+    results.sort(key=lambda r: r.best_start_hour)
+    return results
+
+
+def format_schedule_table(results: list[ScheduleResult]) -> str:
+    """Format schedule results as a console table."""
+    if not results:
+        return "  Geen apparaten gepland."
+
+    lines = ["\n  OPTIMAAL SCHEMA — gepland verbruik", ""]
+    hdr = f"  {'Apparaat':<16} {'Start':>6} {'Eind':>6} {'kWh':>6} {'Kosten €':>9} {'Besparing €':>12} {'PV %':>5}"
+    lines.append(hdr)
+    lines.append("  " + "-" * (len(hdr) - 2))
+
+    total_cost = 0.0
+    total_savings = 0.0
+    for r in results:
+        lines.append(
+            f"  {r.name:<16} {r.best_start_hour:>5}:00 {r.end_hour:>5}:00 "
+            f"{r.kwh:>6.1f} {r.cost_eur:>9.2f} {r.savings_eur:>12.2f} {r.pv_coverage_pct:>4.0f}%"
+        )
+        total_cost += r.cost_eur
+        total_savings += r.savings_eur
+
+    lines.append("  " + "-" * (len(hdr) - 2))
+    lines.append(
+        f"  {'TOTAAL':<16} {'':>6} {'':>6} "
+        f"{'':>6} {total_cost:>9.2f} {total_savings:>12.2f}"
+    )
+    lines.append("")
+
+    # Advice per appliance
+    lines.append("  ADVIES:")
+    for r in results:
+        lines.append(
+            f"  → {r.name}: start om {r.best_start_hour:02d}:00 "
+            f"(gem. €{r.avg_price_eur:.3f}/kWh, {r.pv_coverage_pct:.0f}% PV-dekking, "
+            f"€{r.savings_eur:.2f} goedkoper dan duurste moment)"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Output formatting
 # ---------------------------------------------------------------------------
 

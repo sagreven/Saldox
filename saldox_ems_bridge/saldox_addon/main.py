@@ -23,10 +23,12 @@ from aiohttp import web
 from .action_executor import ActionExecutor
 from .arbitrage_optimizer import ArbitrageConfig, ArbitrageOptimizer
 from .arbitrage_simulator import (
-    HourSlot, enrich_slots_with_profiles, generate_synthetic_dataset,
+    HourSlot, PlannedLoad, enrich_slots_with_profiles, generate_synthetic_dataset,
     run_full_simulation, parameter_sweep,
+    schedule_multiple_loads, format_schedule_table,
     format_comparison_table, format_daily_breakdown, format_sweep_table,
     fetch_prices_from_api, parse_api_prices,
+    APPLIANCE_PROFILES,
 )
 from .ha_api import HomeAssistantClient
 from .ha_sensor_reader import HaBatteryController, HaSensorReader
@@ -1919,10 +1921,14 @@ async function runSim(){
   try{
     const days=document.getElementById('sim-days')?.value||7;
     const sweep=document.getElementById('sim-sweep')?.checked?'true':'false';
-    const r=await fetch(`./simulate?days=${days}&sweep=${sweep}`);
+    const loads=document.getElementById('sim-loads')?.value||'';
+    let url=`./simulate?days=${days}&sweep=${sweep}`;
+    if(loads)url+=`&loads=${encodeURIComponent(loads)}`;
+    const r=await fetch(url);
     const d=await r.json();
     let txt='Databron: '+d.data_source+'\\n';
     if(d.errors&&d.errors.length)txt+='⚠ '+d.errors.join('\\n⚠ ')+'\\n';
+    if(d.schedule)txt+=d.schedule+'\\n';
     txt+=(d.comparison||'');
     if(d.daily_breakdown)txt+='\\n'+d.daily_breakdown;
     if(d.sweep)txt+='\\n'+d.sweep;
@@ -1938,6 +1944,10 @@ async function runSim(){
     <label style="font-size:.85rem">Dagen: <input id="sim-days" type="number" value="7" min="1" max="365" style="width:60px;padding:4px;border:1px solid #ccc;border-radius:4px"></label>
     <label style="font-size:.85rem"><input id="sim-sweep" type="checkbox"> Parameter sweep</label>
     <button id="sim-btn" onclick="runSim()" class="ctrl-btn" style="flex:none;padding:8px 16px;max-width:200px">Simulatie starten</button>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:.85rem">Apparaten: <input id="sim-loads" type="text" value="wasmachine,vaatwasser" placeholder="wasmachine,vaatwasser,droger" style="width:280px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:.8rem"></label>
+    <span style="font-size:.7rem;color:#888">Keuze: wasmachine, vaatwasser, droger, oven, ev_laden, warmtepomp, airco, boiler — of naam:watts:uren</span>
   </div>
   <pre id="sim-out" style="font-size:.75rem;line-height:1.4;overflow-x:auto;max-height:500px;white-space:pre;background:#f8f9fa;padding:12px;border-radius:8px;color:#333"></pre>
 </div>
@@ -2056,6 +2066,45 @@ async function runSim(){
             output["sweep"] = format_sweep_table(sweep)
             output["optimal_params"] = sweep[0].params if sweep else {}
             output["optimal_profit"] = sweep[0].profit_eur if sweep else 0
+
+        # --- Planned loads scheduling ---
+        # loads=wasmachine,vaatwasser or loads=wasmachine:2000:2.5,custom:1500:1
+        loads_param = req.query.get("loads", "").strip()
+        if loads_param:
+            planned: list[PlannedLoad] = []
+            for item in loads_param.split(","):
+                parts = item.strip().split(":")
+                name = parts[0]
+                if len(parts) == 3:
+                    # Custom: name:watts:hours
+                    planned.append(PlannedLoad(
+                        name=name,
+                        avg_watts=float(parts[1]),
+                        duration_hours=float(parts[2]),
+                    ))
+                elif name.lower().replace(" ", "_") in APPLIANCE_PROFILES:
+                    planned.append(PlannedLoad.from_profile(name))
+                else:
+                    errors.append(f"Onbekend apparaat '{name}'. Keuze: {', '.join(APPLIANCE_PROFILES)}")
+
+            if planned:
+                schedule = schedule_multiple_loads(planned, slots)
+                output["schedule"] = format_schedule_table(schedule)
+                output["schedule_items"] = [
+                    {
+                        "name": r.name,
+                        "start_hour": r.best_start_hour,
+                        "end_hour": r.end_hour,
+                        "start_utc": r.best_start_utc,
+                        "kwh": r.kwh,
+                        "cost_eur": r.cost_eur,
+                        "worst_cost_eur": r.worst_cost_eur,
+                        "savings_eur": r.savings_eur,
+                        "avg_price_eur": r.avg_price_eur,
+                        "pv_coverage_pct": r.pv_coverage_pct,
+                    }
+                    for r in schedule
+                ]
 
         return web.json_response(output)
 
