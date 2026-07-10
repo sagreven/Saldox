@@ -1921,7 +1921,9 @@ async function runSim(){
     const sweep=document.getElementById('sim-sweep')?.checked?'true':'false';
     const r=await fetch(`./simulate?days=${days}&sweep=${sweep}`);
     const d=await r.json();
-    let txt=d.comparison||'';
+    let txt='Databron: '+d.data_source+'\\n';
+    if(d.errors&&d.errors.length)txt+='⚠ '+d.errors.join('\\n⚠ ')+'\\n';
+    txt+=(d.comparison||'');
     if(d.daily_breakdown)txt+='\\n'+d.daily_breakdown;
     if(d.sweep)txt+='\\n'+d.sweep;
     if(d.optimal_params)txt+='\\nOptimale params: '+JSON.stringify(d.optimal_params);
@@ -1945,8 +1947,10 @@ async function runSim(){
     async def simulate(req: web.Request) -> web.Response:
         """GET /simulate?days=7&sweep=false&strategy=saldering
 
-        Runs the arbitrage simulator on historical or synthetic data.
-        If SALDOX_API_URL is set, fetches real prices; otherwise uses synthetic.
+        Data sources (in priority order):
+          1. Already-fetched prices from PricesPoller (_latest_prices) — 48h, no extra call
+          2. Historical prices from Saldox API (/api/prices/hourly) — multi-day backtest
+          3. Synthetic data — fallback when no API configured
         """
         from datetime import datetime as dt, timedelta as td, timezone as tz
 
@@ -1954,23 +1958,69 @@ async function runSim(){
         do_sweep = req.query.get("sweep", "false").lower() in ("true", "1")
         strategy_filter = req.query.get("strategy", "")  # empty = all
 
-        # Try real prices from API
         slots: list[HourSlot] = []
+        data_source = "synthetic"
+        errors: list[str] = []
+
         api_url = os.environ.get("SALDOX_API_URL", "").strip()
         api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
-        data_source = "synthetic"
 
-        if api_url and api_token:
+        # --- Source 1: use already-fetched prices from PricesPoller ---
+        today_prices = _latest_prices.get("prices_today", {}).get("value", [])
+        tomorrow_prices = _latest_prices.get("prices_tomorrow", {}).get("value", [])
+        if today_prices or tomorrow_prices:
+            now_utc = dt.now(tz.utc)
+            from .prices_poller import _nl_offset_for
+            offset = _nl_offset_for(now_utc)
+            local_now = now_utc + offset
+            local_midnight = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start_utc = local_midnight - offset
+
+            for hp in (today_prices or []):
+                hour_local = hp.get("hour", 0)
+                hour_utc = today_start_utc + td(hours=hour_local) - offset + offset  # already local→utc via start
+                dt_utc = today_start_utc + td(hours=hour_local)
+                slots.append(HourSlot(
+                    hour_utc=dt_utc,
+                    price_eur_kwh=float(hp.get("price", 0)),
+                ))
+            for hp in (tomorrow_prices or []):
+                hour_local = hp.get("hour", 0)
+                dt_utc = today_start_utc + td(days=1, hours=hour_local)
+                slots.append(HourSlot(
+                    hour_utc=dt_utc,
+                    price_eur_kwh=float(hp.get("price", 0)),
+                ))
+            if slots:
+                data_source = f"live-prices ({len(slots)} uur)"
+                _LOG.info("Simulator: %d uur uit PricesPoller cache", len(slots))
+
+        # --- Source 2: historical prices from API (for multi-day backtest) ---
+        if days > 2 and api_url and api_token:
             to_utc = dt.now(tz.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             from_utc = to_utc - td(days=days)
-            raw = await fetch_prices_from_api(api_url, api_token, from_utc, to_utc)
-            if raw:
-                slots = parse_api_prices(raw)
-                data_source = "saldox-api"
+            try:
+                raw = await fetch_prices_from_api(api_url, api_token, from_utc, to_utc)
+                if raw:
+                    api_slots = parse_api_prices(raw)
+                    if api_slots:
+                        slots = api_slots  # replace with fuller dataset
+                        data_source = f"saldox-api ({len(api_slots)} uur, {days} dagen)"
+                        _LOG.info("Simulator: %d uur uit API (%d dagen)", len(api_slots), days)
+                else:
+                    errors.append(f"API gaf geen data terug voor {days} dagen")
+            except Exception as ex:
+                errors.append(f"API fout: {ex}")
+                _LOG.warning("Simulator API fetch failed: %s", ex)
+        elif days > 2 and not api_url:
+            errors.append("SALDOX_API_URL niet geconfigureerd — kan geen historische prijzen ophalen")
 
+        # --- Source 3: synthetic fallback ---
         if not slots:
             slots = generate_synthetic_dataset(days)
-            data_source = "synthetic"
+            data_source = "synthetic (geen echte data beschikbaar)"
+            if not errors:
+                errors.append("Geen prijsdata beschikbaar — synthetische data gebruikt")
 
         slots = enrich_slots_with_profiles(slots, pv_peak_kw=10.0, base_consumption_w=800.0)
 
@@ -1982,6 +2032,7 @@ async function runSim(){
         results = run_full_simulation(slots, config, strategies)
         output = {
             "data_source": data_source,
+            "errors": errors,
             "days": days,
             "slots_count": len(slots),
             "comparison": format_comparison_table(results),
