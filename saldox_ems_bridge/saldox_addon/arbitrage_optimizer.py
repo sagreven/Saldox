@@ -282,6 +282,13 @@ class ArbitrageOptimizer:
 
             else:
                 # ===== SALDERING STRATEGIE (geen grid export) =====
+                # Key insight: when price is HIGH and there's PV surplus,
+                # let PV go to grid for saldering instead of charging battery.
+                # Recharge battery from grid later when price is LOW.
+
+                has_pv_surplus = s["free_charge_kwh"] > 0.1
+                break_even_i = cheapest_future[s["idx"]] / cfg.efficiency + cfg.min_spread_eur
+                price_is_high = s["idx"] in discharge_set  # price > break-even
 
                 # 1. Grid charge in cheapest hours (AC charge, tot charge target)
                 if s["idx"] in charge_set and soc < charge_target - 0.5:
@@ -297,8 +304,28 @@ class ArbitrageOptimizer:
                             f"AC laden @ €{price:.3f}/kWh — batterij vol → PV saldering"
                         ))
 
-                # 2. Battery full + PV surplus → saldering (PV naar grid)
-                elif s["free_charge_kwh"] > 0.1 and soc >= charge_target - 1.0:
+                # 2. High price + PV surplus → saldering (PV naar grid, battery stays)
+                #    Don't charge battery from PV when selling to grid is more profitable.
+                elif has_pv_surplus and price_is_high:
+                    surplus = s["free_charge_kwh"]
+                    pv_savings += surplus * price  # saldering credit
+                    # Also discharge battery for home deficit if any
+                    deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
+                    drain = 0.0
+                    if deficit_kwh > 0.1 and soc > min_soc:
+                        drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
+                        soc -= drain
+                        total_discharged += drain
+                        discharge_revenue += drain * price
+                    actions.append(self._make_action(
+                        "DischargeBattery", start_utc, end_utc, drain,
+                        surplus * price + drain * price,
+                        f"PV {surplus:.1f} kWh → grid (saldering @ €{price:.3f}/kWh)"
+                        + (f" + Self Use {drain:.1f} kWh" if drain > 0.1 else "")
+                    ))
+
+                # 3. Battery full + PV surplus → saldering (any price)
+                elif has_pv_surplus and soc >= charge_target - 1.0:
                     surplus = s["free_charge_kwh"]
                     pv_savings += surplus * price
                     actions.append(self._make_action(
@@ -307,8 +334,8 @@ class ArbitrageOptimizer:
                         f"Batterij vol → {surplus:.1f} kWh PV naar grid (saldering @ €{price:.3f}/kWh)"
                     ))
 
-                # 3. PV surplus, battery not full → PV charge
-                elif s["free_charge_kwh"] > 0.1:
+                # 4. Low price + PV surplus + battery not full → PV charge
+                elif has_pv_surplus:
                     free_kwh = min(s["free_charge_kwh"], charge_target - soc)
                     if free_kwh > 0.1:
                         soc += free_kwh
@@ -316,11 +343,11 @@ class ArbitrageOptimizer:
                         actions.append(self._make_action(
                             "SolarCharge", start_utc, end_utc, free_kwh,
                             free_kwh * price,
-                            f"PV-laden {free_kwh:.1f} kWh (€{price:.3f}/kWh vermeden)"
+                            f"PV-laden {free_kwh:.1f} kWh (€{price:.3f}/kWh — goedkoop, batterij opslaan)"
                         ))
 
-                # 4. Expensive hours: Self Use (AC discharge)
-                elif s["idx"] in discharge_set and soc > min_soc:
+                # 5. No PV surplus + discharge hour: Self Use (AC discharge)
+                elif price_is_high and soc > min_soc:
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     if deficit_kwh > 0.1:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
@@ -335,7 +362,7 @@ class ArbitrageOptimizer:
                             f"(€{saved:.2f} dure import vermeden)"
                         ))
 
-                # 5. Default: Self Use for remaining deficit (AC discharge)
+                # 6. Default: Self Use for remaining deficit (AC discharge)
                 else:
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     if deficit_kwh > 0 and soc > min_soc:
