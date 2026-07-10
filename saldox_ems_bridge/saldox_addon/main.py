@@ -712,6 +712,19 @@ h1{font-size:1.5rem;margin-bottom:4px;color:#1a7a2e}
 <h1>Saldox EMS Bridge</h1>
 <p class="subtitle"><span class="status-dot" id="dot"></span><span id="conn">Verbinden...</span></p>
 <div id="error"></div>
+<div class="section-title" style="margin-top:8px">Arbitrage Simulator</div>
+<div class="card" style="margin-bottom:16px">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:.85rem">Dagen: <input id="sim-days" type="number" value="1" min="1" max="365" style="width:60px;padding:4px;border:1px solid #ccc;border-radius:4px"></label>
+    <label style="font-size:.85rem"><input id="sim-sweep" type="checkbox"> Parameter sweep</label>
+    <button id="sim-btn" onclick="runSim()" class="ctrl-btn" style="flex:none;padding:8px 16px;max-width:200px">Simulatie starten</button>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:.85rem">Apparaten: <input id="sim-loads" type="text" value="wasmachine,vaatwasser" placeholder="wasmachine,vaatwasser,droger" style="width:280px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:.8rem"></label>
+    <span style="font-size:.7rem;color:#888">Keuze: wasmachine, vaatwasser, droger, oven, ev_laden, warmtepomp, airco, boiler — of naam:watts:uren</span>
+  </div>
+  <pre id="sim-out" style="font-size:.75rem;line-height:1.4;overflow-x:auto;max-height:500px;white-space:pre;background:#f8f9fa;padding:12px;border-radius:8px;color:#333"></pre>
+</div>
 <div class="pf-wrap" id="powerflow"></div>
 <div class="card" id="control-panel" style="max-width:480px;margin:0 auto 24px;padding:16px">
   <div class="label" style="margin-bottom:12px">BATTERIJ BESTURING</div>
@@ -1879,26 +1892,6 @@ async function poll(){
       html+=`<div class="card ok"><div class="label">Vandaag gem.</div><div class="value">${typeof pv('today_avg')==='number'?'€ '+pv('today_avg').toFixed(4):'—'}</div><div class="unit">${typeof pv('today_min')==='number'?'min € '+pv('today_min').toFixed(4)+' · max € '+pv('today_max').toFixed(4):''}</div></div>`;
       if(pv('tomorrow_avg')!=='—'&&pv('tomorrow_avg')!=null)html+=`<div class="card ok"><div class="label">Morgen gem.</div><div class="value">${'€ '+pv('tomorrow_avg').toFixed(4)}</div><div class="unit">min € ${pv('tomorrow_min').toFixed(4)} · max € ${pv('tomorrow_max').toFixed(4)}</div></div>`;
       if(pv('negative_hours_today')!=='—')html+=`<div class="card ${pv('negative_hours_today')>0?'warn':'off'}"><div class="label">Negatieve uren</div><div class="value">${pv('negative_hours_today')}</div><div class="unit">uren vandaag</div></div>`;
-      const tp=p.prices_today&&p.prices_today.value||[];
-      const tm=p.prices_tomorrow&&p.prices_tomorrow.value||[];
-      const nowH=new Date().getHours();
-      const next24=[...tp.filter(h=>h.hour>=nowH),...tm.filter(h=>h.hour<nowH)].slice(0,24);
-      if(next24.length){
-        const prices=next24.map(h=>h.price);
-        const minP=Math.min(...prices);
-        const maxP=Math.max(...prices);
-        const range=maxP-minP||0.01;
-        html+='<div class="card" style="grid-column:1/-1"><div class="label">Komende 24 uur</div><div style="display:flex;align-items:flex-end;gap:1px;height:200px;margin-top:12px;padding-bottom:20px;position:relative">';
-        for(let i=0;i<next24.length;i++){
-          const h=next24[i];
-          const pct=((h.price-minP)/range)*80+15;
-          const neg=h.price<0;
-          const isNow=i===0;
-          const col=neg?'#ef4444':isNow?'#1a7a2e':'#60a5fa';
-          html+=`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%"><div style="background:${col};width:90%;height:${pct}%;border-radius:3px 3px 0 0;min-height:4px;position:relative" title="${h.hour}:00 — € ${h.price.toFixed(4)}"><span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:.5rem;color:#555;white-space:nowrap">${h.price.toFixed(2)}</span></div><div style="font-size:.55rem;color:#999;margin-top:3px">${h.hour}</div></div>`;
-        }
-        html+='</div></div>';
-      }
     }
     grid.innerHTML=html||'<div class="card off"><div class="label">Wachten op data</div><div class="value">—</div></div>';
     // Render EMS plan section
@@ -1938,19 +1931,6 @@ async function runSim(){
   btn.disabled=false;btn.textContent='Simulatie starten';
 }
 </script>
-<div class="section-title">Arbitrage Simulator</div>
-<div class="card" style="margin-bottom:16px">
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-    <label style="font-size:.85rem">Dagen: <input id="sim-days" type="number" value="7" min="1" max="365" style="width:60px;padding:4px;border:1px solid #ccc;border-radius:4px"></label>
-    <label style="font-size:.85rem"><input id="sim-sweep" type="checkbox"> Parameter sweep</label>
-    <button id="sim-btn" onclick="runSim()" class="ctrl-btn" style="flex:none;padding:8px 16px;max-width:200px">Simulatie starten</button>
-  </div>
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-    <label style="font-size:.85rem">Apparaten: <input id="sim-loads" type="text" value="wasmachine,vaatwasser" placeholder="wasmachine,vaatwasser,droger" style="width:280px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:.8rem"></label>
-    <span style="font-size:.7rem;color:#888">Keuze: wasmachine, vaatwasser, droger, oven, ev_laden, warmtepomp, airco, boiler — of naam:watts:uren</span>
-  </div>
-  <pre id="sim-out" style="font-size:.75rem;line-height:1.4;overflow-x:auto;max-height:500px;white-space:pre;background:#f8f9fa;padding:12px;border-radius:8px;color:#333"></pre>
-</div>
 </body></html>"""
         return web.Response(text=html, content_type="text/html")
 
