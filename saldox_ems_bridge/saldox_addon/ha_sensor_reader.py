@@ -170,29 +170,43 @@ class HaBatteryController:
         return f"Ontladen {watts} W"
 
     async def set_discharge_selfuse(self) -> str | None:
-        """Battery covers home deficit in Self Use mode.
+        """Battery idle, ALL PV goes to grid for saldering.
 
-        In Self Use the Sofar handles the power balance automatically:
-          - PV → home first (priority 1)
-          - PV surplus → battery charge (free energy)
-          - When load > PV → battery discharges to cover deficit
-          - No grid import when battery has charge
+        Uses Passive Mode with battery charge AND discharge = 0:
+          - Battery does nothing (idle/standby)
+          - PV → home first, ALL surplus → grid (saldering)
+          - No battery charge from PV (saves saldering revenue)
+          - No grid import for battery
 
-        Note: PV surplus goes to battery (not grid) in this mode. The
-        optimizer accounts for this by only scheduling discharge hours
-        when the price spread justifies it.
+        Use this during expensive hours: PV saldering earns more than
+        storing in battery. Battery recharges from cheap grid later.
         """
         if self._last_mode == "discharge_selfuse":
             return None
 
         await self._ha.call_service("select", "select_option", {
             "entity_id": _STORAGE_MODE_ENTITY,
-            "option": "Self Use",
+            "option": "Passive Mode",
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": -self._max_power_w,  # allow full export
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": 0,  # NO charging
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MIN_BAT_POWER,
+            "value": 0,  # NO discharging
+        })
+        await self._ha.call_service("button", "press", {
+            "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = "discharge_selfuse"
-        _LOG.info("CONTROL: discharge self-use via Self Use mode")
-        return "Ontladen (eigen verbruik)"
+        _LOG.info("CONTROL: battery idle, PV → grid (saldering) via Passive Mode")
+        return "Batterij idle — PV → grid"
 
     async def set_auto(self) -> str | None:
         """Return to Self Use (auto) mode."""
