@@ -596,15 +596,15 @@ def schedule_load(
             # Overnight range (e.g., 22-6) — skip for now
             pass
 
-        # Calculate effective cost: load minus PV surplus = net grid import
+        # Calculate effective cost INCLUDING saldering opportunity cost.
+        # With NL saldering: PV used by appliance = lost grid export revenue.
+        # So the true cost is ALWAYS load × price, regardless of PV coverage.
+        # The cheapest time = the cheapest price, period.
         window_cost = 0.0
         for s in window:
-            # PV surplus available (after baseline home consumption)
-            pv_surplus_w = max(0, s.pv_watts - s.consumption_watts)
-            # Net power from grid needed for this appliance
-            net_grid_w = max(0, load.avg_watts - pv_surplus_w)
-            # Cost for this hour (fractional if duration is not whole hours)
-            window_cost += net_grid_w * s.price_eur_kwh / 1000.0
+            # Full load × price — PV that powers the appliance could have
+            # been sold to grid for saldering at the same price.
+            window_cost += load.avg_watts * s.price_eur_kwh / 1000.0
 
         # Adjust for fractional hours
         fraction = load.duration_hours / dur_slots
