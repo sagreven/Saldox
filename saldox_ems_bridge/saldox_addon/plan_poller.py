@@ -171,7 +171,8 @@ class PlanPoller:
         "DischargeBattery": "Batterij ontladen",
         "ChargeCar": "Auto laden",
         "CurtailPv": "PV beperken",
-        "RunHeavyLoad": "Zwaar verbruik",
+        "ExportToGrid": "Export naar net",
+        "SolarCharge": "Zonne-laden",
     }
 
     async def _push_telemetry(self) -> None:
@@ -188,8 +189,10 @@ class PlanPoller:
             "battery_soc_percent": "batterySoCPercent",
             "battery_power_w": "batteryPowerW",
             "ev_soc_percent": "evSoCPercent",
+            "ev_power_w": "evPowerW",
             "pv_total_power_w": "pvPowerW",
             "ac_active_power_w": "gridPowerW",
+            "load_power_w": "loadPowerW",
         }
         for modbus_key, api_key in mapping.items():
             entry = readings.get(modbus_key)

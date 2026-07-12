@@ -109,38 +109,47 @@ class HaBatteryController:
         self._last_mode: str | None = None
 
     async def set_charge(self, power_w: int | None = None) -> str | None:
-        """Force-charge battery at given power (default: max)."""
+        """Force-charge battery from grid at given power (default: max).
+
+        Sofar sign convention: positive battery power = charge.
+        """
         watts = power_w or self._max_power_w
         if self._last_mode == f"charge_{watts}":
             return None
 
-        # Set to Passive Mode, then set high grid import + battery charge power.
         await self._ha.call_service("select", "select_option", {
             "entity_id": _STORAGE_MODE_ENTITY,
             "option": "Passive Mode",
         })
         await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MAX_BAT_POWER,
-            "value": watts,
-        })
-        await self._ha.call_service("number", "set_value", {
-            "entity_id": _PASSIVE_GRID_POWER,
-            "value": watts,  # import from grid to charge battery
+            "value": watts,  # positive = charge up to watts
         })
         await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MIN_BAT_POWER,
-            "value": 0,  # no discharge
+            "value": watts,  # positive = force charge at watts
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": watts,  # positive = allow grid import for charging
         })
         await self._ha.call_service("button", "press", {
             "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = f"charge_{watts}"
-        _LOG.info("CONTROL: force-charge @ %d W via HA Passive Mode", watts)
+        _LOG.info("CONTROL: force-charge @ %d W via HA Passive Mode (bat=+%d, grid=+%d)", watts, watts, watts)
         return f"Laden {watts} W"
 
     async def set_discharge(self, power_w: int | None = None) -> str | None:
-        """Force-discharge battery at given power (default: max)."""
+        """Force-discharge battery to grid at given power (default: max).
+
+        Sofar Passive Mode sign convention (confirmed by testing):
+          - Battery power: positive = charge, negative = discharge
+          - Grid power: 0 = let inverter decide (surplus → grid)
+        All three registers must be negative for discharge to work:
+        max_bat = -watts, min_bat = -watts, grid = -watts.
+        """
         watts = power_w or self._max_power_w
         if self._last_mode == f"discharge_{watts}":
             return None
@@ -150,36 +159,30 @@ class HaBatteryController:
             "option": "Passive Mode",
         })
         await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": 0,  # no charging allowed during discharge
+        })
+        await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MIN_BAT_POWER,
-            "value": watts,  # discharge power
+            "value": -watts,  # negative = force discharge at this power
         })
         await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_GRID_POWER,
-            "value": -watts,  # export to grid
-        })
-        await self._ha.call_service("number", "set_value", {
-            "entity_id": _PASSIVE_MAX_BAT_POWER,
-            "value": 0,  # no charge
+            "value": -watts,  # negative = export to grid
         })
         await self._ha.call_service("button", "press", {
             "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = f"discharge_{watts}"
-        _LOG.info("CONTROL: force-discharge @ %d W via HA Passive Mode", watts)
+        _LOG.info("CONTROL: force-discharge @ %d W via HA Passive Mode (bat=-%d, grid=0)", watts, watts)
         return f"Ontladen {watts} W"
 
     async def set_discharge_selfuse(self) -> str | None:
-        """Battery idle, ALL PV goes to grid for saldering.
+        """Battery covers home load deficit, PV surplus → grid. Grid import = 0.
 
-        Uses Passive Mode with battery charge AND discharge = 0:
-          - Battery does nothing (idle/standby)
-          - PV → home first, ALL surplus → grid (saldering)
-          - No battery charge from PV (saves saldering revenue)
-          - No grid import for battery
-
-        Use this during expensive hours: PV saldering earns more than
-        storing in battery. Battery recharges from cheap grid later.
+        Baseline mode: no active charging, but battery discharges to prevent
+        grid import. PV surplus goes to grid (saldering / export).
         """
         if self._last_mode == "discharge_selfuse":
             return None
@@ -189,44 +192,85 @@ class HaBatteryController:
             "option": "Passive Mode",
         })
         await self._ha.call_service("number", "set_value", {
-            "entity_id": _PASSIVE_GRID_POWER,
-            "value": -self._max_power_w,  # allow full export
-        })
-        await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MAX_BAT_POWER,
-            "value": 0,  # NO charging
+            "value": 0,  # no charging
         })
         await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MIN_BAT_POWER,
-            "value": 0,  # NO discharging
+            "value": -self._max_power_w,  # allow discharge to cover load
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": 0,  # target zero grid import
         })
         await self._ha.call_service("button", "press", {
             "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = "discharge_selfuse"
-        _LOG.info("CONTROL: battery idle, PV → grid (saldering) via Passive Mode")
-        return "Batterij idle — PV → grid"
+        _LOG.info("CONTROL: baseline — no charge, discharge covers deficit, grid=0")
+        return "Baseline (grid=0, batterij springt bij)"
 
     async def set_auto(self) -> str | None:
-        """Return to Self Use (auto) mode."""
+        """Baseline mode: Passive Mode with grid import = 0.
+
+        Battery doesn't charge, but discharges to cover load deficit.
+        PV surplus goes to grid export. This replaces the old Self Use
+        mode which ignored passive power registers.
+        """
         if self._last_mode == "auto":
             return None
 
         await self._ha.call_service("select", "select_option", {
             "entity_id": _STORAGE_MODE_ENTITY,
-            "option": "Self Use",
+            "option": "Passive Mode",
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": 0,  # no charging
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MIN_BAT_POWER,
+            "value": -self._max_power_w,  # discharge to cover load
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": 0,  # target zero grid import
+        })
+        await self._ha.call_service("button", "press", {
+            "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = "auto"
-        _LOG.info("CONTROL: reset to Self Use mode via HA")
-        return "Auto modus"
+        _LOG.info("CONTROL: baseline (Passive) — no charge, discharge OK, grid=0")
+        return "Baseline (grid=0)"
+
+    async def get_current_mode(self) -> dict:
+        """Read the current energy storage mode and power settings from HA."""
+        states = await self._ha.get_states([
+            _STORAGE_MODE_ENTITY,
+            _PASSIVE_MAX_BAT_POWER,
+            _PASSIVE_MIN_BAT_POWER,
+            _PASSIVE_GRID_POWER,
+        ])
+        mode_state = states.get(_STORAGE_MODE_ENTITY, {}).get("state", "unknown")
+        max_bat = states.get(_PASSIVE_MAX_BAT_POWER, {}).get("state", "0")
+        min_bat = states.get(_PASSIVE_MIN_BAT_POWER, {}).get("state", "0")
+        grid = states.get(_PASSIVE_GRID_POWER, {}).get("state", "0")
+        return {
+            "storageMode": mode_state,
+            "maxBatPowerW": float(max_bat) if max_bat not in ("unknown", "unavailable") else None,
+            "minBatPowerW": float(min_bat) if min_bat not in ("unknown", "unavailable") else None,
+            "gridPowerW": float(grid) if grid not in ("unknown", "unavailable") else None,
+            "saldoxLastMode": self._last_mode,
+        }
 
     async def set_solar_charge(self) -> str | None:
-        """Charge battery from solar only — grid power target = 0 (no import/export).
+        """Charge battery from solar only — no grid import.
 
-        Sets Passive Mode with desired_grid_power = 0 so the inverter balances:
-        solar → home first, surplus → battery, no grid import.
+        Sofar sign convention: max_bat positive = allow charging up to watts.
+        min_bat=0 → no forced discharge. Grid=0 → no grid import/export.
+        PV surplus goes to battery, remainder to grid.
         """
         if self._last_mode == "solar_charge":
             return None
@@ -236,21 +280,80 @@ class HaBatteryController:
             "option": "Passive Mode",
         })
         await self._ha.call_service("number", "set_value", {
-            "entity_id": _PASSIVE_GRID_POWER,
-            "value": 0,  # no grid import, no export
-        })
-        await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MAX_BAT_POWER,
-            "value": self._max_power_w,  # allow full charge rate from solar
+            "value": self._max_power_w,  # positive = allow charge from PV
         })
         await self._ha.call_service("number", "set_value", {
             "entity_id": _PASSIVE_MIN_BAT_POWER,
-            "value": 0,  # no discharge
+            "value": 0,  # no forced discharge
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": 0,  # no grid import
         })
         await self._ha.call_service("button", "press", {
             "entity_id": _PASSIVE_UPDATE_BUTTON,
         })
 
         self._last_mode = "solar_charge"
-        _LOG.info("CONTROL: solar self-use charge via HA Passive Mode (grid=0)")
+        _LOG.info("CONTROL: solar charge via Passive Mode (bat=+%d/0, grid=0)", self._max_power_w)
         return "Zonne-laden (grid=0)"
+
+    async def set_grid_charge(self, power_w: int | None = None) -> str | None:
+        """Grid charge: max import from grid, charge battery, PV curtailed.
+
+        Used during negative EPEX prices when exporting PV costs money.
+        - Battery charges from grid at max power
+        - PV curtailed to 0% to prevent export (active_power_limit)
+        - Grid desired = max import (positive = import direction)
+        """
+        watts = power_w or self._max_power_w
+        if self._last_mode == f"grid_charge_{watts}":
+            return None
+
+        # Switch to Passive Mode
+        await self._ha.call_service("select", "select_option", {
+            "entity_id": _STORAGE_MODE_ENTITY,
+            "option": "Passive Mode",
+        })
+        # Battery: force charge at max power
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MAX_BAT_POWER,
+            "value": watts,
+        })
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_MIN_BAT_POWER,
+            "value": watts,  # force charge
+        })
+        # Grid: max import (positive = import)
+        await self._ha.call_service("number", "set_value", {
+            "entity_id": _PASSIVE_GRID_POWER,
+            "value": watts,  # actively pull from grid
+        })
+        await self._ha.call_service("button", "press", {
+            "entity_id": _PASSIVE_UPDATE_BUTTON,
+        })
+
+        # Curtail PV to 0% — prevent export during negative prices
+        try:
+            await self._ha.call_service("number", "set_value", {
+                "entity_id": "number.sofar_inverter_active_power_export_limit",
+                "value": 0,
+            })
+        except Exception:
+            _LOG.warning("PV curtail entity not available — skipping")
+
+        self._last_mode = f"grid_charge_{watts}"
+        _LOG.info("CONTROL: grid charge @ %dW + PV curtailed (negative price mode)", watts)
+        return f"Grid laden {watts}W + PV uit"
+
+    async def restore_pv(self) -> None:
+        """Restore PV export limit to 100% after negative price period."""
+        try:
+            await self._ha.call_service("number", "set_value", {
+                "entity_id": "number.sofar_inverter_active_power_export_limit",
+                "value": 100,
+            })
+            _LOG.info("CONTROL: PV export limit restored to 100%%")
+        except Exception:
+            _LOG.warning("PV restore entity not available — skipping")

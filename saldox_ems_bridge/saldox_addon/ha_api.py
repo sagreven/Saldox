@@ -92,6 +92,28 @@ class HomeAssistantClient:
                 results[eid] = s
         return results
 
+    async def get_history(
+        self, entity_id: str, start: str, end: str | None = None
+    ) -> list[dict[str, Any]]:
+        """GET /api/history/period/{start}?filter_entity_id={eid}&end_time={end}
+        Returns list of state-change dicts [{state, last_changed, ...}, ...]."""
+        session = await self._get_session()
+        params = f"filter_entity_id={entity_id}&minimal_response&significant_changes_only"
+        if end:
+            params += f"&end_time={end}"
+        url = f"{self.base_url}/api/history/period/{start}?{params}"
+        try:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=60)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    # HA returns [[{state changes}]] — one list per entity
+                    return data[0] if data and len(data) > 0 else []
+                _LOG.warning("HA history %s → HTTP %s", entity_id, resp.status)
+                return []
+        except aiohttp.ClientError as ex:
+            _LOG.warning("HA history error for %s: %s", entity_id, ex)
+            return []
+
     async def call_service(
         self, domain: str, service: str, data: dict[str, Any] | None = None
     ) -> bool:

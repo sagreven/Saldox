@@ -66,6 +66,7 @@ class ArbitrageConfig:
     night_end_hour: int = 6           # local hour — end of overnight reserve window
     max_cycles_per_day: int = 2       # limit battery wear
     grid_export_enabled: bool = False # False = NL saldering strategie
+    retail_surcharge_eur: float = 0.15 # opslag bovenop EPEX (transport, belasting) — Rule P-04
 
     # --- Resolved limits (use these in code) ---
     @property
@@ -273,12 +274,13 @@ class ArbitrageOptimizer:
                         ))
 
                 # 4. Default: Self Use (AC discharge)
+                # Rule P-04: self-use saves full retail (EPEX + surcharge).
                 else:
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     if deficit_kwh > 0 and soc > min_soc:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
-                        pv_savings += drain * price
+                        pv_savings += drain * (price + cfg.retail_surcharge_eur)
 
             else:
                 # ===== SALDERING STRATEGIE (geen grid export) =====
@@ -310,16 +312,17 @@ class ArbitrageOptimizer:
                     surplus = s["free_charge_kwh"]
                     pv_savings += surplus * price  # saldering credit
                     # Also discharge battery for home deficit if any
+                    # Rule P-04: self-use saves full retail; saldering earns EPEX only.
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     drain = 0.0
                     if deficit_kwh > 0.1 and soc > min_soc:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
                         total_discharged += drain
-                        discharge_revenue += drain * price
+                        discharge_revenue += drain * (price + cfg.retail_surcharge_eur)
                     actions.append(self._make_action(
                         "DischargeBattery", start_utc, end_utc, drain,
-                        surplus * price + drain * price,
+                        surplus * price + drain * (price + cfg.retail_surcharge_eur),
                         f"PV {surplus:.1f} kWh → grid (saldering @ €{price:.3f}/kWh)"
                         + (f" + Self Use {drain:.1f} kWh" if drain > 0.1 else "")
                     ))
@@ -347,28 +350,30 @@ class ArbitrageOptimizer:
                         ))
 
                 # 5. No PV surplus + discharge hour: Self Use (AC discharge)
+                # Rule P-04: self-use saves full retail tariff.
                 elif price_is_high and soc > min_soc:
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     if deficit_kwh > 0.1:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
                         total_discharged += drain
-                        saved = drain * price
+                        saved = drain * (price + cfg.retail_surcharge_eur)
                         discharge_revenue += saved
                         actions.append(self._make_action(
                             "DischargeBattery", start_utc, end_utc, drain,
                             saved,
-                            f"Self Use {drain:.1f} kWh @ €{price:.3f}/kWh "
+                            f"Self Use {drain:.1f} kWh @ €{price + cfg.retail_surcharge_eur:.3f}/kWh "
                             f"(€{saved:.2f} dure import vermeden)"
                         ))
 
                 # 6. Default: Self Use for remaining deficit (AC discharge)
+                # Rule P-04: self-use saves full retail tariff.
                 else:
                     deficit_kwh = max(0, s["cons_w"] - s["pv_w"]) / 1000.0
                     if deficit_kwh > 0 and soc > min_soc:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
-                        pv_savings += drain * price
+                        pv_savings += drain * (price + cfg.retail_surcharge_eur)
 
             # Clamp SoC
             soc = max(0, min(cfg.capacity_kwh, soc))

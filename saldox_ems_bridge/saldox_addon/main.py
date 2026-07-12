@@ -330,10 +330,11 @@ def _get_current_soc_kwh() -> float:
 
 def set_plan(plan: dict[str, Any]) -> None:
     """Called by PlanPoller.tick() to share latest EMS plan with /status.
-    Runs the arbitrage optimizer in auto mode, then triggers executor.
+    Runs the arbitrage optimizer in auto mode for dashboard stats, but
+    PRESERVES the server plan actions for the executor (server is authoritative).
     """
     global _executor_status
-    # Run local arbitrage optimizer when in auto mode
+    # Run local arbitrage optimizer when in auto mode — for dashboard stats only.
     mode = _manual_override.get("mode", "auto")
     if mode == "auto" and _arbitrage_optimizer is not None:
         try:
@@ -341,9 +342,8 @@ def set_plan(plan: dict[str, Any]) -> None:
                 timeline=plan.get("timeline", []),
                 current_soc_kwh=_get_current_soc_kwh(),
             )
-            if result and result.actions:
-                plan["actions"] = result.actions
-                plan["batterySoC"] = result.soc_curve
+            if result:
+                # Store local optimizer results separately — do NOT overwrite server actions.
                 plan["arbitrage"] = {
                     "profitEur": result.projected_profit_eur,
                     "chargeCostEur": result.charge_cost_eur,
@@ -397,26 +397,39 @@ async def _run_executor(plan: dict[str, Any]) -> None:
                 if result:
                     _executor_status = "🔋 Ontladen (eigen verbruik)"
                 return
+            elif mode == "grid_charge":
+                # Grid charge: max import + PV curtailed (negative price mode)
+                result = await _ha_controller.set_grid_charge(power_w)
+                if result:
+                    _executor_status = f"🔌 Grid laden + PV uit: {result}"
+                return
             elif mode == "export":
                 # Force-discharge to grid at selected power
                 result = await _ha_controller.set_discharge(power_w)
                 if result:
                     _executor_status = f"⚡ Handmatig: {result}"
                 return
-            elif mode == "standby":
-                result = await _ha_controller.set_auto()
+            elif mode == "baseline" or mode == "standby":
+                # Baseline: no charge, battery covers deficit, grid=0
+                result = await _ha_controller.set_discharge_selfuse()
                 if result:
-                    _executor_status = "⏸ Stand-by (handmatig)"
+                    _executor_status = "⚖ Baseline (grid=0, batterij springt bij)"
                 return
             elif mode == "auto_sofar":
-                result = await _ha_controller.set_auto()
-                if result:
-                    _executor_status = "🔄 Auto (Sofar Self Use)"
+                # Return to Sofar Self Use — inverter decides everything
+                await _ha_controller._ha.call_service("select", "select_option", {
+                    "entity_id": "select.sofar_inverter_energy_storage_mode",
+                    "option": "Self Use",
+                })
+                _ha_controller._last_mode = "sofar_auto"
+                _executor_status = "🔄 Sofar Auto (Self Use)"
                 return
 
             # mode == "auto" → follow the Saldox plan
             if _executor is not None:
-                result = await _executor.execute(plan)
+                soc_pct = _latest.get("battery_soc_percent", {}).get("value")
+                soc_pct = float(soc_pct) if soc_pct is not None else None
+                result = await _executor.execute(plan, current_soc_percent=soc_pct)
                 if result:
                     _executor_status = result
         except Exception as ex:  # noqa: BLE001
@@ -564,6 +577,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "prices": _latest_prices,
             "plan": _latest_plan,
             "executor": _executor_status,
+            "executionLog": _executor.log.entries[-20:] if _executor else [],
             "override": _manual_override,
             "pvHourly": pv_hourly,
             "loadHourly": load_hourly,
@@ -575,7 +589,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         """POST /commands/override  body: { "mode": "auto|charge|discharge|standby", "power_pct": 0..100 }"""
         body = await req.json()
         mode = str(body.get("mode", "auto"))
-        if mode not in ("auto", "auto_sofar", "charge", "charge_solar", "discharge", "export", "standby"):
+        if mode not in ("auto", "auto_sofar", "baseline", "charge", "charge_solar", "grid_charge", "discharge", "export", "standby"):
             return web.json_response({"ok": False, "error": "mode must be auto|auto_sofar|charge|charge_solar|discharge|export|standby"}, status=400)
         pct = int(body.get("power_pct", 100))
         if not 0 <= pct <= 100:
@@ -931,6 +945,15 @@ function renderPlan(plan, pvHourly, loadHourly){
   if(optimized!=null&&naive!=null)h+=`<div class="card ok"><div class="label">Kosten</div><div class="value">€ ${optimized.toFixed(2)}</div><div class="unit">i.p.v. € ${naive.toFixed(2)} zonder plan</div></div>`;
   const arb=plan.arbitrage;
   if(arb&&arb.profitEur>0)h+=`<div class="card savings"><div class="label">Arbitrage winst</div><div class="value">\u20ac ${arb.profitEur.toFixed(2)}</div><div class="unit">${arb.cycles} cyclus(sen) \u00b7 ${arb.summary||''}</div></div>`;
+
+  // Replan indicator — shows when the feedback loop triggered a replan
+  if(plan.lastReplan){
+    const rp=plan.lastReplan;
+    const rpTime=toLocal(rp.timestampUtc);
+    const rpLabels={SoCDrift:'SoC-drift',PvDrift:'PV-drift',EvPluggedIn:'EV aangesloten',PriceUpdate:'Prijsupdate',LoadSpike:'Verbruikspiek',UserOverride:'Handmatig'};
+    const rpLabel=rpLabels[rp.trigger]||rp.trigger;
+    h+=`<div class="card warn"><div class="label">Herplanning</div><div class="value">${rpLabel}</div><div class="unit">${rpTime?fmtTime(rpTime):''} \u00b7 ${rp.reason||''}</div></div>`;
+  }
 
   // Next action card
   const futureActions=actions.filter(a=>{const e=toLocal(a.endUtc);return e&&e>now;}).sort((a,b)=>toLocal(a.startUtc)-toLocal(b.startUtc));
@@ -2088,16 +2111,528 @@ async function runSim(){
 
         return web.json_response(output)
 
+    async def price_index(_req: web.Request) -> web.Response:
+        """GET /price-index — current EPEX price position + wait advice."""
+        from datetime import datetime, timezone, timedelta
+        prices = _latest_prices
+        if not prices:
+            return web.json_response({"available": False, "reason": "Geen prijsdata"})
+
+        now_utc = datetime.now(timezone.utc)
+        now_hour = now_utc.replace(minute=0, second=0, microsecond=0)
+
+        # Build sorted price list for next 24h
+        hourly = []
+        for key, val in prices.items():
+            try:
+                h = datetime.fromisoformat(str(key).replace("Z", "+00:00"))
+                p = float(val) if not isinstance(val, dict) else float(val.get("price", val.get("priceEurKwh", 0)))
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if h >= now_hour - timedelta(hours=1) and h <= now_hour + timedelta(hours=24):
+                hourly.append({"hour": h.isoformat(), "price": round(p, 4)})
+        hourly.sort(key=lambda x: x["hour"])
+
+        if len(hourly) < 2:
+            return web.json_response({"available": False, "reason": "Onvoldoende prijsdata"})
+
+        all_prices = [h["price"] for h in hourly]
+        current = next((h["price"] for h in hourly
+                        if h["hour"][:13] == now_hour.isoformat()[:13]), all_prices[0])
+        min_price = min(all_prices)
+        max_price = max(all_prices)
+        price_range = max_price - min_price if max_price > min_price else 0.01
+
+        # Position 0-100 (0=cheapest, 100=most expensive)
+        position = round((current - min_price) / price_range * 100)
+
+        # Color: green < 25%, yellow 25-75%, red > 75%, dark green for negative
+        if current < 0:
+            color = "darkgreen"
+            label = "Negatief"
+        elif position <= 25:
+            color = "green"
+            label = "Goedkoop"
+        elif position <= 75:
+            color = "yellow"
+            label = "Gemiddeld"
+        else:
+            color = "red"
+            label = "Duur"
+
+        # Find cheapest upcoming hour
+        future = [h for h in hourly if h["hour"] > now_hour.isoformat()]
+        cheapest_future = min(future, key=lambda h: h["price"]) if future else None
+        hours_to_cheapest = None
+        if cheapest_future:
+            ch = datetime.fromisoformat(cheapest_future["hour"])
+            hours_to_cheapest = round((ch - now_utc).total_seconds() / 3600, 1)
+
+        # Wait advice: if price will drop ≥15% within next hours
+        wait_advice = None
+        if future:
+            for h in sorted(future, key=lambda x: x["price"]):
+                if h["price"] < current * 0.85:
+                    wait_h = datetime.fromisoformat(h["hour"])
+                    wait_hours = round((wait_h - now_utc).total_seconds() / 3600, 1)
+                    saving_pct = round((1 - h["price"] / current) * 100) if current > 0 else 0
+                    wait_advice = {
+                        "waitHours": wait_hours,
+                        "targetHour": h["hour"],
+                        "targetPrice": h["price"],
+                        "savingPercent": saving_pct,
+                    }
+                    break
+
+        return web.json_response({
+            "available": True,
+            "currentPrice": current,
+            "position": position,
+            "color": color,
+            "label": label,
+            "minPrice": min_price,
+            "maxPrice": max_price,
+            "cheapestHour": cheapest_future,
+            "hoursToCheapest": hours_to_cheapest,
+            "waitAdvice": wait_advice,
+            "hours": hourly,
+        })
+
+    async def schedule_appliance(req: web.Request) -> web.Response:
+        """POST /commands/schedule-appliance  body: { "appliance": "wasmachine", "deadline": "18:00" }"""
+        body = await req.json()
+        appliance_name = str(body.get("appliance", "")).lower().replace(" ", "_")
+        deadline_str = body.get("deadline")  # optional "HH:MM" or ISO
+
+        profiles = {
+            "wasmachine":  {"watts": 2000, "hours": 2.5, "label": "Wasmachine"},
+            "droger":      {"watts": 3000, "hours": 2.0, "label": "Droger"},
+            "vaatwasser":  {"watts": 1800, "hours": 2.5, "label": "Vaatwasser"},
+            "oven":        {"watts": 2500, "hours": 1.5, "label": "Oven"},
+            "ev_laden":    {"watts": 7400, "hours": 4.0, "label": "EV laden"},
+            "warmtepomp":  {"watts": 1500, "hours": 3.0, "label": "Warmtepomp"},
+            "airco":       {"watts": 1200, "hours": 2.0, "label": "Airco"},
+            "boiler":      {"watts": 2000, "hours": 1.0, "label": "Boiler"},
+        }
+
+        if appliance_name not in profiles:
+            return web.json_response({
+                "ok": False,
+                "error": f"Onbekend apparaat. Keuze: {', '.join(profiles.keys())}"
+            }, status=400)
+
+        profile = profiles[appliance_name]
+        kwh = profile["watts"] * profile["hours"] / 1000
+
+        # Find cheapest window in available prices
+        from datetime import datetime, timezone, timedelta
+        now_utc = datetime.now(timezone.utc)
+        now_hour = now_utc.replace(minute=0, second=0, microsecond=0)
+
+        hourly = []
+        for key, val in _latest_prices.items():
+            try:
+                h = datetime.fromisoformat(str(key).replace("Z", "+00:00"))
+                p = float(val) if not isinstance(val, dict) else float(val.get("price", val.get("priceEurKwh", 0)))
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if h >= now_hour:
+                hourly.append({"hour": h, "price": p})
+        hourly.sort(key=lambda x: x["hour"])
+
+        if not hourly:
+            return web.json_response({"ok": False, "error": "Geen prijsdata"}, status=400)
+
+        # Apply deadline filter
+        if deadline_str:
+            try:
+                if len(deadline_str) <= 5:  # "HH:MM"
+                    dh, dm = map(int, deadline_str.split(":"))
+                    deadline = now_utc.replace(hour=dh, minute=dm, second=0, microsecond=0)
+                    if deadline <= now_utc:
+                        deadline += timedelta(days=1)
+                else:
+                    deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+                hourly = [h for h in hourly if h["hour"] + timedelta(hours=profile["hours"]) <= deadline]
+            except (ValueError, TypeError):
+                pass
+
+        dur_slots = max(1, round(profile["hours"]))
+        if len(hourly) < dur_slots:
+            return web.json_response({"ok": False, "error": "Niet genoeg uren beschikbaar"}, status=400)
+
+        # Sliding window: find cheapest contiguous block
+        best_cost = float("inf")
+        best_idx = 0
+        worst_cost = 0
+        for i in range(len(hourly) - dur_slots + 1):
+            window_cost = sum(h["price"] for h in hourly[i:i + dur_slots]) * kwh / dur_slots
+            if window_cost < best_cost:
+                best_cost = window_cost
+                best_idx = i
+            if window_cost > worst_cost:
+                worst_cost = window_cost
+
+        best_window = hourly[best_idx:best_idx + dur_slots]
+        now_cost = sum(h["price"] for h in hourly[:dur_slots]) * kwh / dur_slots if len(hourly) >= dur_slots else best_cost
+        avg_price = sum(h["price"] for h in best_window) / len(best_window)
+
+        start_local = best_window[0]["hour"].astimezone().strftime("%H:%M")
+        end_local = (best_window[-1]["hour"] + timedelta(hours=1)).astimezone().strftime("%H:%M")
+
+        return web.json_response({
+            "ok": True,
+            "appliance": profile["label"],
+            "kwh": round(kwh, 1),
+            "watts": profile["watts"],
+            "durationHours": profile["hours"],
+            "bestStart": best_window[0]["hour"].isoformat(),
+            "bestStartLocal": start_local,
+            "bestEndLocal": end_local,
+            "bestCostEur": round(best_cost, 2),
+            "nowCostEur": round(now_cost, 2),
+            "worstCostEur": round(worst_cost, 2),
+            "savingsEur": round(worst_cost - best_cost, 2),
+            "savingsVsNowEur": round(now_cost - best_cost, 2),
+            "avgPriceEurKwh": round(avg_price, 4),
+            "advice": f"Start {profile['label']} om {start_local} (€{best_cost:.2f}, "
+                      f"besparing €{worst_cost - best_cost:.2f} vs duurste moment)",
+        })
+
+    async def set_reserve(req: web.Request) -> web.Response:
+        """POST /commands/reserve  body: { "target": "today|tomorrow", "time": "18:00", "socPercent": 90 }"""
+        body = await req.json()
+        target_day = str(body.get("target", "today"))
+        time_str = str(body.get("time", "18:00"))
+        soc_pct = int(body.get("socPercent", 90))
+
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        try:
+            hh, mm = map(int, time_str.split(":"))
+        except (ValueError, TypeError):
+            return web.json_response({"ok": False, "error": "time moet HH:MM zijn"}, status=400)
+
+        deadline = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        if target_day == "tomorrow":
+            deadline += timedelta(days=1)
+        elif deadline <= now:
+            deadline += timedelta(days=1)
+
+        # Push as EmsEvent to Saldox API
+        import aiohttp
+        api_url = os.environ.get("SALDOX_API_URL", "").rstrip("/")
+        api_token = os.environ.get("SALDOX_API_TOKEN", "")
+        if not api_url or not api_token:
+            return web.json_response({"ok": False, "error": "SALDOX_API_URL/TOKEN niet geconfigureerd"}, status=500)
+
+        event_body = {
+            "kind": "CarFullCharge",  # reuse existing event type for SoC target
+            "startUtc": now.isoformat(),
+            "endUtc": deadline.isoformat(),
+            "additionalKwh": soc_pct / 100.0 * 30.0,  # approximate kWh for target SoC
+            "notes": f"Reserve: batterij {soc_pct}% voor {time_str} ({target_day})",
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{api_url}/api/ems/events",
+                    json=event_body,
+                    headers={"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as resp:
+                    if resp.status in (200, 201):
+                        result = await resp.json()
+                        # Force plan refresh
+                        if _plan_poller is not None:
+                            asyncio.ensure_future(_plan_poller.tick())
+                        return web.json_response({
+                            "ok": True,
+                            "deadline": deadline.isoformat(),
+                            "socPercent": soc_pct,
+                            "eventId": result.get("id"),
+                        })
+                    else:
+                        text = await resp.text()
+                        return web.json_response({"ok": False, "error": f"API {resp.status}: {text}"}, status=500)
+        except Exception as ex:
+            return web.json_response({"ok": False, "error": str(ex)}, status=500)
+
+    # Airco control state: remembers original setpoints for restore.
+    _airco_state: dict[str, Any] = {}  # {entity_id: {"original_temp": float, "mode": str, "modified_at": str}}
+
+    async def airco_precondition(req: web.Request) -> web.Response:
+        """POST /commands/airco-precondition  body: { "entity_id": "climate.daikin", "economy_temp": 18, "action": "start|restore" }"""
+        body = await req.json()
+        entity_id = str(body.get("entity_id", ""))
+        action = str(body.get("action", "start"))
+        economy_temp = float(body.get("economy_temp", 18))
+
+        if not entity_id.startswith("climate."):
+            return web.json_response({"ok": False, "error": "entity_id must be a climate.* entity"}, status=400)
+
+        if action == "start":
+            # Read current state to remember original setpoint
+            try:
+                states = await ha.get_states([entity_id])
+                state_obj = states.get(entity_id, {})
+                attrs = state_obj.get("attributes", {})
+                original_temp = attrs.get("temperature", 21)
+                current_temp = attrs.get("current_temperature")
+                hvac_mode = state_obj.get("state", "off")
+
+                # Guard: skip boost if already cool enough (< normal setpoint)
+                normal_setpoint = 18.0  # default comfort temp
+                if current_temp is not None and float(current_temp) < normal_setpoint:
+                    _LOG.info("AIRCO: skip boost %s — already %.1f°C < %.1f°C",
+                              entity_id, float(current_temp), normal_setpoint)
+                    return web.json_response({
+                        "ok": True,
+                        "action": "skipped",
+                        "entity": entity_id,
+                        "reason": f"Al {current_temp}°C — onder {normal_setpoint}°C, boost niet nodig",
+                        "currentTemp": current_temp,
+                    })
+
+                # Remember original values
+                _airco_state[entity_id] = {
+                    "original_temp": original_temp,
+                    "original_mode": hvac_mode,
+                    "modified_at": datetime.now(timezone.utc).isoformat(),
+                    "economy_temp": economy_temp,
+                }
+
+                # Set boost temperature (16°C = aggressive pre-cool)
+                await ha.call_service("climate", "set_temperature", {
+                    "entity_id": entity_id,
+                    "temperature": economy_temp,
+                })
+                _LOG.info("AIRCO: boost %s → %.1f°C (was %.1f°C, current %.1f°C)",
+                          entity_id, economy_temp, original_temp, float(current_temp or 0))
+
+                return web.json_response({
+                    "ok": True,
+                    "action": "start",
+                    "entity": entity_id,
+                    "originalTemp": original_temp,
+                    "economyTemp": economy_temp,
+                    "originalMode": hvac_mode,
+                })
+            except Exception as ex:
+                return web.json_response({"ok": False, "error": str(ex)}, status=500)
+
+        elif action == "restore":
+            saved = _airco_state.get(entity_id)
+            if not saved:
+                return web.json_response({"ok": False, "error": f"Geen opgeslagen staat voor {entity_id}"}, status=400)
+
+            try:
+                await ha.call_service("climate", "set_temperature", {
+                    "entity_id": entity_id,
+                    "temperature": saved["original_temp"],
+                })
+                _LOG.info("AIRCO: restore %s → %.1f°C (was economy %.1f°C)",
+                          entity_id, saved["original_temp"], saved["economy_temp"])
+
+                result = {
+                    "ok": True,
+                    "action": "restore",
+                    "entity": entity_id,
+                    "restoredTemp": saved["original_temp"],
+                    "wasEconomyTemp": saved["economy_temp"],
+                    "economyDuration": saved["modified_at"],
+                }
+                del _airco_state[entity_id]
+                return web.json_response(result)
+            except Exception as ex:
+                return web.json_response({"ok": False, "error": str(ex)}, status=500)
+
+        elif action == "status":
+            return web.json_response({
+                "ok": True,
+                "activePreconditioning": {k: v for k, v in _airco_state.items()},
+            })
+
+        return web.json_response({"ok": False, "error": "action must be start|restore|status"}, status=400)
+
     app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/", ingress_page)
     app.router.add_get("/healthz", health)
     app.router.add_get("/status", status)
     app.router.add_get("/simulate", simulate)
+    app.router.add_get("/price-index", price_index)
     app.router.add_post("/commands/active-power-limit", set_power_limit)
     app.router.add_post("/commands/battery-mode", set_battery_mode)
     app.router.add_post("/commands/battery-charge-power", set_battery_charge_power)
     app.router.add_post("/commands/battery-discharge-power", set_battery_discharge_power)
     app.router.add_post("/commands/override", set_override)
+    app.router.add_post("/commands/schedule-appliance", schedule_appliance)
+    app.router.add_post("/commands/reserve", set_reserve)
+    async def mode_sync_status(_req: web.Request) -> web.Response:
+        """GET /mode-sync — compare Saldox planned mode vs actual HA inverter mode."""
+        ha_mode = {}
+        if _ha_controller is not None and hasattr(_ha_controller, 'get_current_mode'):
+            try:
+                ha_mode = await _ha_controller.get_current_mode()
+            except Exception as ex:
+                ha_mode = {"error": str(ex)}
+
+        # Determine what mode Saldox wants based on current plan
+        planned_mode = "auto"
+        planned_action = None
+        if _executor is not None and _latest_plan:
+            active = _executor._find_active_action(_latest_plan)
+            if active:
+                planned_action = active.get("kind", "")
+                planned_mode = {
+                    "ChargeBattery": "charge",
+                    "DischargeBattery": "discharge_selfuse",
+                    "ExportToGrid": "discharge",
+                    "SolarCharge": "solar_charge",
+                    "CurtailPv": "auto",
+                }.get(planned_action, "auto")
+
+        override_mode = _manual_override.get("mode", "auto")
+
+        # Check for conflict
+        ha_storage = ha_mode.get("storageMode", "unknown")
+        saldox_wants = override_mode if override_mode != "auto" else planned_mode
+        conflict = False
+        if ha_storage == "Self Use" and saldox_wants in ("charge", "discharge", "discharge_selfuse", "solar_charge"):
+            conflict = True
+        elif ha_storage == "Passive Mode" and saldox_wants == "auto":
+            conflict = True
+
+        return web.json_response({
+            "ok": True,
+            "haMode": ha_mode,
+            "saldoxPlannedMode": planned_mode,
+            "saldoxPlannedAction": planned_action,
+            "overrideMode": override_mode,
+            "effectiveMode": saldox_wants,
+            "conflict": conflict,
+            "leading": "saldox",  # configurable later
+        })
+
+    async def backfill_history(req: web.Request) -> web.Response:
+        """POST /commands/backfill  body: { "days": 30 }
+        Fetches historical data from HA and pushes to Saldox API bulk-import."""
+        body = await req.json()
+        backfill_days = int(body.get("days", 30))
+        backfill_days = min(backfill_days, 365)
+
+        from datetime import datetime, timezone, timedelta
+        now_utc = datetime.now(timezone.utc)
+        start = (now_utc - timedelta(days=backfill_days)).strftime("%Y-%m-%dT00:00:00+00:00")
+        end = now_utc.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+        # Entities to backfill with their metric names for the bulk-import API.
+        entities = {
+            "sensor.sofar_inverter_sofar_active_power_load_sys": ("consumption", 1000),  # kW→W
+            "sensor.sofar_inverter_sofar_battery_capacity_total": ("soc", 1),             # % direct
+            "sensor.sofar_inverter_sofar_pv_power_total": ("pv", 1000),                   # kW→W
+            "sensor.sofar_inverter_sofar_active_power_pcc_total": ("grid", 1000),         # kW→W (signed)
+            "sensor.sofar_inverter_sofar_battery_power_total": ("battery", 1000),          # kW→W
+        }
+
+        # Try to get outdoor temp from weather entity.
+        weather_entity = "weather.forecast_thuis"  # typical HA weather entity
+        weather_state = await ha.get_state(weather_entity)
+        if weather_state and weather_state.get("attributes", {}).get("temperature") is not None:
+            entities[weather_entity] = ("temperature_weather", 1)
+
+        all_readings: list[dict] = []
+        entity_counts: dict[str, int] = {}
+
+        for entity_id, (metric, scale) in entities.items():
+            _LOG.info("Backfill: fetching %s (%d days)...", entity_id, backfill_days)
+            try:
+                history = await ha.get_history(entity_id, start, end)
+            except Exception as ex:
+                _LOG.warning("Backfill: failed to fetch %s: %s", entity_id, ex)
+                continue
+
+            count = 0
+            for entry in history:
+                state_val = entry.get("state", "")
+                if state_val in ("unknown", "unavailable", ""):
+                    continue
+                try:
+                    val = float(state_val) * scale
+                except (ValueError, TypeError):
+                    continue
+
+                ts = entry.get("last_changed", entry.get("last_updated", ""))
+                if not ts:
+                    continue
+
+                # For grid power: split into import/export by sign.
+                if metric == "grid":
+                    if val >= 0:
+                        all_readings.append({"timestampUtc": ts, "metric": "grid_import", "value": abs(val)})
+                    else:
+                        all_readings.append({"timestampUtc": ts, "metric": "grid_export", "value": abs(val)})
+                elif metric == "temperature_weather":
+                    # Weather entity: temperature is in attributes, state is condition text.
+                    temp = entry.get("attributes", {}).get("temperature")
+                    if temp is not None:
+                        all_readings.append({"timestampUtc": ts, "metric": "temperature", "value": float(temp)})
+                else:
+                    all_readings.append({"timestampUtc": ts, "metric": metric, "value": val})
+                count += 1
+
+            entity_counts[entity_id] = count
+            _LOG.info("Backfill: %s → %d readings", entity_id, count)
+
+        if not all_readings:
+            return web.json_response({"ok": False, "error": "Geen historische data gevonden in HA", "entities": entity_counts})
+
+        # Push to Saldox API in chunks.
+        api_url = os.environ.get("SALDOX_API_URL", "").rstrip("/")
+        api_token = os.environ.get("SALDOX_API_TOKEN", "")
+        if not api_url or not api_token:
+            return web.json_response({"ok": False, "error": "SALDOX_API_URL/TOKEN niet geconfigureerd"}, status=500)
+
+        chunk_size = 2000
+        total_stored = 0
+        total_skipped = 0
+        errors = []
+
+        async with aiohttp.ClientSession() as session:
+            for i in range(0, len(all_readings), chunk_size):
+                chunk = all_readings[i:i + chunk_size]
+                try:
+                    async with session.post(
+                        f"{api_url}/api/ha/bulk-import",
+                        json={"readings": chunk},
+                        headers={"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=60),
+                    ) as resp:
+                        if resp.status == 200:
+                            result = await resp.json()
+                            total_stored += result.get("stored", 0)
+                            total_skipped += result.get("skipped", 0)
+                        else:
+                            text = await resp.text()
+                            errors.append(f"Chunk {i//chunk_size}: HTTP {resp.status} — {text[:200]}")
+                except Exception as ex:
+                    errors.append(f"Chunk {i//chunk_size}: {ex}")
+
+        _LOG.info("Backfill complete: %d stored, %d skipped, %d errors", total_stored, total_skipped, len(errors))
+        return web.json_response({
+            "ok": True,
+            "days": backfill_days,
+            "totalReadings": len(all_readings),
+            "stored": total_stored,
+            "skipped": total_skipped,
+            "entities": entity_counts,
+            "errors": errors[:5] if errors else [],
+        })
+
+    app.router.add_post("/commands/backfill", backfill_history)
+    app.router.add_post("/commands/airco-precondition", airco_precondition)
+    app.router.add_get("/mode-sync", mode_sync_status)
     return app
 
 
@@ -2138,6 +2673,13 @@ async def main() -> None:
     plan_task = None
     saldox_api_url = os.environ.get("SALDOX_API_URL", "").strip()
     saldox_api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
+    # DEV fallback: if env var not set, use hardcoded dev server URL.
+    if not saldox_api_url:
+        saldox_api_url = "http://100.73.219.127:5244"
+        _LOG.warning("SALDOX_API_URL not set — using dev fallback: %s", saldox_api_url)
+    if not saldox_api_token:
+        saldox_api_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Y2I3ZTczOC1jZmU3LTQ2NGMtYTAzMS1hODBiNmRiYTQxNzMiLCJlbWFpbCI6ImhoLmltbWluZ0BnbWFpbC5jb20iLCJqdGkiOiJjQ1gxd2VxZzYxRlJNVW1rOVQyeXRKIiwidHlwZSI6ImhhX2FwaV9rZXkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJDdXN0b21lciIsImV4cCI6MTgxNTM2ODY3OCwiaXNzIjoiRW5lcmd5QWR2aXNvciIsImF1ZCI6IkVuZXJneUFkdmlzb3IifQ.WnxuLRbclxKaT7uNWtpAteWApQcUubuJpYQvCqNmr7k"
+        _LOG.warning("SALDOX_API_TOKEN not set — using dev fallback")
     if saldox_api_url:
         prices = PricesPoller(
             ha=ha,
