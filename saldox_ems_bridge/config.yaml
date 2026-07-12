@@ -18,7 +18,6 @@ init: false
 hassio_api: true
 homeassistant_api: true
 host_network: true
-devices: true
 
 ports:
   8765/tcp: 8765
