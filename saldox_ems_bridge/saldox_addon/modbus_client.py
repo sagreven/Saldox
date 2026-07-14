@@ -1,5 +1,25 @@
 """Async Modbus client voor Sofar HYD. Ondersteunt zowel TCP als RTU (serial/RS485).
-Wraps pymodbus en doet de scaling/signed-conversie + retry logica."""
+Wraps pymodbus en doet de scaling/signed-conversie + retry logica.
+
+KNOWN ISSUE (2026-07-14): Direct Modbus vanuit de HA addon Docker container
+werkt NIET — pymodbus opent de serial port, verzendt frames, maar ontvangt
+NOOIT een response ("No response received after 3 retries").
+
+Bewezen feiten:
+  - RS485 hardware (CH9102 CDC-ACM USB adapter op /dev/ttyACM0) werkt: de
+    SolaX Modbus HA-integratie (draait in HA core process, NIET in Docker)
+    ontvangt wél responses van de inverter.
+  - Correcte settings: 19200 baud, 8N1 parity, FC03 (holding registers).
+    FC04 (input registers) wordt NIET beantwoord door Sofar HYD.
+  - SolaX Modbus (plugin: sofar/sofar_old) kan het inverter-serienummer
+    niet vinden → herkent het model niet → maakt geen entities aan.
+  - Vermoedelijke oorzaak: Docker container serial I/O verschilt van host
+    process (HA core). Mogelijk CDC-ACM driver/buffering issue.
+
+Workaround: gebruik HaSensorReader + HaBatteryController (leest HA sensors,
+stuurt via HA service calls). Direct Modbus is disabled tot de container-
+issue is opgelost.
+"""
 from __future__ import annotations
 
 import asyncio

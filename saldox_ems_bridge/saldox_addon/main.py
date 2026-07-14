@@ -2683,14 +2683,15 @@ async def main() -> None:
     )
     ha = HomeAssistantClient()
     ha_reader = HaSensorReader(ha)
-    modbus_controller = ModbusBatteryController(modbus)
-    # Keep HA controller as fallback (deprecated)
+    # Direct Modbus controller — disabled: werkt niet vanuit Docker container
+    # (zie modbus_client.py docstring). Bewaar voor als container-issue is opgelost.
+    # modbus_controller = ModbusBatteryController(modbus)
     ha_controller = HaBatteryController(ha)
 
     global _executor, _ha_controller
-    _ha_controller = modbus_controller
-    _executor = ActionExecutor(controller=modbus_controller)
-    _LOG.info("Action executor actief — battery control via direct Modbus writes")
+    _ha_controller = ha_controller
+    _executor = ActionExecutor(controller=ha_controller)
+    _LOG.info("Action executor actief — battery control via HA service calls (Modbus Docker issue)")
 
     poll_task = asyncio.create_task(poll_loop(modbus, ha, ha_reader, slug, friendly, interval), name="poll")
 

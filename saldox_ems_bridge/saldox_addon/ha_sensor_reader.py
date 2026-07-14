@@ -104,9 +104,17 @@ class HaSensorReader:
 class ModbusBatteryController:
     """Controls Sofar inverter battery via direct Modbus writes.
 
-    Replaces HaBatteryController which used HA/Solax service calls.
-    Direct Modbus is faster (<1s vs 10-15s), more reliable (no update button),
-    and doesn't conflict with Solax integration.
+    KNOWN ISSUE (2026-07-14): Direct Modbus vanuit de HA addon Docker container
+    werkt NIET. pymodbus verzendt frames maar ontvangt geen response.
+    Dezelfde pymodbus code werkt WEL vanuit het HA core process (bewezen via
+    SolaX Modbus integratie). Vermoedelijk CDC-ACM serial driver issue in Docker.
+
+    Gebruik HaBatteryController als werkende fallback totdat dit is opgelost.
+    Zie modbus_client.py docstring voor de volledige analyse.
+
+    Oorspronkelijk ontwerp: direct Modbus is sneller (<1s vs 10-15s) en
+    betrouwbaarder dan HA service calls, maar vereist werkende serial I/O
+    vanuit de container.
     """
 
     def __init__(self, modbus: SofarModbusClient, max_power_w: int = 10000):

@@ -5,8 +5,16 @@ DataLogger Stick documentation. Verifieer met `Sofar HYD 5-20KTL-3PH Modbus
 Protocol V1.x` PDF op de Sofar-website bij firmware-updates.
 
 Register-typen:
-  • holding (FC03) — read-write configuratie + writable controls
-  • input   (FC04) — read-only realtime metingen
+  • holding (FC03) — ALLE registers, ook metingen. De Sofar HYD beantwoordt
+    uitsluitend FC03. FC04 (input registers) geeft GEEN response.
+    Bevestigd via SolaX Modbus plugin_sofar.py: register_type = REG_HOLDING.
+  • De Modbus-documentatie zegt FC04 voor metingen, maar de firmware
+    implementeert alles als holding registers.
+
+Seriële verbinding:
+  • Baudrate: 19200 (NIET 9600 — bevestigd via SolaX Modbus default)
+  • Parity: N (8N1)
+  • USB-RS485 adapter: CH9102 CDC-ACM (/dev/ttyACM0, NIET ttyUSB0)
 
 Schaling: het `scale` veld zegt hoe de raw int omgezet wordt naar fysieke
 eenheid. Sofar gebruikt veel `0.1 kWh` / `0.01 V` / `0.001 kVar` schalen.
