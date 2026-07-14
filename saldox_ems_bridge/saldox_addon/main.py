@@ -55,6 +55,8 @@ SENSOR_MAP = {
     "today_import_kwh":       ("today_import_kwh","energy",         "total_increasing"),
     "today_export_kwh":       ("today_export_kwh","energy",         "total_increasing"),
     "today_consumption_kwh":  ("today_consumption_kwh","energy",    "total_increasing"),
+    "battery_input_today_kwh":("battery_in_today_kwh","energy",    "total_increasing"),
+    "battery_output_today_kwh":("battery_out_today_kwh","energy",  "total_increasing"),
     "inverter_temperature_c": ("temperature",    "temperature",     "measurement"),
     "inverter_status":        ("status",         None,              None),
     "battery_voltage_v":      ("battery_voltage","voltage",         "measurement"),
@@ -469,15 +471,17 @@ async def poll_loop(
     _modbus_ok = True  # track Modbus availability
     while True:
         try:
-            # Try direct Modbus first; if it fails, fall back to HA sensors.
+            # Always try direct Modbus first; retry on every cycle.
             readings = None
             source = "modbus"
-            if _modbus_ok:
-                try:
-                    readings = await client.read_all()
-                except Exception:
-                    _modbus_ok = False
-                    _LOG.info("Modbus niet beschikbaar — schakel over naar HA sensor bridge")
+            try:
+                readings = await client.read_all()
+                if not _modbus_ok:
+                    _LOG.info("Modbus hersteld — direct Modbus actief")
+                _modbus_ok = True
+            except Exception as ex:
+                _modbus_ok = False
+                _LOG.warning("Modbus read mislukt: %s — probeer HA sensors", ex)
 
             if readings is None:
                 readings = await ha_reader.read_all()
@@ -511,9 +515,8 @@ async def poll_loop(
             except Exception:
                 pass  # non-critical
 
-            # Only push to HA as separate sensors when reading from direct Modbus
-            # (HA sensors already exist from the Solax integration).
-            if source == "modbus":
+            # Always push to HA as separate sensors (Solax integration removed).
+            if readings:
                 for r in readings:
                     if r.name not in SENSOR_MAP:
                         continue

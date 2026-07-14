@@ -61,6 +61,8 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("today_consumption_kwh",    0x068A, 1, "input", 0.1,   "kWh"),
     Register("today_import_kwh",         0x068C, 1, "input", 0.1,   "kWh"),
     Register("today_export_kwh",         0x068E, 1, "input", 0.1,   "kWh"),
+    Register("battery_input_today_kwh",  0x0694, 1, "input", 0.1,   "kWh", description="Batterij geladen vandaag"),
+    Register("battery_output_today_kwh", 0x0696, 1, "input", 0.1,   "kWh", description="Batterij ontladen vandaag"),
 
     # ----- Extra input registers -----
     Register("battery_soh_percent",      0x060B, 1, "input", 1.0,   "%"),
