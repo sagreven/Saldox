@@ -162,10 +162,17 @@ class SofarModbusClient:
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
                     continue
                 raw_int = _decode(resp.registers, reg)
-                value: float | int = raw_int * reg.scale if reg.scale != 1.0 else raw_int
-                # Render integers als int wanneer schaal=1.0 voor cleaner JSON.
-                if reg.scale == 1.0:
-                    value = int(raw_int)
+                # Negatieve scale (bijv. -10) = multiply by |scale| en keer teken om.
+                # Sofar conventie: battery charge = negatief, maar wij willen + = laden.
+                if reg.scale < 0:
+                    value = raw_int * abs(reg.scale) * -1
+                elif reg.scale != 1.0:
+                    value = raw_int * reg.scale
+                else:
+                    value = raw_int
+                # Render integers als int wanneer schaal geheel is.
+                if abs(reg.scale) in (1.0, 10.0, 100.0) and isinstance(value, float):
+                    value = int(value)
                 out.append(Reading(name=reg.name, value=value, unit=reg.unit, description=reg.description))
             except Exception as ex:  # noqa: BLE001
                 _LOG.warning("Read faalde voor %s (0x%04X): %s", reg.name, reg.address, ex)
