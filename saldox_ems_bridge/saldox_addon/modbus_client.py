@@ -179,14 +179,17 @@ class SofarModbusClient:
         return out
 
     async def write_holding(self, reg: Register, value: int) -> None:
-        """Schrijf één holding-register (FC06). Voor 32-bit writes splitsen we
-        in twee 16-bit words (big-endian word order: high word eerst)."""
+        """Schrijf holding-register(s) via FC16 (write multiple registers).
+
+        Sofar HYD beantwoordt FC06 (write single) NIET — alleen FC16 werkt.
+        Voor 32-bit: big-endian word order (high word eerst).
+        """
         if reg.fc != "holding":
             raise ValueError(f"{reg.name} is geen writable holding-register")
         await self.connect()
         assert self._client is not None
         if reg.word_count == 1:
-            resp = await self._client.write_register(reg.address, value=value & 0xFFFF)
+            resp = await self._client.write_registers(reg.address, values=[value & 0xFFFF])
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
@@ -194,3 +197,28 @@ class SofarModbusClient:
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
+
+    async def write_passive_block(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
+        """Schrijf alle 3 Passive Mode registers als één FC16 blok (6 registers).
+
+        Sofar HYD vereist dat 0x1187-0x118C in één write worden geschreven.
+        Individuele writes geven exception 0x03 (Illegal Data Value).
+
+        Args:
+            grid_w: desired grid power in W (+ = import, - = export)
+            min_bat_w: min battery power in W (- = max discharge)
+            max_bat_w: max battery power in W (+ = max charge)
+        """
+        await self.connect()
+        assert self._client is not None
+
+        def to_u32_words(val: int) -> list[int]:
+            if val < 0:
+                val = val + 0x100000000  # two's complement
+            return [(val >> 16) & 0xFFFF, val & 0xFFFF]
+
+        values = to_u32_words(grid_w) + to_u32_words(min_bat_w) + to_u32_words(max_bat_w)
+        resp = await self._client.write_registers(0x1187, values=values)
+        if resp.isError():
+            raise RuntimeError(f"Passive block write faalde: {resp}")
+        _LOG.info("Modbus passive block: grid=%dW, min_bat=%dW, max_bat=%dW", grid_w, min_bat_w, max_bat_w)
