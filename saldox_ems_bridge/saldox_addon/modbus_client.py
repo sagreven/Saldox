@@ -128,11 +128,11 @@ class SofarModbusClient:
             try:
                 if reg.fc == "input":
                     resp = await self._client.read_input_registers(
-                        address=reg.address, count=reg.word_count, unit=self._unit_id
+                        reg.address, reg.word_count, self._unit_id
                     )
                 else:
                     resp = await self._client.read_holding_registers(
-                        address=reg.address, count=reg.word_count, unit=self._unit_id
+                        reg.address, reg.word_count, self._unit_id
                     )
                 if resp.isError():
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -154,12 +154,14 @@ class SofarModbusClient:
             raise ValueError(f"{reg.name} is geen writable holding-register")
         await self.connect()
         assert self._client is not None
+        # pymodbus 3.7: write_register(address, value, slave) — positional args
+        # voor compat met verschillende pymodbus versies.
         if reg.word_count == 1:
-            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF, unit=self._unit_id)
+            resp = await self._client.write_register(reg.address, value & 0xFFFF, self._unit_id)
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(address=reg.address, values=[hi, lo], unit=self._unit_id)
+            resp = await self._client.write_registers(reg.address, [hi, lo], self._unit_id)
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
