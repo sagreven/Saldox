@@ -70,28 +70,30 @@ class SofarModbusClient:
         self._timeout = timeout
         self._client: _ModbusClient | None = None
         self._lock = asyncio.Lock()
-        # pymodbus 3.5-3.9 compat: detect of 'slave' of 'unit' keyword nodig is
+        # pymodbus compat: detect welke keyword voor slave/unit ID
         self._slave_kwarg = self._detect_slave_kwarg()
+        _LOG.info("pymodbus slave kwarg detected: '%s' (unit_id=%s)", self._slave_kwarg, self._unit_id)
 
     @staticmethod
     def _detect_slave_kwarg() -> str:
         """Detect welke keyword pymodbus accepteert voor slave/unit ID."""
         import inspect
-        from pymodbus.client import AsyncModbusTcpClient
-        sig = inspect.signature(AsyncModbusTcpClient.read_holding_registers)
-        params = list(sig.parameters.keys())
-        if 'slave' in params:
-            return 'slave'
-        if 'unit' in params:
-            return 'unit'
-        # Fallback: probeer geen keyword (unit_id via client constructor)
-        return ''
+        try:
+            from pymodbus.client import AsyncModbusTcpClient
+            sig = inspect.signature(AsyncModbusTcpClient.read_holding_registers)
+            params = list(sig.parameters.keys())
+            _LOG.info("pymodbus read_holding_registers params: %s", params)
+            if 'slave' in params:
+                return 'slave'
+            if 'unit' in params:
+                return 'unit'
+        except Exception as ex:
+            _LOG.warning("pymodbus detect failed: %s, defaulting to 'slave'", ex)
+        return 'slave'  # default to slave (pymodbus 3.7+)
 
     def _slave_kw(self) -> dict:
         """Return {slave: id} of {unit: id} kwargs dict."""
-        if self._slave_kwarg:
-            return {self._slave_kwarg: self._unit_id}
-        return {}
+        return {self._slave_kwarg: self._unit_id}
 
     def _make_client(self) -> _ModbusClient:
         if self._connection_type == "serial":
