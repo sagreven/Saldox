@@ -34,43 +34,45 @@ class Register:
 # (300+ registers) is extensible via dezelfde dataclass.
 SOFAR_HYD_REGISTERS: list[Register] = [
     # ----- Inverter state -----
-    Register("inverter_status",          0x0404, 1, "input", 1.0,   "",        description="0=stand-by, 1=self-check, 2=normal, 3=fault, 4=permanent-fault"),
-    Register("inverter_temperature_c",   0x0418, 1, "input", 1.0,   "°C", signed=True),
-    Register("inverter_fault_code",      0x0414, 1, "input", 1.0,   "",        description="0 = geen fout; non-zero = error-code uit handleiding bijlage A"),
+    # NB: Sofar HYD beantwoordt ALLE registers via FC03 (holding), niet FC04 (input).
+    # SolaX Modbus plugin_sofar.py bevestigt: register_type = REG_HOLDING voor alles.
+    Register("inverter_status",          0x0404, 1, "holding", 1.0,   "",        description="0=stand-by, 1=self-check, 2=normal, 3=fault, 4=permanent-fault"),
+    Register("inverter_temperature_c",   0x0418, 1, "holding", 1.0,   "°C", signed=True),
+    Register("inverter_fault_code",      0x0414, 1, "holding", 1.0,   "",        description="0 = geen fout; non-zero = error-code uit handleiding bijlage A"),
 
     # ----- PV-input (DC) -----
-    Register("pv1_voltage_v",            0x0584, 1, "input", 0.1,   "V"),
-    Register("pv1_current_a",            0x0585, 1, "input", 0.01,  "A"),
-    Register("pv2_voltage_v",            0x0588, 1, "input", 0.1,   "V"),
-    Register("pv2_current_a",            0x0589, 1, "input", 0.01,  "A"),
-    Register("pv_total_power_w",         0x05C4, 2, "input", 100.0, "W",       description="Totale PV-productie (32-bit). Schaal × 100 (registers leveren 0.01 kW)"),
+    Register("pv1_voltage_v",            0x0584, 1, "holding", 0.1,   "V"),
+    Register("pv1_current_a",            0x0585, 1, "holding", 0.01,  "A"),
+    Register("pv2_voltage_v",            0x0588, 1, "holding", 0.1,   "V"),
+    Register("pv2_current_a",            0x0589, 1, "holding", 0.01,  "A"),
+    Register("pv_total_power_w",         0x05C4, 2, "holding", 100.0, "W",       description="Totale PV-productie (32-bit). Schaal × 100 (registers leveren 0.01 kW)"),
 
     # ----- AC output (grid-side) -----
-    Register("ac_active_power_w",        0x0485, 2, "input", 100.0, "W", signed=True, description="+ = export naar grid, − = import van grid"),
-    Register("ac_frequency_hz",          0x0480, 1, "input", 0.01,  "Hz"),
+    Register("ac_active_power_w",        0x0485, 2, "holding", 100.0, "W", signed=True, description="+ = export naar grid, − = import van grid"),
+    Register("ac_frequency_hz",          0x0480, 1, "holding", 0.01,  "Hz"),
 
     # ----- Battery -----
-    Register("battery_soc_percent",      0x0608, 1, "input", 1.0,   "%"),
-    Register("battery_power_w",          0x0606, 2, "input", 100.0, "W", signed=True, description="+ = laden, − = ontladen"),
-    Register("battery_voltage_v",        0x0604, 1, "input", 0.1,   "V"),
-    Register("battery_temperature_c",    0x060A, 1, "input", 0.1,   "°C", signed=True),
+    Register("battery_soc_percent",      0x0608, 1, "holding", 1.0,   "%"),
+    Register("battery_power_w",          0x0606, 2, "holding", 100.0, "W", signed=True, description="+ = laden, − = ontladen"),
+    Register("battery_voltage_v",        0x0604, 1, "holding", 0.1,   "V"),
+    Register("battery_temperature_c",    0x060A, 1, "holding", 0.1,   "°C", signed=True),
 
     # ----- Energy counters -----
-    Register("today_production_kwh",     0x0686, 1, "input", 0.1,   "kWh"),
-    Register("total_production_kwh",     0x0684, 2, "input", 0.1,   "kWh",     description="32-bit lifetime totaal"),
-    Register("today_consumption_kwh",    0x068A, 1, "input", 0.1,   "kWh"),
-    Register("today_import_kwh",         0x068C, 1, "input", 0.1,   "kWh"),
-    Register("today_export_kwh",         0x068E, 1, "input", 0.1,   "kWh"),
-    Register("battery_input_today_kwh",  0x0694, 1, "input", 0.1,   "kWh", description="Batterij geladen vandaag"),
-    Register("battery_output_today_kwh", 0x0696, 1, "input", 0.1,   "kWh", description="Batterij ontladen vandaag"),
+    Register("today_production_kwh",     0x0686, 1, "holding", 0.1,   "kWh"),
+    Register("total_production_kwh",     0x0684, 2, "holding", 0.1,   "kWh",     description="32-bit lifetime totaal"),
+    Register("today_consumption_kwh",    0x068A, 1, "holding", 0.1,   "kWh"),
+    Register("today_import_kwh",         0x068C, 1, "holding", 0.1,   "kWh"),
+    Register("today_export_kwh",         0x068E, 1, "holding", 0.1,   "kWh"),
+    Register("battery_input_today_kwh",  0x0694, 1, "holding", 0.1,   "kWh", description="Batterij geladen vandaag"),
+    Register("battery_output_today_kwh", 0x0696, 1, "holding", 0.1,   "kWh", description="Batterij ontladen vandaag"),
 
-    # ----- Extra input registers -----
-    Register("battery_soh_percent",      0x060B, 1, "input", 1.0,   "%"),
-    Register("battery_cycles",           0x060C, 2, "input", 1.0,   ""),
-    Register("load_power_w",             0x04AF, 2, "input", 100.0, "W",       description="Home consumption"),
-    Register("pv1_power_w",              0x0586, 2, "input", 100.0, "W"),
-    Register("pv2_power_w",              0x058A, 2, "input", 100.0, "W"),
-    Register("grid_frequency_hz",        0x0480, 1, "input", 0.01,  "Hz"),
+    # ----- Extra registers -----
+    Register("battery_soh_percent",      0x060B, 1, "holding", 1.0,   "%"),
+    Register("battery_cycles",           0x060C, 2, "holding", 1.0,   ""),
+    Register("load_power_w",             0x04AF, 2, "holding", 100.0, "W",       description="Home consumption"),
+    Register("pv1_power_w",              0x0586, 2, "holding", 100.0, "W"),
+    Register("pv2_power_w",              0x058A, 2, "holding", 100.0, "W"),
+    Register("grid_frequency_hz",        0x0480, 1, "holding", 0.01,  "Hz"),
 
     # ----- Writable controls (voor Saldox-commands → Modbus-write) -----
     # Active power limit (0-100% van max) — gebruikt voor PV-curtailment bij
