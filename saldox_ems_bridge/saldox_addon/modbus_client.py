@@ -106,7 +106,7 @@ class SofarModbusClient:
                 timeout=self._timeout,
             )
         return AsyncModbusTcpClient(
-            self._host,
+            host=self._host,
             port=self._port,
             timeout=self._timeout,
         )
@@ -150,14 +150,13 @@ class SofarModbusClient:
         assert self._client is not None
         for reg in registers:
             try:
-                kw = self._slave_kw()
                 if reg.fc == "input":
                     resp = await self._client.read_input_registers(
-                        address=reg.address, count=reg.word_count, **kw
+                        address=reg.address, count=reg.word_count
                     )
                 else:
                     resp = await self._client.read_holding_registers(
-                        address=reg.address, count=reg.word_count, **kw
+                        address=reg.address, count=reg.word_count
                     )
                 if resp.isError():
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -179,13 +178,12 @@ class SofarModbusClient:
             raise ValueError(f"{reg.name} is geen writable holding-register")
         await self.connect()
         assert self._client is not None
-        kw = self._slave_kw()
         if reg.word_count == 1:
-            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF, **kw)
+            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF)
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(address=reg.address, values=[hi, lo], **kw)
+            resp = await self._client.write_registers(address=reg.address, values=[hi, lo])
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
