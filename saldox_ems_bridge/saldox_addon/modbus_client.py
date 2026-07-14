@@ -70,30 +70,6 @@ class SofarModbusClient:
         self._timeout = timeout
         self._client: _ModbusClient | None = None
         self._lock = asyncio.Lock()
-        # pymodbus compat: detect welke keyword voor slave/unit ID
-        self._slave_kwarg = self._detect_slave_kwarg()
-        _LOG.info("pymodbus slave kwarg detected: '%s' (unit_id=%s)", self._slave_kwarg, self._unit_id)
-
-    @staticmethod
-    def _detect_slave_kwarg() -> str:
-        """Detect welke keyword pymodbus accepteert voor slave/unit ID."""
-        import inspect
-        try:
-            from pymodbus.client import AsyncModbusTcpClient
-            sig = inspect.signature(AsyncModbusTcpClient.read_holding_registers)
-            params = list(sig.parameters.keys())
-            _LOG.info("pymodbus read_holding_registers params: %s", params)
-            if 'slave' in params:
-                return 'slave'
-            if 'unit' in params:
-                return 'unit'
-        except Exception as ex:
-            _LOG.warning("pymodbus detect failed: %s, defaulting to 'slave'", ex)
-        return 'slave'  # default to slave (pymodbus 3.7+)
-
-    def _slave_kw(self) -> dict:
-        """Return {slave: id} of {unit: id} kwargs dict."""
-        return {self._slave_kwarg: self._unit_id}
 
     def _make_client(self) -> _ModbusClient:
         if self._connection_type == "serial":
@@ -116,6 +92,9 @@ class SofarModbusClient:
             if self._client and self._client.connected:
                 return
             self._client = self._make_client()
+            # pymodbus 3.x: zet slave/unit ID op het client-object zelf.
+            # Dit werkt in alle 3.x versies ongeacht keyword API changes.
+            self._client.slave = self._unit_id
             ok = await self._client.connect()
             if not ok:
                 if self._connection_type == "serial":
@@ -152,11 +131,11 @@ class SofarModbusClient:
             try:
                 if reg.fc == "input":
                     resp = await self._client.read_input_registers(
-                        address=reg.address, count=reg.word_count, **self._slave_kw()
+                        reg.address, reg.word_count
                     )
                 else:
                     resp = await self._client.read_holding_registers(
-                        address=reg.address, count=reg.word_count, **self._slave_kw()
+                        reg.address, reg.word_count
                     )
                 if resp.isError():
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -179,11 +158,11 @@ class SofarModbusClient:
         await self.connect()
         assert self._client is not None
         if reg.word_count == 1:
-            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF, **self._slave_kw())
+            resp = await self._client.write_register(reg.address, value & 0xFFFF)
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(address=reg.address, values=[hi, lo], **self._slave_kw())
+            resp = await self._client.write_registers(reg.address, [hi, lo])
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
