@@ -70,6 +70,28 @@ class SofarModbusClient:
         self._timeout = timeout
         self._client: _ModbusClient | None = None
         self._lock = asyncio.Lock()
+        # pymodbus 3.5-3.9 compat: detect of 'slave' of 'unit' keyword nodig is
+        self._slave_kwarg = self._detect_slave_kwarg()
+
+    @staticmethod
+    def _detect_slave_kwarg() -> str:
+        """Detect welke keyword pymodbus accepteert voor slave/unit ID."""
+        import inspect
+        from pymodbus.client import AsyncModbusTcpClient
+        sig = inspect.signature(AsyncModbusTcpClient.read_holding_registers)
+        params = list(sig.parameters.keys())
+        if 'slave' in params:
+            return 'slave'
+        if 'unit' in params:
+            return 'unit'
+        # Fallback: probeer geen keyword (unit_id via client constructor)
+        return ''
+
+    def _slave_kw(self) -> dict:
+        """Return {slave: id} of {unit: id} kwargs dict."""
+        if self._slave_kwarg:
+            return {self._slave_kwarg: self._unit_id}
+        return {}
 
     def _make_client(self) -> _ModbusClient:
         if self._connection_type == "serial":
@@ -126,13 +148,14 @@ class SofarModbusClient:
         assert self._client is not None
         for reg in registers:
             try:
+                kw = self._slave_kw()
                 if reg.fc == "input":
                     resp = await self._client.read_input_registers(
-                        reg.address, reg.word_count, self._unit_id
+                        address=reg.address, count=reg.word_count, **kw
                     )
                 else:
                     resp = await self._client.read_holding_registers(
-                        reg.address, reg.word_count, self._unit_id
+                        address=reg.address, count=reg.word_count, **kw
                     )
                 if resp.isError():
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -154,14 +177,13 @@ class SofarModbusClient:
             raise ValueError(f"{reg.name} is geen writable holding-register")
         await self.connect()
         assert self._client is not None
-        # pymodbus 3.7: write_register(address, value, slave) — positional args
-        # voor compat met verschillende pymodbus versies.
+        kw = self._slave_kw()
         if reg.word_count == 1:
-            resp = await self._client.write_register(reg.address, value & 0xFFFF, self._unit_id)
+            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF, **kw)
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(reg.address, [hi, lo], self._unit_id)
+            resp = await self._client.write_registers(address=reg.address, values=[hi, lo], **kw)
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
