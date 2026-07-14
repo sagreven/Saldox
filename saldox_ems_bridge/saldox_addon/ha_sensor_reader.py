@@ -34,36 +34,39 @@ class Reading:
 
 # Map: our internal register name → (HA entity_id, unit, scale factor).
 # Scale converts HA values (typically kW) to our internal format (W).
+# SolarmanV2 entity mapping (davidrapan/ha-solarman, profiel sofar_g3hyd.yaml)
+# WiFi logger LSW3 op 192.168.178.159:8899, SN 3154393423
+# NB: SolarmanV2 entities rapporteren in W (niet kW), dus scale=1.
 _SENSOR_MAP: dict[str, tuple[str, str, float]] = {
-    "pv_total_power_w":       ("sensor.sofar_inverter_sofar_pv_power_total",           "W",  1000),
-    "ac_active_power_w":      ("sensor.sofar_inverter_sofar_active_power_pcc_total",   "W",  1000),  # kW→W
-    "battery_soc_percent":    ("sensor.sofar_inverter_sofar_battery_capacity_total",    "%",  1),
-    "battery_power_w":        ("sensor.sofar_inverter_sofar_battery_power_total",       "W",  1000),  # kW→W
-    "battery_voltage_v":      ("sensor.sofar_inverter_sofar_battery_voltage_1",         "V",  1),
-    "battery_temperature_c":  ("sensor.sofar_inverter_sofar_battery_temperature_1",     "°C", 1),
-    "inverter_temperature_c": ("sensor.sofar_inverter_sofar_heatsink_temperature_1",    "°C", 1),
-    "today_production_kwh":   ("sensor.sofar_inverter_sofar_solar_generation_today",    "kWh", 1),
-    "total_production_kwh":   ("sensor.sofar_inverter_sofar_solar_generation_total",    "kWh", 1),
-    "today_import_kwh":       ("sensor.sofar_inverter_sofar_import_energy_today",       "kWh", 1),
-    "today_export_kwh":       ("sensor.sofar_inverter_sofar_export_energy_today",       "kWh", 1),
-    "today_consumption_kwh":  ("sensor.sofar_inverter_sofar_load_consumption_today",    "kWh", 1),
-    "battery_input_today_kwh":("sensor.sofar_inverter_sofar_battery_input_energy_today","kWh", 1),
-    "battery_output_today_kwh":("sensor.sofar_inverter_sofar_battery_output_energy_today","kWh", 1),
-    "battery_soh_percent":    ("sensor.sofar_inverter_sofar_battery_state_of_health_total", "%", 1),
-    "battery_cycles":         ("sensor.sofar_inverter_sofar_battery_charge_cycle_1",    "",   1),
-    "grid_frequency_hz":      ("sensor.sofar_inverter_sofar_grid_frequency",            "Hz", 1),
-    "inverter_status":        ("sensor.sofar_inverter_sofar_system_state",              "",   0),  # text
-    "pv1_power_w":            ("sensor.sofar_inverter_sofar_pv_power_1",               "W",  1000),
-    "pv2_power_w":            ("sensor.sofar_inverter_sofar_pv_power_2",               "W",  1000),
-    "load_power_w":           ("sensor.sofar_inverter_sofar_active_power_load_sys",     "W",  1000),
+    "pv_total_power_w":       ("sensor.sofar_hyd_pv_power",                "W",  1),
+    "ac_active_power_w":      ("sensor.sofar_hyd_activepower_pcc_total",   "W",  1),
+    "battery_soc_percent":    ("sensor.sofar_hyd_battery",                  "%",  1),
+    "battery_power_w":        ("sensor.sofar_hyd_battery_power",            "W",  1),
+    "battery_voltage_v":      ("sensor.sofar_hyd_battery_voltage",          "V",  1),
+    "battery_temperature_c":  ("sensor.sofar_hyd_battery_temperature",      "°C", 1),
+    "inverter_temperature_c": ("sensor.sofar_hyd_ambient_temperature_1",    "°C", 1),
+    "today_production_kwh":   ("sensor.sofar_hyd_today_production",         "kWh", 1),
+    "total_production_kwh":   ("sensor.sofar_hyd_total_production",         "kWh", 1),
+    "today_import_kwh":       ("sensor.sofar_hyd_today_energy_import",      "kWh", 1),
+    "today_export_kwh":       ("sensor.sofar_hyd_today_energy_export",      "kWh", 1),
+    "today_consumption_kwh":  ("sensor.sofar_hyd_today_load_consumption",   "kWh", 1),
+    "battery_input_today_kwh":("sensor.sofar_hyd_today_battery_charge",     "kWh", 1),
+    "battery_output_today_kwh":("sensor.sofar_hyd_today_battery_discharge", "kWh", 1),
+    "battery_soh_percent":    ("sensor.sofar_hyd_battery_soh",              "%",  1),
+    "battery_cycles":         ("sensor.sofar_hyd_battery_number_of_cycles", "",   1),
+    "grid_frequency_hz":      ("sensor.sofar_hyd_grid_frequency",           "Hz", 1),
+    "inverter_status":        ("sensor.sofar_hyd_inverter_status",          "",   0),  # text
+    "pv1_power_w":            ("sensor.sofar_hyd_pv1_power",               "W",  1),
+    "pv2_power_w":            ("sensor.sofar_hyd_pv2_power",               "W",  1),
+    "load_power_w":           ("sensor.sofar_hyd_activepower_load_sys",     "W",  1),
 }
 
-# Control entities for battery mode via HA services.
-_STORAGE_MODE_ENTITY = "select.sofar_inverter_energy_storage_mode"
-_PASSIVE_GRID_POWER = "number.sofar_inverter_passive_desired_grid_power"
-_PASSIVE_MAX_BAT_POWER = "number.sofar_inverter_passive_maximum_battery_power"
-_PASSIVE_MIN_BAT_POWER = "number.sofar_inverter_passive_minimum_battery_power"
-_PASSIVE_UPDATE_BUTTON = "button.sofar_inverter_passive_update_battery_charge_discharge"
+# Control entities for battery mode via SolarmanV2 HA services.
+_STORAGE_MODE_ENTITY = "select.sofar_hyd_storage_control_mode"
+_PASSIVE_GRID_POWER = "number.sofar_hyd_passive_grid_power"
+_PASSIVE_MAX_BAT_POWER = "number.sofar_hyd_passive_maximum_battery_power"
+_PASSIVE_MIN_BAT_POWER = "number.sofar_hyd_passive_minimum_battery_power"
+_PASSIVE_UPDATE_BUTTON = ""  # SolarmanV2 heeft geen update button nodig — writes zijn direct
 
 
 class HaSensorReader:
