@@ -51,8 +51,9 @@ def _decode(raw: list[int], reg: Register) -> int:
         if reg.signed and v & 0x8000:
             v -= 0x10000
         return v
-    # 32-bit: high word eerst (Sofar gebruikt big-endian word order).
-    hi, lo = raw[0], raw[1]
+    # 32-bit: Sofar HYD gebruikt little-endian word order (low word eerst).
+    # raw[0] = low word, raw[1] = high word.
+    lo, hi = raw[0], raw[1]
     v = (hi << 16) | lo
     if reg.signed and v & 0x80000000:
         v -= 0x100000000
@@ -172,7 +173,7 @@ class SofarModbusClient:
 
     async def write_holding(self, reg: Register, value: int) -> None:
         """Schrijf één holding-register (FC06). Voor 32-bit writes splitsen we
-        in twee 16-bit words (big-endian)."""
+        in twee 16-bit words (little-endian word order: low word eerst)."""
         if reg.fc != "holding":
             raise ValueError(f"{reg.name} is geen writable holding-register")
         await self.connect()
@@ -180,9 +181,9 @@ class SofarModbusClient:
         if reg.word_count == 1:
             resp = await self._client.write_register(reg.address, value=value & 0xFFFF)
         else:
-            hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(reg.address, values=[hi, lo])
+            hi = (value >> 16) & 0xFFFF
+            resp = await self._client.write_registers(reg.address, values=[lo, hi])
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
