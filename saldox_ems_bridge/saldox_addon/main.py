@@ -31,7 +31,7 @@ from .arbitrage_simulator import (
     APPLIANCE_PROFILES,
 )
 from .ha_api import HomeAssistantClient
-from .ha_sensor_reader import HaBatteryController, HaSensorReader
+from .ha_sensor_reader import HaBatteryController, HaSensorReader, ModbusBatteryController
 from .modbus_client import SofarModbusClient
 from .plan_poller import PlanPoller
 from .prices_poller import PricesPoller
@@ -58,6 +58,20 @@ SENSOR_MAP = {
     "inverter_temperature_c": ("temperature",    "temperature",     "measurement"),
     "inverter_status":        ("status",         None,              None),
     "battery_voltage_v":      ("battery_voltage","voltage",         "measurement"),
+    # New sensors — full inverter coverage without Solax integration
+    "battery_temperature_c":  ("battery_temperature", "temperature","measurement"),
+    "battery_soh_percent":    ("battery_soh",    None,              "measurement"),
+    "battery_cycles":         ("battery_cycles", None,              "total_increasing"),
+    "load_power_w":           ("load_power",     "power",           "measurement"),
+    "pv1_power_w":            ("pv1_power",      "power",           "measurement"),
+    "pv2_power_w":            ("pv2_power",      "power",           "measurement"),
+    "ac_frequency_hz":        ("grid_frequency", "frequency",       "measurement"),
+    "grid_frequency_hz":      ("grid_frequency_raw", "frequency",   "measurement"),
+    "inverter_fault_code":    ("fault_code",     None,              None),
+    "pv1_voltage_v":          ("pv1_voltage",    "voltage",         "measurement"),
+    "pv1_current_a":          ("pv1_current",    "current",         "measurement"),
+    "pv2_voltage_v":          ("pv2_voltage",    "voltage",         "measurement"),
+    "pv2_current_a":          ("pv2_current",    "current",         "measurement"),
 }
 
 
@@ -417,10 +431,16 @@ async def _run_executor(plan: dict[str, Any]) -> None:
                 return
             elif mode == "auto_sofar":
                 # Return to Sofar Self Use — inverter decides everything
-                await _ha_controller._ha.call_service("select", "select_option", {
-                    "entity_id": "select.sofar_inverter_energy_storage_mode",
-                    "option": "Self Use",
-                })
+                if isinstance(_ha_controller, ModbusBatteryController):
+                    try:
+                        await _ha_controller._modbus.write_holding(by_name("energy_storage_mode"), 0)
+                    except Exception as ex:
+                        _LOG.warning("Modbus write energy_storage_mode failed: %s", ex)
+                else:
+                    await _ha_controller._ha.call_service("select", "select_option", {
+                        "entity_id": "select.sofar_inverter_energy_storage_mode",
+                        "option": "Self Use",
+                    })
                 _ha_controller._last_mode = "sofar_auto"
                 _executor_status = "🔄 Sofar Auto (Self Use)"
                 return
@@ -2660,12 +2680,14 @@ async def main() -> None:
     )
     ha = HomeAssistantClient()
     ha_reader = HaSensorReader(ha)
+    modbus_controller = ModbusBatteryController(modbus)
+    # Keep HA controller as fallback (deprecated)
     ha_controller = HaBatteryController(ha)
 
     global _executor, _ha_controller
-    _ha_controller = ha_controller
-    _executor = ActionExecutor(controller=ha_controller)
-    _LOG.info("Action executor actief — battery control via HA Solax integration")
+    _ha_controller = modbus_controller
+    _executor = ActionExecutor(controller=modbus_controller)
+    _LOG.info("Action executor actief — battery control via direct Modbus writes")
 
     poll_task = asyncio.create_task(poll_loop(modbus, ha, ha_reader, slug, friendly, interval), name="poll")
 

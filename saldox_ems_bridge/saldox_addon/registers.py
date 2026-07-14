@@ -62,14 +62,35 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("today_import_kwh",         0x068C, 1, "input", 0.1,   "kWh"),
     Register("today_export_kwh",         0x068E, 1, "input", 0.1,   "kWh"),
 
+    # ----- Extra input registers -----
+    Register("battery_soh_percent",      0x060B, 1, "input", 1.0,   "%"),
+    Register("battery_cycles",           0x060C, 2, "input", 1.0,   ""),
+    Register("load_power_w",             0x04AF, 2, "input", 100.0, "W",       description="Home consumption"),
+    Register("pv1_power_w",              0x0586, 2, "input", 100.0, "W"),
+    Register("pv2_power_w",              0x058A, 2, "input", 100.0, "W"),
+    Register("grid_frequency_hz",        0x0480, 1, "input", 0.01,  "Hz"),
+
     # ----- Writable controls (voor Saldox-commands → Modbus-write) -----
     # Active power limit (0-100% van max) — gebruikt voor PV-curtailment bij
     # negatieve prijzen of overproductie.
     Register("active_power_limit_pct",   0x1004, 1, "holding", 1.0, "%",       description="Schrijf 0-100. Default 100 = geen begrenzing."),
+    # Remote on/off switch
+    Register("remote_switch",            0x1104, 1, "holding", 1.0, "",        description="0=Off, 1=On"),
     # Battery charge/discharge mode: 0=auto, 1=force-charge, 2=force-discharge, 3=standby
     Register("battery_mode",             0x1110, 1, "holding", 1.0, "",        description="0=auto, 1=force-charge, 2=force-discharge, 3=standby"),
     Register("battery_charge_power_w",   0x1112, 2, "holding", 100.0, "W",     description="Doel-laadvermogen wanneer mode=force-charge"),
     Register("battery_discharge_power_w",0x1114, 2, "holding", 100.0, "W",     description="Doel-ontlaadvermogen wanneer mode=force-discharge"),
+
+    # ----- Energy storage mode (writable) -----
+    Register("energy_storage_mode",      0x1200, 1, "holding", 1.0, "",        description="0=Self Use, 1=Time of Use, 2=Timing Mode, 3=Passive Mode, 4=Peak Cut"),
+
+    # ----- Passive Mode registers (writable, signed) -----
+    Register("passive_max_battery_power_w", 0x1187, 1, "holding", 10.0, "W", signed=True,
+             description="Max battery power in Passive Mode. + = charge limit"),
+    Register("passive_min_battery_power_w", 0x1188, 1, "holding", 10.0, "W", signed=True,
+             description="Min battery power in Passive Mode. - = discharge limit"),
+    Register("passive_desired_grid_power_w", 0x1189, 1, "holding", 10.0, "W", signed=True,
+             description="Desired grid power in Passive Mode. + = import, - = export"),
 ]
 
 

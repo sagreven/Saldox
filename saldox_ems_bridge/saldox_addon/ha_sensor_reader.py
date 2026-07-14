@@ -5,16 +5,21 @@ reads its HA sensor states and converts them to the same internal format
 that the direct Modbus reader produces. This allows the rest of the add-on
 (dashboard, plan poller, action executor) to work unchanged.
 
-Also provides battery control via HA service calls (energy storage mode,
-passive mode power limits) instead of direct Modbus writes.
+Also provides battery control via:
+  - ModbusBatteryController: direct Modbus writes (preferred, <1s latency)
+  - HaBatteryController: HA/Solax service calls (deprecated fallback)
 """
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from .ha_api import HomeAssistantClient
+from .registers import by_name
+
+if TYPE_CHECKING:
+    from .modbus_client import SofarModbusClient
 
 _LOG = logging.getLogger(__name__)
 
@@ -96,8 +101,122 @@ class HaSensorReader:
         pass
 
 
+class ModbusBatteryController:
+    """Controls Sofar inverter battery via direct Modbus writes.
+
+    Replaces HaBatteryController which used HA/Solax service calls.
+    Direct Modbus is faster (<1s vs 10-15s), more reliable (no update button),
+    and doesn't conflict with Solax integration.
+    """
+
+    def __init__(self, modbus: SofarModbusClient, max_power_w: int = 10000):
+        self._modbus = modbus
+        self._max_power_w = max_power_w
+        self._last_mode: str | None = None
+
+    @staticmethod
+    def _to_raw(reg_name: str, physical_value: int) -> int:
+        """Convert a physical value (e.g. watts) to raw register value using scale."""
+        reg = by_name(reg_name)
+        if reg.scale and reg.scale != 1.0:
+            return int(physical_value / reg.scale)
+        return physical_value
+
+    async def set_charge(self, power_w: int | None = None) -> str | None:
+        """Force-charge battery at given power."""
+        watts = power_w or self._max_power_w
+        if self._last_mode == f"charge_{watts}":
+            return None
+        try:
+            await self._modbus.write_holding(by_name("battery_mode"), 1)
+            raw = self._to_raw("battery_charge_power_w", watts)
+            await self._modbus.write_holding(by_name("battery_charge_power_w"), raw)
+        except Exception as ex:
+            _LOG.error("Modbus write failed (set_charge %d W): %s", watts, ex)
+            return f"FOUT: charge {watts} W — {ex}"
+
+        self._last_mode = f"charge_{watts}"
+        _LOG.info("MODBUS CONTROL: force-charge @ %d W", watts)
+        return f"Laden {watts} W (direct Modbus)"
+
+    async def set_discharge(self, power_w: int | None = None) -> str | None:
+        """Force-discharge battery at given power."""
+        watts = power_w or self._max_power_w
+        if self._last_mode == f"discharge_{watts}":
+            return None
+        try:
+            await self._modbus.write_holding(by_name("battery_mode"), 2)
+            raw = self._to_raw("battery_discharge_power_w", watts)
+            await self._modbus.write_holding(by_name("battery_discharge_power_w"), raw)
+        except Exception as ex:
+            _LOG.error("Modbus write failed (set_discharge %d W): %s", watts, ex)
+            return f"FOUT: discharge {watts} W — {ex}"
+
+        self._last_mode = f"discharge_{watts}"
+        _LOG.info("MODBUS CONTROL: force-discharge @ %d W", watts)
+        return f"Ontladen {watts} W (direct Modbus)"
+
+    async def set_auto(self) -> str | None:
+        """Auto mode -- inverter decides (self-use)."""
+        if self._last_mode == "auto":
+            return None
+        try:
+            await self._modbus.write_holding(by_name("battery_mode"), 0)
+        except Exception as ex:
+            _LOG.error("Modbus write failed (set_auto): %s", ex)
+            return f"FOUT: auto — {ex}"
+
+        self._last_mode = "auto"
+        _LOG.info("MODBUS CONTROL: auto (self-use)")
+        return "Auto (direct Modbus)"
+
+    async def set_standby(self) -> str | None:
+        """Standby -- battery does nothing."""
+        if self._last_mode == "standby":
+            return None
+        try:
+            await self._modbus.write_holding(by_name("battery_mode"), 3)
+        except Exception as ex:
+            _LOG.error("Modbus write failed (set_standby): %s", ex)
+            return f"FOUT: standby — {ex}"
+
+        self._last_mode = "standby"
+        _LOG.info("MODBUS CONTROL: standby")
+        return "Standby (direct Modbus)"
+
+    async def set_discharge_selfuse(self) -> str | None:
+        """Alias for set_auto -- battery covers home deficit."""
+        return await self.set_auto()
+
+    async def set_solar_charge(self) -> str | None:
+        """Alias for set_auto -- inverter handles PV charging."""
+        return await self.set_auto()
+
+    async def set_grid_charge(self, power_w: int | None = None) -> str | None:
+        """Grid charge -- force charge from grid at given power."""
+        return await self.set_charge(power_w)
+
+    async def restore_pv(self) -> None:
+        """Restore PV export limit to 100% after curtailment."""
+        try:
+            await self._modbus.write_holding(by_name("active_power_limit_pct"), 100)
+            _LOG.info("MODBUS CONTROL: PV export limit restored to 100%%")
+        except Exception as ex:
+            _LOG.warning("Modbus write failed (restore_pv): %s", ex)
+
+    async def get_current_mode(self) -> dict:
+        """Read the current battery mode from Modbus registers."""
+        return {
+            "storageMode": "direct-modbus",
+            "saldoxLastMode": self._last_mode,
+        }
+
+
 class HaBatteryController:
     """Controls the Sofar inverter battery via HA service calls.
+
+    DEPRECATED: Use ModbusBatteryController instead. This class is kept
+    as a fallback for environments where direct Modbus is not available.
 
     Uses the Solax integration's energy storage mode and passive mode
     power limits instead of direct Modbus writes.
