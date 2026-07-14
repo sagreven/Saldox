@@ -152,11 +152,11 @@ class SofarModbusClient:
             try:
                 if reg.fc == "input":
                     resp = await self._client.read_input_registers(
-                        address=reg.address, count=reg.word_count
+                        address=reg.address, count=reg.word_count, **self._slave_kw()
                     )
                 else:
                     resp = await self._client.read_holding_registers(
-                        address=reg.address, count=reg.word_count
+                        address=reg.address, count=reg.word_count, **self._slave_kw()
                     )
                 if resp.isError():
                     _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -179,11 +179,11 @@ class SofarModbusClient:
         await self.connect()
         assert self._client is not None
         if reg.word_count == 1:
-            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF)
+            resp = await self._client.write_register(address=reg.address, value=value & 0xFFFF, **self._slave_kw())
         else:
             hi = (value >> 16) & 0xFFFF
             lo = value & 0xFFFF
-            resp = await self._client.write_registers(address=reg.address, values=[hi, lo])
+            resp = await self._client.write_registers(address=reg.address, values=[hi, lo], **self._slave_kw())
         if resp.isError():
             raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
         _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)

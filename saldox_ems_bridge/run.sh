@@ -10,6 +10,8 @@ export MODBUS_HOST="$(bashio::config 'modbus.host' '192.168.1.50')"
 export MODBUS_PORT="$(bashio::config 'modbus.port' 502)"
 export MODBUS_SERIAL_PORT="$(bashio::config 'modbus.serial_port' '/dev/ttyUSB0')"
 export MODBUS_BAUDRATE="$(bashio::config 'modbus.baudrate' 9600)"
+export MODBUS_PARITY="$(bashio::config 'modbus.parity' 'N')"
+export MODBUS_STOPBITS="$(bashio::config 'modbus.stopbits' 1)"
 export MODBUS_UNIT_ID="$(bashio::config 'modbus.unit_id' 1)"
 export POLL_INTERVAL="$(bashio::config 'modbus.poll_interval_seconds' 10)"
 
@@ -28,7 +30,7 @@ export HA_SUPERVISOR_URL="http://supervisor/core"
 # SUPERVISOR_TOKEN al gezet door de runtime — alleen doorlinken voor duidelijkheid.
 
 if [ "${MODBUS_CONNECTION_TYPE}" = "serial" ]; then
-  bashio::log.info "Serial RTU via ${MODBUS_SERIAL_PORT} @ ${MODBUS_BAUDRATE} baud (unit ${MODBUS_UNIT_ID}) iedere ${POLL_INTERVAL}s"
+  bashio::log.info "Serial RTU via ${MODBUS_SERIAL_PORT} @ ${MODBUS_BAUDRATE} 8${MODBUS_PARITY}${MODBUS_STOPBITS} (unit ${MODBUS_UNIT_ID}) iedere ${POLL_INTERVAL}s"
 else
   bashio::log.info "Polling ${MODBUS_HOST}:${MODBUS_PORT} (unit ${MODBUS_UNIT_ID}) iedere ${POLL_INTERVAL}s"
 fi
