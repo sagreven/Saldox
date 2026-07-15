@@ -643,13 +643,26 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             return web.json_response({"ok": False, "error": str(ex)}, status=500)
 
     async def set_battery_mode(req: web.Request) -> web.Response:
+        """Set battery mode via ModbusBatteryController."""
         body = await req.json()
         mode = str(body.get("mode", ""))
-        if mode not in BATTERY_MODE_MAP:
-            return web.json_response({"ok": False, "error": f"mode must be one of {list(BATTERY_MODE_MAP)}"}, status=400)
+        controller = _ha_controller
         try:
-            await client.write_holding(by_name("battery_mode"), BATTERY_MODE_MAP[mode])
-            return web.json_response({"ok": True, "mode": mode})
+            if mode == "auto":
+                result = await controller.set_auto()
+            elif mode == "standby":
+                result = await controller.set_standby()
+            elif mode == "force-charge":
+                watts = int(body.get("watts", 0)) or None
+                result = await controller.set_charge(watts)
+            elif mode == "force-discharge":
+                watts = int(body.get("watts", 0)) or None
+                result = await controller.set_discharge(watts)
+            elif mode == "solar-charge":
+                result = await controller.set_solar_charge()
+            else:
+                return web.json_response({"ok": False, "error": f"mode must be one of: auto, standby, force-charge, force-discharge, solar-charge"}, status=400)
+            return web.json_response({"ok": True, "mode": mode, "result": result})
         except Exception as ex:  # noqa: BLE001
             return web.json_response({"ok": False, "error": str(ex)}, status=500)
 
@@ -659,10 +672,8 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         if watts < 0:
             return web.json_response({"ok": False, "error": "watts moet >= 0 zijn"}, status=400)
         try:
-            # Schaal × 100 omdat het register 0.01 kW = 10 W resolutie heeft.
-            raw = watts // 100
-            await client.write_holding(by_name("battery_charge_power_w"), raw)
-            return web.json_response({"ok": True, "watts": watts})
+            result = await _ha_controller.set_charge(watts)
+            return web.json_response({"ok": True, "watts": watts, "result": result})
         except Exception as ex:  # noqa: BLE001
             return web.json_response({"ok": False, "error": str(ex)}, status=500)
 
@@ -672,9 +683,8 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         if watts < 0:
             return web.json_response({"ok": False, "error": "watts moet >= 0 zijn"}, status=400)
         try:
-            raw = watts // 100
-            await client.write_holding(by_name("battery_discharge_power_w"), raw)
-            return web.json_response({"ok": True, "watts": watts})
+            result = await _ha_controller.set_discharge(watts)
+            return web.json_response({"ok": True, "watts": watts, "result": result})
         except Exception as ex:  # noqa: BLE001
             return web.json_response({"ok": False, "error": str(ex)}, status=500)
 
