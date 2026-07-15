@@ -51,9 +51,11 @@ def _decode(raw: list[int], reg: Register) -> int:
         if reg.signed and v & 0x8000:
             v -= 0x10000
         return v
-    # 32-bit: Sofar HYD gebruikt big-endian word order (high word eerst).
-    # raw[0] = high word, raw[1] = low word.
-    hi, lo = raw[0], raw[1]
+    # 32-bit word order: default big-endian (hi, lo), swap_words=True → little-endian (lo, hi).
+    if reg.swap_words:
+        lo, hi = raw[0], raw[1]
+    else:
+        hi, lo = raw[0], raw[1]
     v = (hi << 16) | lo
     if reg.signed and v & 0x80000000:
         v -= 0x100000000
@@ -212,12 +214,13 @@ class SofarModbusClient:
         await self.connect()
         assert self._client is not None
 
-        def to_u32_words(val: int) -> list[int]:
+        def to_u32_words_le(val: int) -> list[int]:
+            """Little-endian word order: [lo, hi] (passive registers)."""
             if val < 0:
                 val = val + 0x100000000  # two's complement
-            return [(val >> 16) & 0xFFFF, val & 0xFFFF]
+            return [val & 0xFFFF, (val >> 16) & 0xFFFF]
 
-        values = to_u32_words(grid_w) + to_u32_words(min_bat_w) + to_u32_words(max_bat_w)
+        values = to_u32_words_le(grid_w) + to_u32_words_le(min_bat_w) + to_u32_words_le(max_bat_w)
         resp = await self._client.write_registers(0x1187, values=values)
         if resp.isError():
             raise RuntimeError(f"Passive block write faalde: {resp}")

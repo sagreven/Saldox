@@ -31,6 +31,7 @@ class Register:
     scale: float
     unit: str
     signed: bool = False
+    swap_words: bool = False  # True = little-endian word order (low word eerst)
     description: str = ""
 
 
@@ -84,11 +85,11 @@ SOFAR_HYD_REGISTERS: list[Register] = [
              description="0=Self Use, 1=Time of Use, 2=Optimized Revenue, 3=Passive, 4=Peak Shaving"),
 
     # ----- Passive Mode registers (S32, little-endian word order) -----
-    Register("passive_desired_grid_power_w", 0x1187, 2, "holding", 1.0, "W", signed=True,
+    Register("passive_desired_grid_power_w", 0x1187, 2, "holding", 1.0, "W", signed=True, swap_words=True,
              description="Desired grid power in Passive Mode. + = import, - = export"),
-    Register("passive_min_battery_power_w",  0x1189, 2, "holding", 1.0, "W", signed=True,
+    Register("passive_min_battery_power_w",  0x1189, 2, "holding", 1.0, "W", signed=True, swap_words=True,
              description="Min battery power in Passive Mode. - = discharge limit"),
-    Register("passive_max_battery_power_w",  0x118B, 2, "holding", 1.0, "W", signed=True,
+    Register("passive_max_battery_power_w",  0x118B, 2, "holding", 1.0, "W", signed=True, swap_words=True,
              description="Max battery power in Passive Mode. + = charge limit"),
 ]
 
