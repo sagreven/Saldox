@@ -237,16 +237,6 @@ class ModbusBatteryController:
             "storageMode": "direct-modbus",
             "saldoxLastMode": self._last_mode,
         }
-            _LOG.info("MODBUS CONTROL: PV export limit restored to 100%%")
-        except Exception as ex:
-            _LOG.warning("Modbus write failed (restore_pv): %s", ex)
-
-    async def get_current_mode(self) -> dict:
-        """Read the current battery mode from Modbus registers."""
-        return {
-            "storageMode": "direct-modbus",
-            "saldoxLastMode": self._last_mode,
-        }
 
 
 class HaBatteryController:
