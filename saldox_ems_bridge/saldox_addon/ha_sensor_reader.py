@@ -105,112 +105,138 @@ class HaSensorReader:
 
 
 class ModbusBatteryController:
-    """Controls Sofar inverter battery via direct Modbus writes.
+    """Controls Sofar HYD battery via direct Modbus writes over RS485.
 
-    KNOWN ISSUE (2026-07-14): Direct Modbus vanuit de HA addon Docker container
-    werkt NIET. pymodbus verzendt frames maar ontvangt geen response.
-    Dezelfde pymodbus code werkt WEL vanuit het HA core process (bewezen via
-    SolaX Modbus integratie). Vermoedelijk CDC-ACM serial driver issue in Docker.
+    Bewezen werkend op 2026-07-14: 9600 baud, FC16 (write multiple), Passive Mode
+    block write (0x1187-0x118C, 6 registers in één FC16 call).
 
-    Gebruik HaBatteryController als werkende fallback totdat dit is opgelost.
-    Zie modbus_client.py docstring voor de volledige analyse.
+    Sofar Passive Mode conventie:
+      - grid_power: + = import van grid, - = export naar grid
+      - min_battery: - = max discharge power (negatief!)
+      - max_battery: + = max charge power
 
-    Oorspronkelijk ontwerp: direct Modbus is sneller (<1s vs 10-15s) en
-    betrouwbaarder dan HA service calls, maar vereist werkende serial I/O
-    vanuit de container.
+    FC06 (write single) werkt NIET op deze firmware — alleen FC16.
     """
 
-    def __init__(self, modbus: SofarModbusClient, max_power_w: int = 10000):
+    def __init__(self, modbus: SofarModbusClient, max_power_w: int = 15000):
         self._modbus = modbus
         self._max_power_w = max_power_w
         self._last_mode: str | None = None
 
-    @staticmethod
-    def _to_raw(reg_name: str, physical_value: int) -> int:
-        """Convert a physical value (e.g. watts) to raw register value using scale."""
-        reg = by_name(reg_name)
-        if reg.scale and reg.scale != 1.0:
-            return int(physical_value / reg.scale)
-        return physical_value
+    async def _set_storage_mode(self, mode: int) -> None:
+        """Set energy storage mode via FC16. 0=SelfUse, 3=Passive, etc."""
+        await self._modbus.write_holding(by_name("energy_storage_mode"), mode)
 
     async def set_charge(self, power_w: int | None = None) -> str | None:
-        """Force-charge battery at given power."""
+        """Force-charge battery via Passive Mode."""
         watts = power_w or self._max_power_w
         if self._last_mode == f"charge_{watts}":
             return None
         try:
-            await self._modbus.write_holding(by_name("battery_mode"), 1)
-            raw = self._to_raw("battery_charge_power_w", watts)
-            await self._modbus.write_holding(by_name("battery_charge_power_w"), raw)
+            await self._set_storage_mode(3)  # Passive
+            await self._modbus.write_passive_block(
+                grid_w=watts,       # import from grid for charging
+                min_bat_w=watts,    # force charge (positive min = force charge)
+                max_bat_w=watts,    # max charge rate
+            )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_charge %d W): %s", watts, ex)
             return f"FOUT: charge {watts} W — {ex}"
-
         self._last_mode = f"charge_{watts}"
         _LOG.info("MODBUS CONTROL: force-charge @ %d W", watts)
         return f"Laden {watts} W (direct Modbus)"
 
     async def set_discharge(self, power_w: int | None = None) -> str | None:
-        """Force-discharge battery at given power."""
+        """Force-discharge battery via Passive Mode."""
         watts = power_w or self._max_power_w
         if self._last_mode == f"discharge_{watts}":
             return None
         try:
-            await self._modbus.write_holding(by_name("battery_mode"), 2)
-            raw = self._to_raw("battery_discharge_power_w", watts)
-            await self._modbus.write_holding(by_name("battery_discharge_power_w"), raw)
+            await self._set_storage_mode(3)  # Passive
+            await self._modbus.write_passive_block(
+                grid_w=-watts,      # export to grid
+                min_bat_w=-watts,   # force discharge (negative = discharge)
+                max_bat_w=0,        # no charging
+            )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_discharge %d W): %s", watts, ex)
             return f"FOUT: discharge {watts} W — {ex}"
-
         self._last_mode = f"discharge_{watts}"
         _LOG.info("MODBUS CONTROL: force-discharge @ %d W", watts)
         return f"Ontladen {watts} W (direct Modbus)"
 
     async def set_auto(self) -> str | None:
-        """Auto mode -- inverter decides (self-use)."""
+        """Baseline mode: Passive, battery covers deficit, no grid charge."""
         if self._last_mode == "auto":
             return None
         try:
-            await self._modbus.write_holding(by_name("battery_mode"), 0)
+            await self._set_storage_mode(3)  # Passive
+            await self._modbus.write_passive_block(
+                grid_w=0,                    # no grid import target
+                min_bat_w=-self._max_power_w, # allow full discharge
+                max_bat_w=0,                 # no active charging
+            )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_auto): %s", ex)
             return f"FOUT: auto — {ex}"
-
         self._last_mode = "auto"
-        _LOG.info("MODBUS CONTROL: auto (self-use)")
-        return "Auto (direct Modbus)"
+        _LOG.info("MODBUS CONTROL: auto/baseline (Passive, grid=0)")
+        return "Baseline (direct Modbus)"
 
     async def set_standby(self) -> str | None:
-        """Standby -- battery does nothing."""
+        """Standby: battery does nothing."""
         if self._last_mode == "standby":
             return None
         try:
-            await self._modbus.write_holding(by_name("battery_mode"), 3)
+            await self._set_storage_mode(3)  # Passive
+            await self._modbus.write_passive_block(
+                grid_w=0,
+                min_bat_w=0,    # no discharge
+                max_bat_w=0,    # no charge
+            )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_standby): %s", ex)
             return f"FOUT: standby — {ex}"
-
         self._last_mode = "standby"
         _LOG.info("MODBUS CONTROL: standby")
         return "Standby (direct Modbus)"
 
     async def set_discharge_selfuse(self) -> str | None:
-        """Alias for set_auto -- battery covers home deficit."""
+        """Battery covers home deficit, PV surplus to grid."""
         return await self.set_auto()
 
     async def set_solar_charge(self) -> str | None:
-        """Alias for set_auto -- inverter handles PV charging."""
-        return await self.set_auto()
+        """Charge from PV only, no grid import."""
+        if self._last_mode == "solar_charge":
+            return None
+        try:
+            await self._set_storage_mode(3)  # Passive
+            await self._modbus.write_passive_block(
+                grid_w=0,                    # no grid import
+                min_bat_w=0,                 # no discharge
+                max_bat_w=self._max_power_w,  # charge from PV surplus
+            )
+        except Exception as ex:
+            _LOG.error("Modbus write failed (set_solar_charge): %s", ex)
+            return f"FOUT: solar_charge — {ex}"
+        self._last_mode = "solar_charge"
+        _LOG.info("MODBUS CONTROL: solar charge (PV only)")
+        return "Zonne-laden (direct Modbus)"
 
     async def set_grid_charge(self, power_w: int | None = None) -> str | None:
-        """Grid charge -- force charge from grid at given power."""
+        """Grid charge: force charge from grid."""
         return await self.set_charge(power_w)
 
     async def restore_pv(self) -> None:
-        """Restore PV export limit to 100% after curtailment."""
-        try:
-            await self._modbus.write_holding(by_name("active_power_limit_pct"), 100)
+        """Restore PV export — no-op in Passive Mode (PV always active)."""
+        _LOG.info("MODBUS CONTROL: restore_pv (no-op in Passive Mode)")
+
+    async def get_current_mode(self) -> dict:
+        """Read the current battery mode from last known state."""
+        return {
+            "storageMode": "direct-modbus",
+            "saldoxLastMode": self._last_mode,
+        }
             _LOG.info("MODBUS CONTROL: PV export limit restored to 100%%")
         except Exception as ex:
             _LOG.warning("Modbus write failed (restore_pv): %s", ex)
