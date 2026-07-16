@@ -2708,7 +2708,7 @@ async def main() -> None:
     saldox_api_token = os.environ.get("SALDOX_API_TOKEN", "").strip()
     # DEV fallback: if env var not set, use hardcoded dev server URL.
     if not saldox_api_url:
-        saldox_api_url = "http://100.73.219.127:5244"
+        saldox_api_url = "http://127.0.0.1:5244"
         _LOG.warning("SALDOX_API_URL not set — using dev fallback: %s", saldox_api_url)
     if not saldox_api_token:
         saldox_api_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4Y2I3ZTczOC1jZmU3LTQ2NGMtYTAzMS1hODBiNmRiYTQxNzMiLCJlbWFpbCI6ImhoLmltbWluZ0BnbWFpbC5jb20iLCJqdGkiOiJjQ1gxd2VxZzYxRlJNVW1rOVQyeXRKIiwidHlwZSI6ImhhX2FwaV9rZXkiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJDdXN0b21lciIsImV4cCI6MTgxNTM2ODY3OCwiaXNzIjoiRW5lcmd5QWR2aXNvciIsImF1ZCI6IkVuZXJneUFkdmlzb3IifQ.WnxuLRbclxKaT7uNWtpAteWApQcUubuJpYQvCqNmr7k"
