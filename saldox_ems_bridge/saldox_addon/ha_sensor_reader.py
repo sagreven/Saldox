@@ -166,7 +166,11 @@ class ModbusBatteryController:
         return f"Ontladen {watts} W (direct Modbus)"
 
     async def set_auto(self) -> str | None:
-        """Baseline mode: Passive, battery covers deficit, no grid charge."""
+        """Baseline mode: Passive, PV charges battery, no grid charge.
+
+        grid_w=0 prevents grid import for charging. max_bat allows PV surplus
+        to flow into the battery. min_bat allows discharge to cover load.
+        """
         if self._last_mode == "auto":
             return None
         try:
@@ -174,13 +178,13 @@ class ModbusBatteryController:
             await self._modbus.write_passive_block(
                 grid_w=0,                    # no grid import target
                 min_bat_w=-self._max_power_w, # allow full discharge
-                max_bat_w=0,                 # no active charging
+                max_bat_w=self._max_power_w,  # allow PV surplus charging
             )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_auto): %s", ex)
             return f"FOUT: auto — {ex}"
         self._last_mode = "auto"
-        _LOG.info("MODBUS CONTROL: auto/baseline (Passive, grid=0)")
+        _LOG.info("MODBUS CONTROL: auto/baseline (Passive, grid=0, PV charge OK)")
         return "Baseline (direct Modbus)"
 
     async def set_standby(self) -> str | None:
