@@ -122,10 +122,22 @@ class ModbusBatteryController:
         self._modbus = modbus
         self._max_power_w = max_power_w
         self._last_mode: str | None = None
+        # Track last written values for periodic verification.
+        self._last_written: dict[str, int] | None = None
 
     async def _set_storage_mode(self, mode: int) -> None:
         """Set energy storage mode via FC16. 0=SelfUse, 3=Passive, etc."""
         await self._modbus.write_holding(by_name("energy_storage_mode"), mode)
+
+    async def _write_passive(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
+        """Write passive block and track values for later verification."""
+        await self._modbus.write_passive_block(grid_w, min_bat_w, max_bat_w)
+        self._last_written = {"grid_w": grid_w, "min_bat_w": min_bat_w, "max_bat_w": max_bat_w}
+
+    @property
+    def last_written_registers(self) -> dict[str, int] | None:
+        """Last written passive register values (for external monitoring)."""
+        return self._last_written
 
     async def set_charge(self, power_w: int | None = None) -> str | None:
         """Force-charge battery via Passive Mode."""
@@ -134,7 +146,7 @@ class ModbusBatteryController:
             return None
         try:
             await self._set_storage_mode(3)  # Passive
-            await self._modbus.write_passive_block(
+            await self._write_passive(
                 grid_w=watts,       # import from grid for charging
                 min_bat_w=watts,    # force charge (positive min = force charge)
                 max_bat_w=watts,    # max charge rate
@@ -153,7 +165,7 @@ class ModbusBatteryController:
             return None
         try:
             await self._set_storage_mode(3)  # Passive
-            await self._modbus.write_passive_block(
+            await self._write_passive(
                 grid_w=-watts,      # export to grid
                 min_bat_w=-watts,   # force discharge (negative = discharge)
                 max_bat_w=0,        # no charging
@@ -175,7 +187,7 @@ class ModbusBatteryController:
             return None
         try:
             await self._set_storage_mode(3)  # Passive
-            await self._modbus.write_passive_block(
+            await self._write_passive(
                 grid_w=0,                    # no grid import target
                 min_bat_w=-self._max_power_w, # allow full discharge
                 max_bat_w=self._max_power_w,  # allow PV surplus charging
@@ -193,7 +205,7 @@ class ModbusBatteryController:
             return None
         try:
             await self._set_storage_mode(3)  # Passive
-            await self._modbus.write_passive_block(
+            await self._write_passive(
                 grid_w=0,
                 min_bat_w=0,    # no discharge
                 max_bat_w=0,    # no charge
@@ -215,7 +227,7 @@ class ModbusBatteryController:
             return None
         try:
             await self._set_storage_mode(3)  # Passive
-            await self._modbus.write_passive_block(
+            await self._write_passive(
                 grid_w=0,                    # no grid import
                 min_bat_w=0,                 # no discharge
                 max_bat_w=self._max_power_w,  # charge from PV surplus

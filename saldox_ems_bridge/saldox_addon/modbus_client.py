@@ -206,6 +206,9 @@ class SofarModbusClient:
         Sofar HYD vereist dat 0x1187-0x118C in één write worden geschreven.
         Individuele writes geven exception 0x03 (Illegal Data Value).
 
+        After writing, reads back the registers and logs a warning if the
+        values don't match (detects word-order or communication issues).
+
         Args:
             grid_w: desired grid power in W (+ = import, - = export)
             min_bat_w: min battery power in W (- = max discharge)
@@ -224,4 +227,43 @@ class SofarModbusClient:
         resp = await self._client.write_registers(0x1187, values=values)
         if resp.isError():
             raise RuntimeError(f"Passive block write faalde: {resp}")
-        _LOG.info("Modbus passive block: grid=%dW, min_bat=%dW, max_bat=%dW", grid_w, min_bat_w, max_bat_w)
+        _LOG.info("Modbus passive block WRITE: grid=%dW, min_bat=%dW, max_bat=%dW", grid_w, min_bat_w, max_bat_w)
+
+        # Verify: read back and compare.
+        await self._verify_passive_block(grid_w, min_bat_w, max_bat_w)
+
+    async def _verify_passive_block(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
+        """Read back passive registers and warn if values don't match what was written."""
+        assert self._client is not None
+        try:
+            resp = await self._client.read_holding_registers(0x1187, count=6)
+            if resp.isError():
+                _LOG.warning("VERIFY: read-back failed: %s", resp)
+                return
+
+            def from_be_s32(hi: int, lo: int) -> int:
+                v = (hi << 16) | lo
+                if v & 0x80000000:
+                    v -= 0x100000000
+                return v
+
+            regs = resp.registers
+            rb_grid = from_be_s32(regs[0], regs[1])
+            rb_min = from_be_s32(regs[2], regs[3])
+            rb_max = from_be_s32(regs[4], regs[5])
+
+            mismatches = []
+            if rb_grid != grid_w:
+                mismatches.append(f"grid: wrote={grid_w}, read={rb_grid}")
+            if rb_min != min_bat_w:
+                mismatches.append(f"min_bat: wrote={min_bat_w}, read={rb_min}")
+            if rb_max != max_bat_w:
+                mismatches.append(f"max_bat: wrote={max_bat_w}, read={rb_max}")
+
+            if mismatches:
+                _LOG.error("VERIFY MISMATCH after passive write! %s | raw=%s",
+                           " | ".join(mismatches), [f"0x{r:04X}" for r in regs])
+            else:
+                _LOG.info("VERIFY OK: grid=%dW, min_bat=%dW, max_bat=%dW", rb_grid, rb_min, rb_max)
+        except Exception as ex:
+            _LOG.warning("VERIFY: read-back exception: %s", ex)
