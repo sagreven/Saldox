@@ -84,12 +84,12 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("energy_storage_mode",      0x1110, 1, "holding", 1.0, "",
              description="0=Self Use, 1=Time of Use, 2=Optimized Revenue, 3=Passive, 4=Peak Shaving"),
 
-    # ----- Passive Mode registers (S32, little-endian word order) -----
-    Register("passive_desired_grid_power_w", 0x1187, 2, "holding", 1.0, "W", signed=True, swap_words=True,
+    # ----- Passive Mode registers (S32, big-endian word order [hi, lo]) -----
+    Register("passive_desired_grid_power_w", 0x1187, 2, "holding", 1.0, "W", signed=True, swap_words=False,
              description="Desired grid power in Passive Mode. + = import, - = export"),
-    Register("passive_min_battery_power_w",  0x1189, 2, "holding", 1.0, "W", signed=True, swap_words=True,
+    Register("passive_min_battery_power_w",  0x1189, 2, "holding", 1.0, "W", signed=True, swap_words=False,
              description="Min battery power in Passive Mode. - = discharge limit"),
-    Register("passive_max_battery_power_w",  0x118B, 2, "holding", 1.0, "W", signed=True, swap_words=True,
+    Register("passive_max_battery_power_w",  0x118B, 2, "holding", 1.0, "W", signed=True, swap_words=False,
              description="Max battery power in Passive Mode. + = charge limit"),
 ]
 

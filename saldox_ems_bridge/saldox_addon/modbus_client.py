@@ -214,13 +214,13 @@ class SofarModbusClient:
         await self.connect()
         assert self._client is not None
 
-        def to_u32_words_le(val: int) -> list[int]:
-            """Little-endian word order: [lo, hi] (passive registers)."""
+        def to_u32_words_be(val: int) -> list[int]:
+            """Big-endian word order: [hi, lo] — matches Sofar HYD convention."""
             if val < 0:
                 val = val + 0x100000000  # two's complement
-            return [val & 0xFFFF, (val >> 16) & 0xFFFF]
+            return [(val >> 16) & 0xFFFF, val & 0xFFFF]
 
-        values = to_u32_words_le(grid_w) + to_u32_words_le(min_bat_w) + to_u32_words_le(max_bat_w)
+        values = to_u32_words_be(grid_w) + to_u32_words_be(min_bat_w) + to_u32_words_be(max_bat_w)
         resp = await self._client.write_registers(0x1187, values=values)
         if resp.isError():
             raise RuntimeError(f"Passive block write faalde: {resp}")
