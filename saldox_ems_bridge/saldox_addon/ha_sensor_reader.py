@@ -12,6 +12,7 @@ Also provides battery control via:
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any, TYPE_CHECKING
 
@@ -118,12 +119,59 @@ class ModbusBatteryController:
     FC06 (write single) werkt NIET op deze firmware — alleen FC16.
     """
 
-    def __init__(self, modbus: SofarModbusClient, max_power_w: int = 15000):
+    def __init__(self, modbus: SofarModbusClient, max_power_w: int = 15000,
+                 ramp_start_w: int = 500, ramp_rate_w_per_s: int = 50,
+                 ramp_idle_threshold_w: int = 100):
         self._modbus = modbus
         self._max_power_w = max_power_w
         self._last_mode: str | None = None
         # Track last written values for periodic verification.
         self._last_written: dict[str, int] | None = None
+        # Soft-start voor laden — zie _charge_ceiling().
+        self._ramp_start_w = ramp_start_w
+        self._ramp_rate_w_per_s = ramp_rate_w_per_s
+        self._ramp_idle_threshold_w = ramp_idle_threshold_w
+        self._ramp_started_at: float | None = None
+
+    # ------------------------------------------------------------------
+    #  Soft-start / ramp-up
+    # ------------------------------------------------------------------
+
+    def note_battery_power(self, watts: float | None) -> None:
+        """Feed the measured battery power in so the ramp tracks reality.
+
+        Sofar-conventie: positief = laden. Zolang er feitelijk niet geladen
+        wordt houden we de ramp scherpgesteld, zodat het plafond pas gaat
+        oplopen vanaf het moment dat er echt stroom de batterij in gaat. Zonder
+        deze koppeling zou de ramp al 's nachts in baseline-modus aflopen en
+        bij zonsopgang geen enkele bescherming meer bieden.
+        """
+        if watts is None:
+            return
+        if watts < self._ramp_idle_threshold_w:
+            self._ramp_started_at = None
+
+    def _charge_ceiling(self, requested_w: int) -> int:
+        """Return how much charge power we currently allow.
+
+        De DC-zekering klapt eruit wanneer er in één keer een hoog laadvermogen
+        op een (bijna) lege batterij wordt gezet. We springen daarom nooit
+        direct naar het gevraagde vermogen: vanaf het moment dat het laden
+        aangaat starten we op _ramp_start_w en lopen lineair op met
+        _ramp_rate_w_per_s tot het gevraagde plafond bereikt is.
+
+        Bewust op wall-time gebaseerd en niet per poll-cyclus, zodat
+        POLL_INTERVAL de rampsnelheid niet beïnvloedt.
+        """
+        if requested_w <= 0:
+            self._ramp_started_at = None  # laden uit — ramp weer scherpstellen
+            return 0
+        now = time.monotonic()
+        if self._ramp_started_at is None:
+            self._ramp_started_at = now
+        elapsed = now - self._ramp_started_at
+        allowed = self._ramp_start_w + self._ramp_rate_w_per_s * elapsed
+        return max(1, min(int(allowed), requested_w))
 
     async def _set_storage_mode(self, mode: int) -> None:
         """Set energy storage mode via FC16. 0=SelfUse, 3=Passive, etc."""
@@ -142,25 +190,30 @@ class ModbusBatteryController:
     async def set_charge(self, power_w: int | None = None) -> str | None:
         """Force-charge battery via Passive Mode."""
         watts = power_w or self._max_power_w
-        if self._last_mode == f"charge_{watts}":
+        ceiling = self._charge_ceiling(watts)
+        if self._last_mode == f"charge_{watts}_{ceiling}":
             return None
         try:
             await self._set_storage_mode(3)  # Passive
             await self._write_passive(
-                grid_w=watts,       # import from grid for charging
-                min_bat_w=watts,    # force charge (positive min = force charge)
-                max_bat_w=watts,    # max charge rate
+                grid_w=ceiling,     # import from grid for charging
+                min_bat_w=ceiling,  # force charge (positive min = force charge)
+                max_bat_w=ceiling,  # max charge rate (soft-started)
             )
         except Exception as ex:
-            _LOG.error("Modbus write failed (set_charge %d W): %s", watts, ex)
-            return f"FOUT: charge {watts} W — {ex}"
-        self._last_mode = f"charge_{watts}"
-        _LOG.info("MODBUS CONTROL: force-charge @ %d W", watts)
-        return f"Laden {watts} W (direct Modbus)"
+            _LOG.error("Modbus write failed (set_charge %d W): %s", ceiling, ex)
+            return f"FOUT: charge {ceiling} W — {ex}"
+        self._last_mode = f"charge_{watts}_{ceiling}"
+        if ceiling < watts:
+            _LOG.info("MODBUS CONTROL: force-charge ramp %d/%d W", ceiling, watts)
+            return f"Laden {ceiling} W (ramp → {watts} W, direct Modbus)"
+        _LOG.info("MODBUS CONTROL: force-charge @ %d W", ceiling)
+        return f"Laden {ceiling} W (direct Modbus)"
 
     async def set_discharge(self, power_w: int | None = None) -> str | None:
         """Force-discharge battery via Passive Mode."""
         watts = power_w or self._max_power_w
+        self._charge_ceiling(0)  # laden uit — soft-start weer scherpstellen
         if self._last_mode == f"discharge_{watts}":
             return None
         try:
@@ -183,24 +236,26 @@ class ModbusBatteryController:
         grid_w=0 prevents grid import for charging. max_bat allows PV surplus
         to flow into the battery. min_bat allows discharge to cover load.
         """
-        if self._last_mode == "auto":
+        ceiling = self._charge_ceiling(self._max_power_w)
+        if self._last_mode == f"auto_{ceiling}":
             return None
         try:
             await self._set_storage_mode(3)  # Passive
             await self._write_passive(
                 grid_w=0,                    # no grid import target
                 min_bat_w=-self._max_power_w, # allow full discharge
-                max_bat_w=self._max_power_w,  # allow PV surplus charging
+                max_bat_w=ceiling,           # PV surplus charging, soft-started
             )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_auto): %s", ex)
             return f"FOUT: auto — {ex}"
-        self._last_mode = "auto"
-        _LOG.info("MODBUS CONTROL: auto/baseline (Passive, grid=0, PV charge OK)")
+        self._last_mode = f"auto_{ceiling}"
+        _LOG.info("MODBUS CONTROL: auto/baseline (Passive, grid=0, PV charge ≤ %d W)", ceiling)
         return "Baseline (direct Modbus)"
 
     async def set_standby(self) -> str | None:
         """Standby: battery does nothing."""
+        self._charge_ceiling(0)  # laden uit — soft-start weer scherpstellen
         if self._last_mode == "standby":
             return None
         try:
@@ -223,20 +278,21 @@ class ModbusBatteryController:
 
     async def set_solar_charge(self) -> str | None:
         """Charge from PV only, no grid import."""
-        if self._last_mode == "solar_charge":
+        ceiling = self._charge_ceiling(self._max_power_w)
+        if self._last_mode == f"solar_charge_{ceiling}":
             return None
         try:
             await self._set_storage_mode(3)  # Passive
             await self._write_passive(
-                grid_w=0,                    # no grid import
-                min_bat_w=0,                 # no discharge
-                max_bat_w=self._max_power_w,  # charge from PV surplus
+                grid_w=0,            # no grid import
+                min_bat_w=0,         # no discharge
+                max_bat_w=ceiling,   # charge from PV surplus, soft-started
             )
         except Exception as ex:
             _LOG.error("Modbus write failed (set_solar_charge): %s", ex)
             return f"FOUT: solar_charge — {ex}"
-        self._last_mode = "solar_charge"
-        _LOG.info("MODBUS CONTROL: solar charge (PV only)")
+        self._last_mode = f"solar_charge_{ceiling}"
+        _LOG.info("MODBUS CONTROL: solar charge (PV only, ≤ %d W)", ceiling)
         return "Zonne-laden (direct Modbus)"
 
     async def set_grid_charge(self, power_w: int | None = None) -> str | None:

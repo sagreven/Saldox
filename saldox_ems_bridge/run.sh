@@ -15,6 +15,12 @@ export MODBUS_STOPBITS="$(bashio::config 'modbus.stopbits' 1)"
 export MODBUS_UNIT_ID="$(bashio::config 'modbus.unit_id' 1)"
 export POLL_INTERVAL="$(bashio::config 'modbus.poll_interval_seconds' 10)"
 
+# Soft-start bij laden — voorkomt dat de DC-zekering eruit klapt wanneer er in
+# één keer een hoog laadvermogen op een (bijna) lege batterij wordt gezet.
+export BATTERY_RAMP_START_W="$(bashio::config 'battery.ramp_start_w' 500)"
+export BATTERY_RAMP_RATE_W_PER_S="$(bashio::config 'battery.ramp_rate_w_per_s' 50)"
+export BATTERY_RAMP_IDLE_THRESHOLD_W="$(bashio::config 'battery.ramp_idle_threshold_w' 100)"
+
 export HA_DEVICE_SLUG="$(bashio::config 'ha.device_slug' 'sofar_hyd')"
 export HA_FRIENDLY_NAME="$(bashio::config 'ha.friendly_name' 'Sofar HYD')"
 

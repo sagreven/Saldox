@@ -391,6 +391,14 @@ async def _run_executor(plan: dict[str, Any]) -> None:
         return  # skip if another executor call is in progress
     async with _executor_lock:
         try:
+            # Voed het gemeten batterijvermogen in de soft-start zodat de ramp
+            # pas gaat lopen zodra er echt geladen wordt (zie
+            # ModbusBatteryController.note_battery_power).
+            note = getattr(_ha_controller, "note_battery_power", None)
+            if note is not None:
+                bat_w = _latest.get("battery_power_w", {}).get("value")
+                note(float(bat_w) if bat_w is not None else None)
+
             mode = _manual_override.get("mode", "auto")
             pct = _manual_override.get("power_pct", 100)
             max_w = 15000  # Sofar HYD 15KTL rated max — BMS will limit actual rate
@@ -2698,7 +2706,12 @@ async def main() -> None:
     )
     ha = HomeAssistantClient()
     ha_reader = HaSensorReader(ha)
-    modbus_controller = ModbusBatteryController(modbus)
+    modbus_controller = ModbusBatteryController(
+        modbus,
+        ramp_start_w=int(os.environ.get("BATTERY_RAMP_START_W", "500")),
+        ramp_rate_w_per_s=int(os.environ.get("BATTERY_RAMP_RATE_W_PER_S", "50")),
+        ramp_idle_threshold_w=int(os.environ.get("BATTERY_RAMP_IDLE_THRESHOLD_W", "100")),
+    )
 
     global _executor, _ha_controller
     _ha_controller = modbus_controller
