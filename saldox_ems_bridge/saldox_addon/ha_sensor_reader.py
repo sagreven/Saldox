@@ -140,15 +140,28 @@ class ModbusBatteryController:
     def note_battery_power(self, watts: float | None) -> None:
         """Feed the measured battery power in so the ramp tracks reality.
 
-        Sofar-conventie: positief = laden. Zolang er feitelijk niet geladen
-        wordt houden we de ramp scherpgesteld, zodat het plafond pas gaat
-        oplopen vanaf het moment dat er echt stroom de batterij in gaat. Zonder
-        deze koppeling zou de ramp al 's nachts in baseline-modus aflopen en
-        bij zonsopgang geen enkele bescherming meer bieden.
+        Zolang er feitelijk niet geladen wordt houden we de ramp scherpgesteld,
+        zodat het plafond pas gaat oplopen vanaf het moment dat er echt stroom
+        de batterij in gaat. Zonder deze koppeling zou de ramp al 's nachts in
+        baseline-modus aflopen en bij zonsopgang geen bescherming meer bieden.
+
+        LET OP — tekenconventie. De comment bij het battery_power_w-register
+        (registers.py) claimt "wij + = laden", maar dat klopt niet met de
+        praktijk. Gemeten op 2026-09-07 om 18:20 UTC, met de executor in
+        geforceerde ontlading (max_bat_w=0, laden dus onmogelijk):
+
+            add-on battery_power_w         = +420 W
+            sensor.sofar_hyd_battery_power = -410 W
+            sensor.sofar_hyd_battery_current = -1,08 A
+            SoC liep in dat venster van 39% naar 38%
+
+        In readings["battery_power_w"] is positief dus ONTLADEN. We rekenen
+        hier daarom om naar laadvermogen.
         """
         if watts is None:
             return
-        if watts < self._ramp_idle_threshold_w:
+        charge_w = -watts  # zie docstring: add-on levert + bij ontladen
+        if charge_w < self._ramp_idle_threshold_w:
             self._ramp_started_at = None
 
     def _charge_ceiling(self, requested_w: int) -> int:
