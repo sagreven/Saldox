@@ -360,6 +360,39 @@ def _get_current_soc_kwh() -> float:
     return 15.0  # default 50%
 
 
+def _config_from_plan(plan: dict[str, Any]) -> ArbitrageConfig:
+    """Bouw de optimizer-config uit de instellingen die de SERVER meestuurt.
+
+    De server kent de werkelijke gebruikersinstellingen en zet ze in elk plan
+    (retailSurchargeEurKwh, gridExportEnabled). De addon hoorde die niet te
+    raden. Voorheen draaide de optimizer op kale ArbitrageConfig()-defaults,
+    met twee gevolgen:
+
+      * grid_export_enabled stond hardcoded op False terwijl de gebruiker
+        export aan had staan. De projectie rekende dus in saldering-modus en
+        rapporteerde structureel exportRevenueEur = 0 — niet omdat er geen
+        export was, maar omdat die strategie niet werd doorgerekend.
+      * retail_surcharge_eur was een hardcoded constante die kon afwijken van
+        de opgeslagen gebruikerswaarde (0.13 in de dev-kopie versus 0.15 in
+        productie en in de database).
+
+    Ontbreekt een veld in het plan, dan vallen we terug op de default.
+    """
+    defaults = ArbitrageConfig()
+    surcharge = plan.get("retailSurchargeEurKwh")
+    export_enabled = plan.get("gridExportEnabled")
+    return ArbitrageConfig(
+        grid_export_enabled=(
+            bool(export_enabled) if export_enabled is not None
+            else defaults.grid_export_enabled
+        ),
+        retail_surcharge_eur=(
+            float(surcharge) if surcharge is not None
+            else defaults.retail_surcharge_eur
+        ),
+    )
+
+
 def set_plan(plan: dict[str, Any]) -> None:
     """Called by PlanPoller.tick() to share latest EMS plan with /status.
     Runs the arbitrage optimizer in auto mode for dashboard stats, but
@@ -370,7 +403,10 @@ def set_plan(plan: dict[str, Any]) -> None:
     mode = _manual_override.get("mode", "auto")
     if mode == "auto" and _arbitrage_optimizer is not None:
         try:
-            result = _arbitrage_optimizer.optimize(
+            # Config per plan, zodat de projectie de werkelijke instellingen
+            # volgt in plaats van hardcoded defaults.
+            cfg = _config_from_plan(plan)
+            result = ArbitrageOptimizer(cfg).optimize(
                 timeline=plan.get("timeline", []),
                 current_soc_kwh=_get_current_soc_kwh(),
             )
@@ -388,6 +424,12 @@ def set_plan(plan: dict[str, Any]) -> None:
                     "isProjection": True,
                     "horizonHours": result.horizon_hours,
                     "appliesToServerPlan": False,
+                    # Welke aannames deze projectie gebruikte — afkomstig uit
+                    # het serverplan, niet uit hardcoded defaults. Zonder dit
+                    # is niet te zien of een bedrag van nul betekent "geen
+                    # export" of "export niet doorgerekend".
+                    "assumedSurchargeEurKwh": cfg.retail_surcharge_eur,
+                    "assumedGridExportEnabled": cfg.grid_export_enabled,
                     "profitEur": result.projected_profit_eur,
                     "chargeCostEur": result.charge_cost_eur,
                     # Gesplitst: inkomsten versus vermeden kosten.

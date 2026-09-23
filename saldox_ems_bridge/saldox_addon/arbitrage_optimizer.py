@@ -65,8 +65,19 @@ class ArbitrageConfig:
     night_start_hour: int = 22        # local hour — start of overnight reserve window
     night_end_hour: int = 6           # local hour — end of overnight reserve window
     max_cycles_per_day: int = 2       # limit battery wear
+    # De volgende twee zijn FALLBACKS. De werkelijke waarden komen uit het
+    # serverplan via main._config_from_plan(); de server kent de opgeslagen
+    # gebruikersinstellingen. Gebruik deze defaults alleen als het plan ze niet
+    # meestuurt.
     grid_export_enabled: bool = False # False = NL saldering strategie
-    retail_surcharge_eur: float = 0.15 # opslag bovenop EPEX (transport, belasting) — Rule P-04
+    # Opslag BOVENOP kale EPEX (energiebelasting + leverancierskosten, incl.
+    # btw) — Rule P-04. Dit is nadrukkelijk niet het all-in tarief: EPEX zelf
+    # piekt boven €0,40/kWh. Spiegelt GenericDynamicTariff.SurchargeEurKwh en
+    # User.RetailSurchargeEurKwh serverside, beide 0.15.
+    # NB: bij TariffProvider.AnwbDynamisch is het echte model
+    # EPEX x 1,21 + €0,129, dus niet lineair. Een vlakke opslag onderschat
+    # daar bij hoge prijzen (equivalent 0,142 bij EPEX 0,06 tot 0,213 bij 0,40).
+    retail_surcharge_eur: float = 0.15
 
     # --- Resolved limits (use these in code) ---
     @property
