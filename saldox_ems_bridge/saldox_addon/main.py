@@ -207,6 +207,19 @@ def get_completed_hourly_usage() -> list[dict]:
 # ---------------------------------------------------------------------------
 # Hourly energy trade accumulator — tracks import/export kWh + costs per hour.
 # Published as HA sensors for financial tracking.
+#
+# LET OP — historie vóór de tekenfix (v2.1.0) is omgekeerd.
+# Tot die fix boekte deze accumulator import als export en andersom, omdat de
+# conventie hier geschreven was voor het HA-sensorpad terwijl direct Modbus
+# het primaire pad werd. Alles wat vóór v2.1.0 is gepubliceerd naar de sensoren
+# grid_import_kwh / grid_export_kwh / grid_export_revenue / trade_profit /
+# net_result staat gespiegeld in de HA-historie.
+#
+# Niet met terugwerkende kracht te herstellen: _trade_hourly wordt elke dag
+# geleegd en er worden geen ruwe samples bewaard. Wie oude grafieken leest moet
+# import en export omwisselen. De kWh-tellers van de wisselrichter zelf
+# (today_import_kwh / today_export_kwh) zijn altijd correct geweest — gebruik
+# die als ijkpunt.
 # ---------------------------------------------------------------------------
 _trade_hourly: dict[int, dict[str, float]] = {}
 _trade_hourly_date: str = ""
@@ -228,7 +241,10 @@ def _accumulate_trade(readings: dict[str, dict]) -> None:
         _trade_hourly_date = today
     hour = now.hour
 
-    # Grid power: + = export, − = import (in Watts)
+    # Grid power: + = IMPORT, − = export (in Watts).
+    # Canonieke conventie, gelijk voor beide databronnen: registers.py past scale -10
+    # toe op het Modbus-register en ha_sensor_reader.py scale -1 op de SolarmanV2-
+    # entiteit. Serverside hanteert HomeAssistantController.cs:209 hetzelfde teken.
     grid_w = readings.get("ac_active_power_w", {}).get("value", 0) or 0
     grid_w = float(grid_w)
     pv_w = readings.get("pv_total_power_w", {}).get("value", 0) or 0
@@ -247,10 +263,10 @@ def _accumulate_trade(readings: dict[str, dict]) -> None:
         }
     bucket = _trade_hourly[hour]
     bucket["samples"] += 1
-    if grid_w < 0:
-        bucket["import_w"] += abs(grid_w)
+    if grid_w > 0:
+        bucket["import_w"] += grid_w
     else:
-        bucket["export_w"] += grid_w
+        bucket["export_w"] += abs(grid_w)
     bucket["self_w"] += self_w
 
 
@@ -869,20 +885,27 @@ function renderPowerFlow(readings, executorStatus, prices, plan){
   // Extract values (default 0 if missing)
   const val=(k)=>{const r=readings[k];return r?Number(r.value)||0:0;};
   const pvW=val('pv_total_power_w');
-  const gridW=val('ac_active_power_w');   // + export, − import
-  const batW=val('battery_power_w');      // + charge, − discharge
+  const gridW=val('ac_active_power_w');   // + import, − export
+  const batW=val('battery_power_w');      // + ontladen, − laden
   const batSoC=val('battery_soc_percent');
   const batV=val('battery_voltage_v');
   const batTemp=val('battery_temperature_c');
-  // Derive home consumption: PV + grid_import + bat_discharge - grid_export - bat_charge
-  const homeW=Math.max(0, pvW - gridW - batW);
+  // Balans: PV + import + ontladen = huisverbruik + export + laden.
+  // Met bovenstaande tekens is dat simpelweg de som van de drie bronnen.
+  const homeW=Math.max(0, pvW + gridW + batW);
+
+  // Richtingen expliciet, zodat de tekenconventie op één plek staat.
+  const gridImportW=Math.max(0, gridW);
+  const gridExportW=Math.max(0, -gridW);
+  const batChargeW=Math.max(0, -batW);
+  const batDischargeW=Math.max(0, batW);
 
   // Flow magnitudes for lines
-  const pvToHome=Math.max(0, pvW - Math.max(0,gridW) - Math.max(0,batW));
-  const pvToGrid=Math.max(0, gridW);
-  const pvToBat=Math.max(0, batW);
-  const gridToHome=Math.max(0, -gridW);
-  const batToHome=Math.max(0, -batW);
+  const pvToHome=Math.max(0, pvW - gridExportW - batChargeW);
+  const pvToGrid=gridExportW;
+  const pvToBat=batChargeW;
+  const gridToHome=gridImportW;
+  const batToHome=batDischargeW;
 
   const lc=(w,rev)=>w>10?(rev?'pf-line active reverse':'pf-line active'):'pf-line idle';
   const ls=(w,col)=>w>10?col:'#e5e7eb';
@@ -894,10 +917,10 @@ function renderPowerFlow(readings, executorStatus, prices, plan){
   const batRemKwh=batCapKwh-batKwh;
   const chargeRateKw=Math.abs(batW)/1000;
   let timeEst='';
-  if(batW>100){
+  if(batW<-100){            // negatief = laden → naar vol
     const hrsToFull=batRemKwh/chargeRateKw;
     timeEst=hrsToFull<1?Math.round(hrsToFull*60)+'m vol':hrsToFull.toFixed(1)+'u vol';
-  }else if(batW<-100){
+  }else if(batW>100){       // positief = ontladen → naar leeg
     const hrsToEmpty=batKwh/chargeRateKw;
     timeEst=hrsToEmpty<1?Math.round(hrsToEmpty*60)+'m leeg':hrsToEmpty.toFixed(1)+'u leeg';
   }
@@ -947,11 +970,11 @@ function renderPowerFlow(readings, executorStatus, prices, plan){
     <text x="160" y="50" class="pf-val" fill="#22c55e">${fw(pvW)}</text>
     <text x="160" y="62" class="pf-sub">Zonnepanelen</text>
     <text x="40" y="132" class="pf-icon">\u26a1</text>
-    <text x="40" y="158" class="pf-val" fill="${gridW>=0?'#22c55e':'#3b82f6'}">${fw(Math.abs(gridW))}</text>
-    <text x="40" y="170" class="pf-sub">${gridW>=0?'Export':'Import'}</text>
+    <text x="40" y="158" class="pf-val" fill="${gridW>=0?'#3b82f6':'#22c55e'}">${fw(Math.abs(gridW))}</text>
+    <text x="40" y="170" class="pf-sub">${gridW>=0?'Import':'Export'}</text>
     <text x="280" y="132" class="pf-icon">&#x1F50B;</text>
     <text x="280" y="158" class="pf-val" fill="#f59e0b">${batSoC}%</text>
-    <text x="280" y="170" class="pf-sub">${batW>10?'Laden '+fw(batW):batW<-10?'Ontladen '+fw(-batW):'Stand-by'}</text>
+    <text x="280" y="170" class="pf-sub">${batW<-10?'Laden '+fw(-batW):batW>10?'Ontladen '+fw(batW):'Stand-by'}</text>
     <text x="160" y="238" class="pf-icon">&#x1F3E0;</text>
     <text x="160" y="262" class="pf-val" fill="#f97316">${fw(homeW)}</text>
     <text x="160" y="274" class="pf-sub">Verbruik</text>

@@ -40,7 +40,12 @@ class Reading:
 # NB: SolarmanV2 entities rapporteren in W (niet kW), dus scale=1.
 _SENSOR_MAP: dict[str, tuple[str, str, float]] = {
     "pv_total_power_w":       ("sensor.sofar_hyd_pv_power",                "W",  1),
-    "ac_active_power_w":      ("sensor.sofar_hyd_activepower_pcc_total",   "W",  1),
+    # Scale -1: SolarmanV2 rapporteert PCC-vermogen met negatief=import, terwijl
+    # registers.py (Modbus-pad) via scale -10 juist positief=import oplevert. Zonder
+    # deze flip leveren de twee paden tegengestelde tekens voor hetzelfde veld, en
+    # boekt _accumulate_trade import als export. Canoniek is POSITIEF = IMPORT —
+    # dezelfde conventie die HomeAssistantController.cs:209 serverside hanteert.
+    "ac_active_power_w":      ("sensor.sofar_hyd_activepower_pcc_total",   "W",  -1),
     "battery_soc_percent":    ("sensor.sofar_hyd_battery",                  "%",  1),
     "battery_power_w":        ("sensor.sofar_hyd_battery_power",            "W",  1),
     "battery_voltage_v":      ("sensor.sofar_hyd_battery_voltage",          "V",  1),
