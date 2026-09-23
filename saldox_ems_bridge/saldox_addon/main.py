@@ -376,12 +376,30 @@ def set_plan(plan: dict[str, Any]) -> None:
             )
             if result:
                 # Store local optimizer results separately — do NOT overwrite server actions.
+                #
+                # LET OP: dit is een PROJECTIE van een ALTERNATIEF plan. De
+                # optimizer rekent zijn eigen schema door over de timeline; de
+                # executor volgt het serverplan hierboven. Die twee kunnen
+                # fundamenteel verschillen (serverplan zonder ontladen versus
+                # een optimizer-plan vol self-use). Presenteer deze cijfers dus
+                # nooit als gerealiseerd resultaat — vandaar isProjection en
+                # horizonHours, zodat de UI het kan labelen.
                 plan["arbitrage"] = {
+                    "isProjection": True,
+                    "horizonHours": result.horizon_hours,
+                    "appliesToServerPlan": False,
                     "profitEur": result.projected_profit_eur,
                     "chargeCostEur": result.charge_cost_eur,
+                    # Gesplitst: inkomsten versus vermeden kosten.
+                    "exportRevenueEur": result.export_revenue_eur,
+                    "selfUseValueEur": result.self_use_value_eur,
+                    # Historisch aggregaat (export + self-use); behouden voor
+                    # bestaande consumenten, maar niet meer tonen als "opbrengst".
                     "dischargeRevenueEur": result.discharge_revenue_eur,
                     "pvSavingsEur": result.pv_savings_eur,
+                    "netResultEur": result.net_result_eur,
                     "cycles": result.cycles,
+                    "cyclesExact": result.cycles_exact,
                     "summary": result.summary,
                 }
         except Exception as ex:
@@ -1013,7 +1031,24 @@ function renderPlan(plan, pvHourly, loadHourly){
   if(savings!=null)h+=`<div class="card savings"><div class="label">Besparing</div><div class="value">€ ${savings.toFixed(2)}</div><div class="unit">komende 48 uur</div></div>`;
   if(optimized!=null&&naive!=null)h+=`<div class="card ok"><div class="label">Kosten</div><div class="value">€ ${optimized.toFixed(2)}</div><div class="unit">i.p.v. € ${naive.toFixed(2)} zonder plan</div></div>`;
   const arb=plan.arbitrage;
-  if(arb&&arb.profitEur>0)h+=`<div class="card savings"><div class="label">Arbitrage winst</div><div class="value">\u20ac ${arb.profitEur.toFixed(2)}</div><div class="unit">${arb.cycles} cyclus(sen) \u00b7 ${arb.summary||''}</div></div>`;
+  // Projectie van een ALTERNATIEF scenario \u2014 niet gerealiseerd, en niet het
+  // plan dat de executor draait. Label expliciet, anders leest dit als
+  // "vandaag verdiend". Het bedrag is grotendeels vermeden inkoop, geen geld
+  // dat binnenkomt; daarom "batterijsaldo" en een aparte uitsplitsing.
+  if(arb&&arb.profitEur!=null&&(arb.profitEur>0||arb.selfUseValueEur>0)){
+    const hor=arb.horizonHours?`komende ${arb.horizonHours} uur`:'projectie';
+    const cyc=(arb.cyclesExact!=null?arb.cyclesExact:arb.cycles).toFixed(2);
+    const split=[];
+    if(arb.exportRevenueEur>0.005)split.push(`\u20ac ${arb.exportRevenueEur.toFixed(2)} teruglevering`);
+    if(arb.selfUseValueEur>0.005)split.push(`\u20ac ${arb.selfUseValueEur.toFixed(2)} vermeden inkoop`);
+    if(arb.chargeCostEur>0.005)split.push(`\u20ac ${arb.chargeCostEur.toFixed(2)} laadkosten`);
+    h+=`<div class="card"><div class="label">Batterijsaldo \u2014 verwacht</div>`
+      +`<div class="value">\u20ac ${arb.profitEur.toFixed(2)}</div>`
+      +`<div class="unit">${hor} \u00b7 ${cyc} cyclus \u00b7 scenario, niet uitgevoerd</div>`
+      +(split.length?`<div class="unit">${split.join(' \u00b7 ')}</div>`:'')
+      +(arb.netResultEur!=null?`<div class="unit">incl. PV: \u20ac ${arb.netResultEur.toFixed(2)}</div>`:'')
+      +`</div>`;
+  }
 
   // Replan indicator — shows when the feedback loop triggered a replan
   if(plan.lastReplan){

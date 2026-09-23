@@ -92,14 +92,36 @@ class ArbitrageConfig:
 
 @dataclass
 class ArbitrageResult:
-    """Output of the optimizer."""
+    """Output of de optimizer — een PROJECTIE over de plan-horizon.
+
+    Dit is géén realisatie. De optimizer bouwt zijn eigen alternatieve plan uit
+    de timeline; de executor volgt het serverplan (zie main.set_plan). De twee
+    kunnen fundamenteel verschillen. Zet deze cijfers dus nooit zonder label
+    naast gerealiseerde dagtotalen.
+
+    Geldstromen zijn gesplitst omdat ze wezenlijk verschillen:
+      * export_revenue_eur — geld dat binnenkomt door terugleveren aan het net.
+      * self_use_value_eur — geld dat NIET weggaat doordat de batterij het huis
+        voedt in plaats van het net. Gewaardeerd tegen EPEX + retail-opslag.
+      * pv_savings_eur     — PV-gerelateerde waarde (direct gebruik, saldering,
+        gratis laden). Raakt de batterij-arbitrage niet.
+
+    discharge_revenue_eur is het historische aggregaat (export + self-use) en
+    blijft bestaan voor arbitrage_simulator.py. Gebruik in nieuwe code de
+    gesplitste velden.
+    """
     actions: list[dict] = field(default_factory=list)
     soc_curve: list[dict] = field(default_factory=list)
     projected_profit_eur: float = 0.0
     charge_cost_eur: float = 0.0
     discharge_revenue_eur: float = 0.0
+    export_revenue_eur: float = 0.0
+    self_use_value_eur: float = 0.0
     pv_savings_eur: float = 0.0
+    net_result_eur: float = 0.0
     cycles: int = 0
+    cycles_exact: float = 0.0
+    horizon_hours: int = 0
     summary: str = ""
 
 
@@ -208,7 +230,11 @@ class ArbitrageOptimizer:
         actions = []
         soc_curve = []
         charge_cost = 0.0
-        discharge_revenue = 0.0
+        # Gesplitst: inkomsten uit teruglevering versus vermeden inkoopkosten.
+        # Die twee werden eerder samengeteld in één veld "discharge_revenue",
+        # waardoor het dashboard vermeden kosten als opbrengst toonde.
+        export_revenue = 0.0
+        self_use_value = 0.0
         pv_savings = 0.0
         total_charged = 0.0
         total_discharged = 0.0
@@ -264,7 +290,7 @@ class ArbitrageOptimizer:
                     if discharge_kwh > 0.5:
                         soc -= discharge_kwh
                         revenue = discharge_kwh * price * cfg.efficiency
-                        discharge_revenue += revenue
+                        export_revenue += revenue
                         total_discharged += discharge_kwh
                         actions.append(self._make_action(
                             "ExportToGrid", start_utc, end_utc, discharge_kwh,
@@ -280,7 +306,18 @@ class ArbitrageOptimizer:
                     if deficit_kwh > 0 and soc > min_soc:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
-                        pv_savings += drain * (price + cfg.retail_surcharge_eur)
+                        # Telde eerder alleen SoC af: niet in total_discharged en
+                        # zonder actie, waardoor dit ontladen onzichtbaar bleef in
+                        # de cyclustelling en de actielijst.
+                        total_discharged += drain
+                        saved = drain * (price + cfg.retail_surcharge_eur)
+                        self_use_value += saved
+                        actions.append(self._make_action(
+                            "DischargeBattery", start_utc, end_utc, drain,
+                            saved,
+                            f"Self Use {drain:.1f} kWh @ €{price + cfg.retail_surcharge_eur:.3f}/kWh "
+                            f"(€{saved:.2f} dure import vermeden)"
+                        ))
 
             else:
                 # ===== SALDERING STRATEGIE (geen grid export) =====
@@ -319,7 +356,7 @@ class ArbitrageOptimizer:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
                         total_discharged += drain
-                        discharge_revenue += drain * (price + cfg.retail_surcharge_eur)
+                        self_use_value += drain * (price + cfg.retail_surcharge_eur)
                     actions.append(self._make_action(
                         "DischargeBattery", start_utc, end_utc, drain,
                         surplus * price + drain * (price + cfg.retail_surcharge_eur),
@@ -358,7 +395,7 @@ class ArbitrageOptimizer:
                         soc -= drain
                         total_discharged += drain
                         saved = drain * (price + cfg.retail_surcharge_eur)
-                        discharge_revenue += saved
+                        self_use_value += saved
                         actions.append(self._make_action(
                             "DischargeBattery", start_utc, end_utc, drain,
                             saved,
@@ -373,7 +410,17 @@ class ArbitrageOptimizer:
                     if deficit_kwh > 0 and soc > min_soc:
                         drain = min(deficit_kwh, soc - min_soc, cfg.eff_ac_discharge_kw)
                         soc -= drain
-                        pv_savings += drain * (price + cfg.retail_surcharge_eur)
+                        # Idem tak 4: telde eerder alleen SoC af, zonder
+                        # total_discharged en zonder actie.
+                        total_discharged += drain
+                        saved = drain * (price + cfg.retail_surcharge_eur)
+                        self_use_value += saved
+                        actions.append(self._make_action(
+                            "DischargeBattery", start_utc, end_utc, drain,
+                            saved,
+                            f"Self Use {drain:.1f} kWh @ €{price + cfg.retail_surcharge_eur:.3f}/kWh "
+                            f"(€{saved:.2f} dure import vermeden)"
+                        ))
 
             # Clamp SoC
             soc = max(0, min(cfg.capacity_kwh, soc))
@@ -387,11 +434,21 @@ class ArbitrageOptimizer:
             })
 
         # --- Calculate results ---
+        # Batterij-arbitrage: wat de batterij oplevert (teruglevering + vermeden
+        # inkoop) minus wat het kostte om 'm te laden. PV-waarde staat hier
+        # bewust buiten — die hangt niet aan de batterij.
+        discharge_revenue = export_revenue + self_use_value   # legacy aggregaat
         profit = discharge_revenue - charge_cost
-        cycles = min(
-            int(total_charged / cfg.capacity_kwh + 0.5) if cfg.capacity_kwh > 0 else 0,
-            int(total_discharged / cfg.capacity_kwh + 0.5) if cfg.capacity_kwh > 0 else 0,
+        # Totale waarde inclusief PV, zodat de getoonde componenten ergens op
+        # optellen. Voorheen werd pv_savings wel getoond maar nergens in verwerkt.
+        net_result = profit + pv_savings
+
+        cycles_exact = (
+            min(total_charged, total_discharged) / cfg.capacity_kwh
+            if cfg.capacity_kwh > 0 else 0.0
         )
+        # Int-variant blijft bestaan voor arbitrage_simulator.total_cycles.
+        cycles = int(cycles_exact + 0.5)
 
         # Build summary
         charge_hours = sum(1 for a in actions if a["kind"] == "ChargeBattery")
@@ -399,12 +456,17 @@ class ArbitrageOptimizer:
         solar_hours = sum(1 for a in actions if a["kind"] == "SolarCharge")
         selfuse_hours = sum(1 for a in actions if a["kind"] == "DischargeBattery")
         strategy = "export" if cfg.grid_export_enabled else "saldering"
+        horizon_hours = len(slots)
+        # Expliciet "verwacht" en met horizon: dit is een projectie, geen realisatie.
         summary = (
-            f"{strategy}: {cycles} cyclus, {charge_hours}u laden"
+            f"verwacht over {horizon_hours}u — {strategy}: "
+            f"{cycles_exact:.2f} cyclus, {charge_hours}u laden"
             + (f", {export_hours}u export" if export_hours else "")
             + (f", {selfuse_hours}u self-use" if selfuse_hours else "")
             + (f", {solar_hours}u zon" if solar_hours else "")
-            + f" · winst €{profit:.2f}"
+            + f" · batterijsaldo €{profit:.2f}"
+            + (f" (waarvan €{self_use_value:.2f} vermeden inkoop)"
+               if self_use_value > 0.005 else "")
         )
 
         _LOG.info("Arbitrage optimizer: %s", summary)
@@ -415,8 +477,13 @@ class ArbitrageOptimizer:
             projected_profit_eur=round(profit, 2),
             charge_cost_eur=round(charge_cost, 2),
             discharge_revenue_eur=round(discharge_revenue, 2),
+            export_revenue_eur=round(export_revenue, 2),
+            self_use_value_eur=round(self_use_value, 2),
             pv_savings_eur=round(pv_savings, 2),
+            net_result_eur=round(net_result, 2),
             cycles=cycles,
+            cycles_exact=round(cycles_exact, 2),
+            horizon_hours=horizon_hours,
             summary=summary,
         )
 
