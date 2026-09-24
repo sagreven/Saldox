@@ -41,6 +41,14 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("inverter_status",          0x0404, 1, "holding", 1.0,   "",        description="0=wait, 1=check, 2=normal, 3=fault, 4=permanent-fault"),
     Register("inverter_temperature_c",   0x0418, 1, "holding", 1.0,   "°C", signed=True),
     Register("inverter_fault_code",      0x0414, 1, "holding", 1.0,   "",        description="0 = geen fout"),
+    # Isolatieweerstand van de DC-zijde. Daalt bij vocht of een aardlek in een
+    # string. Gaf in augustus 2026 twaalf dagen voorsprong op de uitval van
+    # string 2: 384 -> 50 kOhm op 27-08, string dood op 09-09. Gelezen door
+    # pv_diagnostics.py onder exact deze naam.
+    # LET OP: adres overgenomen uit het SolarmanV2-profiel sofar_g3hyd.yaml en
+    # geverifieerd door de uitgelezen waarde te vergelijken met de HA-entiteit
+    # sensor.sofar_hyd_insulation_resistance — die moet hetzelfde tonen.
+    Register("insulation_resistance",    0x042B, 1, "holding", 1.0,   "kΩ"),
 
     # ----- PV-input (DC) -----
     # PV power is U16 × 10 W (niet U32 × 100 zoals de oude PDF zei)

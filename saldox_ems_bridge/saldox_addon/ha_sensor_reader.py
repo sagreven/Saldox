@@ -51,6 +51,9 @@ _SENSOR_MAP: dict[str, tuple[str, str, float]] = {
     "battery_voltage_v":      ("sensor.sofar_hyd_battery_voltage",          "V",  1),
     "battery_temperature_c":  ("sensor.sofar_hyd_battery_temperature",      "°C", 1),
     "inverter_temperature_c": ("sensor.sofar_hyd_ambient_temperature_1",    "°C", 1),
+    # Isolatieweerstand — gebruikt door pv_diagnostics.py. Ook op het Modbus-pad
+    # aanwezig (registers.py, 0x042B); hier als terugval als Modbus uitvalt.
+    "insulation_resistance":  ("sensor.sofar_hyd_insulation_resistance",    "kΩ", 1),
     "today_production_kwh":   ("sensor.sofar_hyd_today_production",         "kWh", 1),
     "total_production_kwh":   ("sensor.sofar_hyd_total_production",         "kWh", 1),
     "today_import_kwh":       ("sensor.sofar_hyd_today_energy_import",      "kWh", 1),
