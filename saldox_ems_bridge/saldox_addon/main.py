@@ -35,6 +35,7 @@ from .ha_sensor_reader import HaBatteryController, HaSensorReader, ModbusBattery
 from .modbus_client import SofarModbusClient
 from .plan_poller import PlanPoller
 from .prices_poller import PricesPoller
+from .pv_diagnostics import PvDiagnostics
 from .registers import by_name
 
 _LOG = logging.getLogger("saldox_addon")
@@ -224,6 +225,13 @@ def get_completed_hourly_usage() -> list[dict]:
 _trade_hourly: dict[int, dict[str, float]] = {}
 _trade_hourly_date: str = ""
 _trade_daily_totals: dict[str, float] = {}
+
+# PV-stringdiagnose. State staat in /data en overleeft herstart en update —
+# anders zou "bevestigd" bij elke herstart terugkomen.
+_pv_diag = PvDiagnostics.load()
+_pv_alarms: list[dict] = []
+
+
 
 
 def _accumulate_trade(readings: dict[str, dict]) -> None:
@@ -587,6 +595,21 @@ async def poll_loop(
             _accumulate_load(snapshot)
             _accumulate_trade(snapshot)
 
+            # PV-stringdiagnose: basislijnen bijwerken en beoordelen. Mag nooit
+            # de pollcyclus onderbreken — een diagnosefout is geen reden om de
+            # besturing te laten vallen.
+            global _pv_alarms
+            try:
+                _pv_diag.observe(snapshot)
+                _pv_alarms = _pv_diag.evaluate(snapshot)
+                for a in _pv_alarms:
+                    if not a["acknowledged"]:
+                        _LOG.warning("PV-DIAGNOSE [%s] %s — %s",
+                                     a["severity"], a["title"], a["detail"])
+            except Exception as ex:
+                _LOG.error("PV-diagnose faalde: %s", ex, exc_info=True)
+
+
             # Read outdoor temperature from HA weather entity.
             try:
                 weather = await ha.get_state("weather.forecast_thuis")
@@ -689,6 +712,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "plan": _latest_plan,
             "executor": _executor_status,
             "executionLog": _executor.log.entries[-20:] if _executor else [],
+            "pvAlarms": _pv_alarms,
             "override": _manual_override,
             "pvHourly": pv_hourly,
             "loadHourly": load_hourly,
@@ -2036,6 +2060,52 @@ function drawPlanChart(timeline,actions,batSoC,evSoC){
   }
 }
 
+// Waarschuwingen over de PV-strings. Bewust bovenaan en niet weg te scrollen:
+// string 2 lag zestien dagen stil zonder dat iemand het zag.
+function renderPvAlarms(alarms){
+  let el=document.getElementById('pv-alarms');
+  if(!el){
+    el=document.createElement('div');
+    el.id='pv-alarms';
+    el.style.cssText='max-width:900px;margin:0 auto 16px';
+    const host=document.querySelector('main')||document.body;
+    host.insertBefore(el, host.firstChild);
+  }
+  const open=(alarms||[]).filter(a=>!a.acknowledged);
+  if(!open.length){el.innerHTML='';return;}
+  el.innerHTML=open.map(a=>{
+    const kritiek=a.severity==='critical';
+    const rand=kritiek?'#ef4444':'#f59e0b';
+    const vlag=kritiek?'🔴':'🟠';
+    const sinds=a.since?new Date(a.since).toLocaleString('nl-NL',{dateStyle:'short',timeStyle:'short'}):'';
+    return `<div class="card" style="border-left:4px solid ${rand};padding:14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div style="flex:1">
+          <div style="font-weight:700;color:${rand}">${vlag} ${a.title}</div>
+          <div style="font-size:.9rem;margin-top:4px;line-height:1.45">${a.detail}</div>
+          ${sinds?`<div class="unit" style="margin-top:6px">sinds ${sinds}</div>`:''}
+        </div>
+        <button onclick="ackPvAlarm('${a.key}')"
+          style="flex:none;padding:7px 12px;border:1px solid #999;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem">
+          Bevestigen
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function ackPvAlarm(key){
+  if(!confirm('Waarschuwing verbergen?\n\nDe melding komt terug zodra het probleem opnieuw optreedt. Het onderliggende defect wordt hiermee niet opgelost.'))return;
+  try{
+    const r=await fetch('./commands/diagnostics-ack',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key})
+    });
+    if(!r.ok){const e=await r.json().catch(()=>({}));alert('Bevestigen mislukt: '+(e.error||r.status));return;}
+    poll();
+  }catch(e){alert('Bevestigen mislukt: '+e.message);}
+}
+
 async function poll(){
   try{
     const r=await fetch('./status');
@@ -2044,6 +2114,7 @@ async function poll(){
     dot.className='status-dot green';
     conn.textContent='Verbonden — '+new Date(d.timestamp*1000).toLocaleTimeString('nl-NL');
     errEl.style.display='none';
+    renderPvAlarms(d.pvAlarms||[]);
     renderPowerFlow(d.readings||{}, d.executor||'', d.prices||{}, d.plan||null);
     syncControlPanel(d.override);
     let html='';
@@ -2445,6 +2516,29 @@ async function runSim(){
                       f"besparing €{worst_cost - best_cost:.2f} vs duurste moment)",
         })
 
+    async def ack_pv_alarm(req: web.Request) -> web.Response:
+        """POST /commands/diagnostics-ack  body: { "key": "string_dead_pv2" }
+
+        Bevestigen verbergt het alarm, maar blijft in /status zichtbaar met
+        acknowledged=true. De bevestiging vervalt zodra het alarm verdwijnt,
+        zodat een terugkerend defect opnieuw opvalt.
+        """
+        try:
+            body = await req.json()
+        except Exception:
+            return web.json_response({"ok": False, "error": "geen geldige JSON"}, status=400)
+        key = str(body.get("key", "")).strip()
+        if not key:
+            return web.json_response({"ok": False, "error": "key ontbreekt"}, status=400)
+        bekend = {a["key"] for a in _pv_alarms}
+        if key not in bekend:
+            return web.json_response(
+                {"ok": False, "error": f"onbekend alarm '{key}'", "actief": sorted(bekend)},
+                status=404)
+        _pv_diag.acknowledge(key)
+        _LOG.info("PV-diagnose: alarm %s bevestigd door gebruiker", key)
+        return web.json_response({"ok": True, "key": key, "acknowledged": True})
+
     async def set_reserve(req: web.Request) -> web.Response:
         """POST /commands/reserve  body: { "target": "today|tomorrow", "time": "18:00", "socPercent": 90 }"""
         body = await req.json()
@@ -2615,6 +2709,7 @@ async function runSim(){
     app.router.add_post("/commands/override", set_override)
     app.router.add_post("/commands/schedule-appliance", schedule_appliance)
     app.router.add_post("/commands/reserve", set_reserve)
+    app.router.add_post("/commands/diagnostics-ack", ack_pv_alarm)
     async def mode_sync_status(_req: web.Request) -> web.Response:
         """GET /mode-sync — compare Saldox planned mode vs actual HA inverter mode."""
         ha_mode = {}
