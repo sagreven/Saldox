@@ -93,6 +93,10 @@ class SofarModbusClient:
         self._timeout = timeout
         self._client: _ModbusClient | None = None
         self._lock = asyncio.Lock()
+        # Hoeveel Passive-blokschrijfacties er achter elkaar zijn mislukt. Nul zodra
+        # er weer een slaagt. Main leest dit om een hik te onderscheiden van een
+        # aanhoudend verlies van besturing.
+        self.passive_write_failures = 0
 
     def _make_client(self) -> _ModbusClient:
         if self._connection_type == "serial":
@@ -224,13 +228,45 @@ class SofarModbusClient:
             return [(val >> 16) & 0xFFFF, val & 0xFFFF]
 
         values = to_u32_words_be(grid_w) + to_u32_words_be(min_bat_w) + to_u32_words_be(max_bat_w)
-        resp = await self._client.write_registers(0x1187, values=values)
-        if resp.isError():
-            raise RuntimeError(f"Passive block write faalde: {resp}")
-        _LOG.info("Modbus passive block WRITE: grid=%dW, min_bat=%dW, max_bat=%dW", grid_w, min_bat_w, max_bat_w)
 
-        # Verify: read back and compare.
-        await self._verify_passive_block(grid_w, min_bat_w, max_bat_w)
+        # Twee pogingen, met een verse verbinding tussendoor.
+        #
+        # Op 28-09-2026 faalde deze schrijfactie vanaf 16:36 met exception 7 (Negative
+        # Acknowledge) en bleef dat zeventien uur doen. De executor viel elke cyclus
+        # terug op set_auto(), de omvormer regelde zichzelf, en bij 9% SoC laadde hij
+        # uit het net bij tegen EUR 0,38 -- terwijl diezelfde dag uren van EUR 0,10 had.
+        #
+        # De oude code gooide de fout meteen door. connect() hergebruikt een client
+        # die zichzelf "connected" noemt, dus er werd nooit een nieuwe verbinding
+        # opgezet: een halfdode link bleef eindeloos hetzelfde antwoord geven. Nu gaat
+        # de verbinding na de eerste mislukking dicht en wordt hij opnieuw opgebouwd.
+        laatste_resp = None
+        for poging in (1, 2):
+            if poging > 1:
+                await self.close()
+                await asyncio.sleep(0.5)
+                await self.connect()
+                assert self._client is not None
+
+            resp = await self._client.write_registers(0x1187, values=values)
+            if not resp.isError():
+                if self.passive_write_failures:
+                    _LOG.info("Passive block write hersteld na %d mislukte pogingen",
+                              self.passive_write_failures)
+                self.passive_write_failures = 0
+                _LOG.info("Modbus passive block WRITE: grid=%dW, min_bat=%dW, max_bat=%dW",
+                          grid_w, min_bat_w, max_bat_w)
+                await self._verify_passive_block(grid_w, min_bat_w, max_bat_w)
+                return
+
+            laatste_resp = resp
+            _LOG.warning("Passive block write poging %d/2 faalde: %s", poging, resp)
+
+        self.passive_write_failures += 1
+        raise RuntimeError(
+            f"Passive block write faalde na 2 pogingen ({self.passive_write_failures}x achtereen): "
+            f"{laatste_resp}"
+        )
 
     async def _verify_passive_block(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
         """Read back passive registers and warn if values don't match what was written."""

@@ -704,6 +704,16 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
         last_written = None
         if _ha_controller and hasattr(_ha_controller, 'last_written_registers'):
             last_written = _ha_controller.last_written_registers
+
+        # Hoe lang zijn we de besturing al kwijt? _executor_status alleen is niet
+        # genoeg: die zag er op 28-09-2026 zeventien uur lang hetzelfde uit als na
+        # één mislukte poging, en niemand kon aan de string zien of het een hik was
+        # of een aanhoudend verlies. Deze teller maakt dat onderscheid zichtbaar.
+        write_failures = 0
+        modbus = getattr(_ha_controller, "_modbus", None)
+        if modbus is not None:
+            write_failures = getattr(modbus, "passive_write_failures", 0)
+
         return web.json_response({
             "ok": True,
             "timestamp": _latest_ts,
@@ -719,6 +729,7 @@ def make_webhook_app(client: SofarModbusClient, ha: HomeAssistantClient) -> web.
             "arbitrage": _latest_plan.get("arbitrage", {}),
             "trade": _trade_daily_totals,
             "registers": {"lastWritten": last_written},
+            "modbusWriteFailures": write_failures,
         })
 
     async def set_override(req: web.Request) -> web.Response:

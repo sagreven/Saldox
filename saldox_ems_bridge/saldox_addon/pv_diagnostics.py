@@ -7,17 +7,49 @@ tijd: pv2_power ging naar 0, de stringspanning stortte in van 450 V naar 6 V,
 en de isolatieweerstand zakte van 384 kOhm naar 50 kOhm. Niemand kreeg een
 seintje. Dit bestand is de reden dat dat niet nog eens gebeurt.
 
+WAAROM pv2_power NIET MEER GEBRUIKT WORDT
+Op 24 september 2026 bleek dat register kapot: het stond constant op 0 W
+terwijl de string aantoonbaar leverde -- spanning en stroom gaven samen 220 W.
+De oude regel "string levert 0 W terwijl de andere produceert" keek dus naar
+een teller die niets meer zei. Erger: hij verklaarde de string DOOD terwijl
+hij in werkelijkheid een vijfde van zijn vermogen leverde. De nieuwe regels
+rekenen daarom op spanning en stroom, die wel kloppen.
+
+DE OHMSE SIGNATUUR
+Een gezonde string hangt aan de MPPT: die houdt de spanning rond een vast
+punt en laat de stroom met de instraling meebewegen. U/I loopt daardoor over
+een dag van honderden ohm bij weinig licht naar enkele tientallen bij vol zon.
+Een string met een corroderend contact doet het omgekeerde: daar bepaalt de
+overgangsweerstand alles, en staat U/I gespijkerd op diezelfde waarde -- hier
+23 ohm -- bij elk lichtniveau. Die constantheid IS de diagnose, niet de hoogte.
+
 DREMPELS
 Teruggetoetst op 75 dagen eigen historie (13 juli - 23 september 2026):
 
   string dood      27 treffers, exact twee aaneengesloten blokken
                    (15-25 juli en 8 sept-heden). Nul losse valse meldingen op
                    de 48 gezonde dagen ertussen.
+                   VERVALLEN -- zie hierboven, pv2_power is onbetrouwbaar.
 
-  isolatie <50%    8 meldingen in 75 dagen. Allemaal in de aanloop naar het
-                   defect; de eerste op 27 augustus, twaalf dagen voor de
-                   string het begaf. Bij 60% komen er twee meldingen bij zonder
-                   nieuwe informatie; bij 40% mist hij 8 september.
+  V2 < 0,50 x V1   eerste melding 17 juli, 27 van 73 dagen. Dat is zeven weken
+                   voor de uitval van 9 september die we eerder als startpunt
+                   aanhielden. Gemeten scheiding: defecte dagen 0,08-0,34,
+                   gezonde dagen 0,59-2,26. De drempel ligt in dat gat, maar
+                   niet in het midden -- naar de gezonde kant is de marge 0,09,
+                   naar de defecte kant 0,16. Bij 0,45 zou hij gecentreerd zijn.
+
+  CV < 0,15        zelfde 26 dagen. Defect 0,01-0,07, gezond 0,38-1,20. Geen
+                   enkele overlap; dit is het schoonste onderscheid van de twee.
+
+EEN RICHTING, GEEN SYMMETRIE
+De twee strings draaien op verschillende spanning: string 1 rond 200 V, string
+2 rond 426 V. In normaal bedrijf is V1/V2 daardoor 0,44-1,70, dus een
+symmetrische toets "V1 < 0,50 x V2" zou op gezonde dagen afgaan. De snelle
+vlag kijkt om die reden ALLEEN of string 2 wegzakt t.o.v. string 1. Valt string
+1 uit, dan moet de CV-regel dat opvangen -- die werkt wel voor beide, omdat hij
+elke string tegen zijn eigen gedrag over de dag afzet en niet tegen de andere.
+Bij een installatie met andere stringtopologie moet STRING_FAULT_VOLTAGE_
+FRACTION opnieuw worden bepaald.
 
 LOKALE DAGEN, GEEN UTC
 De dagindeling volgt de lokale tijd. Tijdens de terugtoets bleken dag- en
@@ -50,9 +82,30 @@ INSULATION_BASELINE_DAYS = 14
 VOLTAGE_BASELINE_DAYS = 7
 MIN_BASELINE_DAYS = 5           # onder dit aantal geen oordeel -- te weinig historie
 
+# --- Stringfout op spanning/stroom (vervangt de pv2_power-toets) ---
+STRING_FAULT_VOLTAGE_FRACTION = 0.50   # V2 onder deze fractie van V1 = verdacht
+STRING_FAULT_MIN_CURRENT_A = 0.5       # onder deze stroom zegt de verhouding niets
+STRING_FAULT_MIN_HOURS = 2             # zo lang moet het aanhouden voor de vlag
+OHMIC_CV_MAX = 0.15                    # variatiecoefficient van U/I over de dag
+OHMIC_MIN_HOURS = 4                    # minder belaste uren -> geen CV-oordeel
+OHMIC_MIN_CURRENT_SPREAD = 2.5         # hoogste/laagste stroom over die uren
+#
+# Die laatste drempel is niet cosmetisch. Een vaste U/I zegt alleen iets als de
+# stroom wel degelijk bewoog: bleef de instraling de hele meetperiode gelijk,
+# dan is een constante verhouding vanzelfsprekend en geen bewijs van een
+# weerstand. Zonder deze eis meldde de regel op 30 augustus string 1 als defect
+# -- vier middaguren met nauwelijks variatie (stroombereik 1,6x) gaven daar een
+# CV van 0,09. Gezonde dagen halen over hun eerste vier belaste uren 2,7x tot
+# 3,9x; de defecte dagen zitten op 3,7x tot 6,3x. Bij 2,5x valt het valse geval
+# af zonder een echte te missen.
+
 
 def _local_day(ts: datetime) -> str:
     return (ts + timedelta(hours=LOCAL_OFFSET_HOURS)).strftime("%Y-%m-%d")
+
+
+def _local_hour(ts: datetime) -> str:
+    return (ts + timedelta(hours=LOCAL_OFFSET_HOURS)).strftime("%Y-%m-%dT%H")
 
 
 def _median(values: list[float]) -> float:
@@ -60,6 +113,22 @@ def _median(values: list[float]) -> float:
         return 0.0
     s = sorted(values)
     return s[len(s) // 2]
+
+
+def _cv(values: list[float]) -> float | None:
+    """Variatiecoefficient: spreiding gedeeld door gemiddelde.
+
+    Dimensieloos, dus bruikbaar om "beweegt mee met het licht" (hoog) te
+    onderscheiden van "staat vast" (laag), ongeacht het spanningsniveau van
+    de string.
+    """
+    if len(values) < 3:
+        return None
+    mean = sum(values) / len(values)
+    if mean <= 0:
+        return None
+    var = sum((v - mean) ** 2 for v in values) / len(values)
+    return (var ** 0.5) / mean
 
 
 @dataclass
@@ -91,6 +160,10 @@ class PvDiagnostics:
     voltage_daily_max: dict[str, dict[str, float]] = field(default_factory=dict)
     # string -> tijdstip waarop hij voor het eerst dood leek
     dead_since: dict[str, str] = field(default_factory=dict)
+    # "YYYY-MM-DDTHH" (lokaal) -> string -> [somV, somI, aantal]
+    # Uurgemiddelden zijn nodig omdat een losse meting te veel ruist om U/I
+    # betrouwbaar te bepalen; per uur middelen haalt die ruis eruit.
+    hourly: dict[str, dict[str, list[float]]] = field(default_factory=dict)
     # alarmsleutel -> tijdstip van bevestigen
     acknowledged: dict[str, str] = field(default_factory=dict)
 
@@ -104,6 +177,7 @@ class PvDiagnostics:
                 insulation_daily_min=raw.get("insulation_daily_min", {}),
                 voltage_daily_max=raw.get("voltage_daily_max", {}),
                 dead_since=raw.get("dead_since", {}),
+                hourly=raw.get("hourly", {}),
                 acknowledged=raw.get("acknowledged", {}),
             )
         except FileNotFoundError:
@@ -121,17 +195,26 @@ class PvDiagnostics:
                     "insulation_daily_min": self.insulation_daily_min,
                     "voltage_daily_max": self.voltage_daily_max,
                     "dead_since": self.dead_since,
+                    "hourly": self.hourly,
                     "acknowledged": self.acknowledged,
                 }, fh)
             os.replace(tmp, STATE_PATH)              # atomair; geen half bestand bij stroomuitval
         except Exception as ex:
             _LOG.warning("Diagnose-state niet op te slaan: %s", ex)
 
-    def _prune(self, keep_days: int = 45) -> None:
-        cutoff = _local_day(datetime.now(timezone.utc) - timedelta(days=keep_days))
+    def _prune(self, now: datetime | None = None, keep_days: int = 45) -> None:
+        # now expliciet meegeven, niet de wandklok pakken: bij het terugspelen
+        # van historie wist de wandklok-variant alles wat ouder was dan 45 dagen
+        # meteen weer uit, waardoor het juli-blok onzichtbaar bleef.
+        now = now or datetime.now(timezone.utc)
+        cutoff = _local_day(now - timedelta(days=keep_days))
         for store in (self.insulation_daily_min, self.voltage_daily_max):
             for day in [d for d in store if d < cutoff]:
                 del store[day]
+        # hourly heeft sleutels "YYYY-MM-DDTHH"; vergelijk op het datumdeel,
+        # anders zou "2026-09-01T05" < "2026-09-01" onjuist uitpakken.
+        for key in [k for k in self.hourly if k[:10] < cutoff]:
+            del self.hourly[key]
 
     # ------------------------------------------------------------ bijwerken
     def observe(self, readings: dict, now: datetime | None = None) -> None:
@@ -148,13 +231,45 @@ class PvDiagnostics:
             prev = self.insulation_daily_min.get(day)
             self.insulation_daily_min[day] = min(prev, iso) if prev is not None else float(iso)
 
+        hour = _local_hour(now)
         for s in ("pv1", "pv2"):
             v = val(f"{s}_voltage_v")
             if isinstance(v, (int, float)):
                 bucket = self.voltage_daily_max.setdefault(day, {})
                 bucket[s] = max(bucket.get(s, 0.0), float(v))
 
-        self._prune()
+            i = val(f"{s}_current_a")
+            if isinstance(v, (int, float)) and isinstance(i, (int, float)):
+                acc = self.hourly.setdefault(hour, {}).setdefault(s, [0.0, 0.0, 0.0])
+                acc[0] += float(v)
+                acc[1] += float(i)
+                acc[2] += 1
+
+        self._prune(now)
+
+    def _hourly_ratios(self, string: str, day: str) -> list[tuple[float, float]]:
+        """(U/I, I) per uur voor een string op een lokale dag, belaste uren.
+
+        Onbelaste uren laten vallen: bij bijna nul stroom schiet de verhouding
+        naar duizenden ohm en zou hij de spreiding domineren, waardoor juist
+        een defecte string er gevarieerd uit gaat zien.
+
+        De stroom komt mee terug omdat de CV-toets moet weten of er genoeg
+        variatie in de instraling zat om iets te kunnen concluderen.
+        """
+        out: list[tuple[float, float]] = []
+        # Niet sorteren: CV, mediaan en spreiding zijn volgorde-onafhankelijk,
+        # en deze lus draait bij elke polling over de hele bewaarde historie.
+        for key, per_string in self.hourly.items():
+            if key[:10] != day:
+                continue
+            acc = per_string.get(string)
+            if not acc or acc[2] <= 0:
+                continue
+            mean_v, mean_i = acc[0] / acc[2], acc[1] / acc[2]
+            if mean_i > STRING_FAULT_MIN_CURRENT_A and mean_v > 0:
+                out.append((mean_v / mean_i, mean_i))
+        return out
 
     # -------------------------------------------------------------- oordeel
     def evaluate(self, readings: dict, now: datetime | None = None) -> list[dict]:
@@ -166,33 +281,67 @@ class PvDiagnostics:
             entry = readings.get(key)
             return entry.get("value") if isinstance(entry, dict) else None
 
-        p1, p2 = val("pv1_power_w"), val("pv2_power_w")
+        # --- Regel 1a: snelle vlag — string 2 zakt weg onder string 1 ---
+        #
+        # Eenrichtingsverkeer, en dat is geen slordigheid: string 1 draait rond
+        # 200 V en string 2 rond 426 V, dus in gezond bedrijf is V1 al 0,44-1,70
+        # keer V2. De omgekeerde toets zou daarmee op goede dagen afgaan.
+        v1, i1 = val("pv1_voltage_v"), val("pv1_current_a")
+        v2, i2 = val("pv2_voltage_v"), val("pv2_current_a")
+        measured = all(isinstance(x, (int, float)) for x in (v1, i1, v2, i2))
 
-        # --- Regel 1: één string levert, de andere niets ---
-        for dead, alive, dead_name in (("pv1", "pv2", "1"), ("pv2", "pv1", "2")):
-            dp = p1 if dead == "pv1" else p2
-            ap = p2 if dead == "pv1" else p1
-            if not isinstance(dp, (int, float)) or not isinstance(ap, (int, float)):
-                continue
-            if ap > DAYLIGHT_MIN_W and dp <= 0:
-                first = self.dead_since.get(dead)
+        if measured and i1 > STRING_FAULT_MIN_CURRENT_A and v1 > 0:
+            fraction = v2 / v1
+            if fraction < STRING_FAULT_VOLTAGE_FRACTION:
+                first = self.dead_since.get("pv2")
                 if first is None:
-                    self.dead_since[dead] = now.isoformat()
-                    continue                                 # eerst laten aanhouden
-                elapsed = now - datetime.fromisoformat(first)
-                if elapsed >= timedelta(minutes=STRING_DEAD_MINUTES):
+                    self.dead_since["pv2"] = now.isoformat()
+                elif now - datetime.fromisoformat(first) >= timedelta(hours=STRING_FAULT_MIN_HOURS):
                     alarms.append(Alarm(
-                        key=f"string_dead_{dead}",
+                        key="string_fault_pv2",
                         severity="critical",
-                        title=f"String {dead_name} levert niets",
-                        detail=(f"String {dead_name} staat op 0 W terwijl de andere "
-                                f"{int(ap)} W levert, al sinds {first[:16].replace('T', ' ')}. "
-                                f"Controleer de DC-zijde: zekering, MC4-connectoren, "
-                                f"doorvoer."),
+                        title="String 2 levert ver onder string 1",
+                        detail=(f"String 2 staat op {v2:.0f} V tegen {v1:.0f} V voor "
+                                f"string 1 ({fraction:.2f}x), al sinds "
+                                f"{first[:16].replace('T', ' ')}. Normaal ligt die "
+                                f"verhouding boven 0,59. Wijst op een onderbroken of "
+                                f"weerstandsvolle verbinding: MC4-connectoren, "
+                                f"DC-scheider, klemmen in de omvormer."),
                         since=first,
                     ))
             else:
-                self.dead_since.pop(dead, None)
+                self.dead_since.pop("pv2", None)
+        elif measured and i1 <= STRING_FAULT_MIN_CURRENT_A:
+            pass          # te weinig licht om te oordelen; loper niet resetten
+
+        # --- Regel 1b: bevestiging — U/I staat vast, dus een weerstand ---
+        #
+        # Werkt wel voor beide strings: hij zet elke string af tegen zijn eigen
+        # verloop over de dag, niet tegen de andere string.
+        for s, name in (("pv1", "1"), ("pv2", "2")):
+            samples = self._hourly_ratios(s, today)
+            if len(samples) < OHMIC_MIN_HOURS:
+                continue
+            currents = [i for _, i in samples]
+            spread = max(currents) / min(currents) if min(currents) > 0 else 0.0
+            if spread < OHMIC_MIN_CURRENT_SPREAD:
+                continue           # te weinig variatie in het licht; zegt niets
+            ratios = [r for r, _ in samples]
+            cv = _cv(ratios)
+            if cv is None or cv >= OHMIC_CV_MAX:
+                continue
+            alarms.append(Alarm(
+                key=f"string_ohmic_{s}",
+                severity="critical",
+                title=f"String {name} gedraagt zich als weerstand",
+                detail=(f"De verhouding spanning/stroom staat vandaag over "
+                        f"{len(ratios)} belaste uren vast op {_median(ratios):.0f} ohm "
+                        f"(spreiding {cv:.2f}). Een werkende string volgt de MPPT en "
+                        f"varieert sterk over de dag; een vaste waarde betekent dat "
+                        f"een overgangsweerstand het gedrag bepaalt. Zoek een "
+                        f"gecorrodeerd of verbrand contact."),
+                since=now.isoformat(),
+            ))
 
         # --- Regel 2: stringspanning ingestort ---
         #
