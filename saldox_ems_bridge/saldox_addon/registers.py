@@ -55,9 +55,13 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("pv1_voltage_v",            0x0584, 1, "holding", 0.1,   "V"),
     Register("pv1_current_a",            0x0585, 1, "holding", 0.01,  "A"),
     Register("pv1_power_w",              0x0586, 1, "holding", 10.0,  "W"),
-    Register("pv2_voltage_v",            0x0588, 1, "holding", 0.1,   "V"),
-    Register("pv2_current_a",            0x0589, 1, "holding", 0.01,  "A"),
-    Register("pv2_power_w",              0x058A, 1, "holding", 10.0,  "W"),
+    # PV2 lag +1 register te hoog (0x0588/0589/058A). Officiële Sofar HYD-map: PV-registers
+    # zijn aaneengesloten, PV2 begint op 0x0587. De offset las PV2-stroom als spanning
+    # (~45 V), PV2-vermogen als stroom (~2 A) en een gereserveerd register als vermogen
+    # (vast 0) → phantom "string 2 ingestort / 23 ohm" terwijl PV2 gezond is (471,6 V / 2,02 kW).
+    Register("pv2_voltage_v",            0x0587, 1, "holding", 0.1,   "V"),
+    Register("pv2_current_a",            0x0588, 1, "holding", 0.01,  "A"),
+    Register("pv2_power_w",              0x0589, 1, "holding", 10.0,  "W"),
     Register("pv_total_power_w",         0x05C4, 1, "holding", 100.0, "W"),
 
     # ----- AC output (grid-side) -----
