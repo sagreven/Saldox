@@ -37,6 +37,7 @@ HEADLINES = {
     "Terugverdientijd per maatregel": "Niet elke maatregel hoeft zich terug te verdienen.",
     "Stroomcontract: nu en straks": "Dynamisch blijft dynamisch, en dat laat de batterij verdienen.",
     "Prijsontwikkeling: oorlog en einde saldering": "Duurder gas maakt het pakket juist sneller terugverdiend.",
+    "Optie: terugverdientijd van 5 jaar": "Vijf jaar is haalbaar, met de airco's apart.",
     "Verdienmodel verhuurder: wie betaalt, wie bespaart": "Wie betaalt de rekening, wie houdt de besparing?",
     "Waarom de airco's geen terugverdientijd hebben": "Vervangen moet. De vraag is alleen: welke vervanging.",
     "Inkoopprijzen via een relatie": "Het inkoopvoordeel gaat volledig naar de verhuurder.",
@@ -110,6 +111,15 @@ PRIJS = [  # zie model.PRIJZEN_2027
 ]
 
 
+VIJF_JAAR = [  # zie model.vijf_jaar(); (variant, pess, normaal, opt) in jaren
+    ("Volledig pakket", 13.5, 7.5, 5.1),
+    ("Volledig + EIA/KIA + prijzen 2027", 9.9, 5.6, 3.9),
+    ("Energiedeel zonder airco's", 6.4, 4.2, 3.0),
+    ("Energiedeel + EIA/KIA", 5.8, 3.8, 2.7),
+    ("Energiedeel + EIA/KIA + prijzen 2027", 5.4, 3.6, 2.6),
+]
+
+
 def inserts():
     """Per sectie: (anker, html). Anker 'lede' = na de eerste alinea, 'table:N' = na de N-de tabel (1-based)."""
     return {
@@ -123,6 +133,10 @@ def inserts():
             PRIJS, INVESTERING, "prijs-chart", "Prijsscenario · basis tegenover 2027",
             "Met prijzen volgens de termijnmarkt ca. 6,4 jaar in plaats van 7,5",
             "Stroom €0,21 → €0,23 per kWh, gas €1,00 → €1,40 per m³ (excl. btw)"))],
+        "Optie: terugverdientijd van 5 jaar": [("table:1", charts.payback(
+            VIJF_JAAR, 5, refs=[(5, "doel 5 jaar", "ref-sun", 20)], lw=250, cap=15, fid="vijf-jaar-chart",
+            eyebrow="Optie · route naar 5 jaar", title="Met de airco's apart haalt het energiedeel ruim 5 jaar",
+            sub="Netto, na jaarlijkse kosten · EIA/KIA bij 19% vennootschapsbelasting"))],
         "Stroomcontract: nu en straks": [("table:1", charts.contract(CONTRACT, INVESTERING))],
     }
 

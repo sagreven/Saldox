@@ -28,6 +28,8 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 
 **Prijsscenario 2027** (nieuwe sectie): door de oorlog met Iran (vanaf 28-2-2026, Straat van Hormuz dicht) steeg TTF van ca. €31 naar €74 per MWh; Cal-2027 gas ca. €55, stroom ca. €125 per MWh. Met stroom €0,23 en gas €1,40 excl. btw: netto €4.405 / €7.697 / €11.125, terugverdientijd **11,1 / 6,4 / 4,4 jaar**. De airco's winnen het meest; de laadpalen leveren iets minder op zolang het laadtarief niet meestijgt. Energiebelasting 2027: gas €0,6163 per m³, stroom €0,0880 per kWh. Het einde van de saldering zat al in het model.
 
+**Optie 5 jaar** (nieuwe sectie, `model.vijf_jaar()`): met de airco's buiten de business case (energiedeel €25.500) normaal 4,2 jaar, met EIA/KIA (19% vpb, voordeel ca. €2.480) 3,8 jaar, met ook de prijzen van 2027 3,6 jaar. Minder stroomverbruik mag: bij 20.000 kWh 4,3 jaar, bij 15.000 kWh 4,6 jaar. Pessimistisch haalt 5 jaar niet (5,4–6,4). Het volledige pakket inclusief airco's haalt 5 jaar alleen optimistisch; met EIA/KIA en de prijzen van 2027 normaal 5,6 jaar.
+
 ## 2. Gecorrigeerd of aangevuld in de tekst
 
 - **Inkoopprijzen:** via een relatie, geen marge voor Saldox. Margetabel en "verkoop aan derden" geschrapt.

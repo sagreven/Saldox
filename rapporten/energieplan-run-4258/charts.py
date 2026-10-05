@@ -192,26 +192,29 @@ def begroting(items, totaal):
 
 
 # ════════════════════════════════════════════════ Terugverdientijd per maatregel
-def payback(rows, pakket_normaal):
-    """rows: (label, pess|None, normaal|None, opt). None = niet terugverdiend (pess) / meer dan 25 (normaal)."""
+def payback(rows, pakket_normaal, refs=None, lw=160, cap=25, fid="payback-chart", eyebrow="Terugverdientijd per maatregel",
+            title="Laadpalen, smart control en zon zijn snel terug; de airco's niet",
+            sub="Netto, na jaarlijkse kosten · meten per unit en inspectie hebben geen eigen opbrengst"):
+    """rows: (label, pess|None, normaal|None, opt). None = niet terugverdiend (pess) / meer dan cap (normaal)."""
     W = 760
-    lw, ml, mr, mt, rh = 160, 172, 30, 60, 50
+    ml, mr, mt, rh = lw + 12, 30, 60, 50
     H = mt + rh * len(rows) + 30
     pw = W - ml - mr
-    cap = 25
-    zone = 3.2  # extra jaren voor de zone 'niet'
+    zone = cap * 0.128  # extra jaren voor de zone 'niet'
     X = lambda j: ml + min(j, cap + zone) / (cap + zone) * pw
     o = [svg_open(W, H, "Terugverdientijd per maatregel",
                   "Per maatregel een lijn van optimistisch tot pessimistisch, met een punt voor het normale scenario.")]
     o.append(f'<rect x="{X(cap):.1f}" y="{mt - 14}" width="{X(cap + zone) - X(cap):.1f}" height="{rh * len(rows) + 8}" fill="url(#hatch-red)" opacity=".75"/>')
-    o.append(f'<text class="zone-label" x="{(X(cap) + X(cap + zone)) / 2:.1f}" y="{mt - 20}" text-anchor="middle">niet / &gt; 25</text>')
-    for j in range(0, cap + 1, 5):
+    o.append(f'<text class="zone-label" x="{(X(cap) + X(cap + zone)) / 2:.1f}" y="{mt - 20}" text-anchor="middle">niet / &gt; {cap}</text>')
+    for j in range(0, cap + 1, 5 if cap > 15 else 1):
         o.append(f'<line class="grid" x1="{X(j):.1f}" x2="{X(j):.1f}" y1="{mt - 14}" y2="{mt + rh * len(rows) - 6}"/>')
         o.append(f'<text class="tick" x="{X(j):.1f}" y="{mt + rh * len(rows) + 12}" text-anchor="middle">{j}</text>')
     o.append(f'<text class="axis-title" x="{ml + pw / 2:.1f}" y="{H - 2}" text-anchor="middle">Jaren</text>')
     # referentielijnen
-    for j, lab, cls, dy in [(pakket_normaal, f"totaal pakket {nl(pakket_normaal, 1)} jaar", "ref-sun", 36),
-                            (15, "levensduur airco 15 jaar (aanname)", "ref-ink", 20)]:
+    if refs is None:
+        refs = [(pakket_normaal, f"totaal pakket {nl(pakket_normaal, 1)} jaar", "ref-sun", 36),
+                (15, "levensduur airco 15 jaar (aanname)", "ref-ink", 20)]
+    for j, lab, cls, dy in refs:
         o.append(f'<line class="{cls}" x1="{X(j):.1f}" x2="{X(j):.1f}" y1="{mt - dy + 4}" y2="{mt + rh * len(rows) - 6}"/>')
         o.append(f'<text class="ref-label" x="{X(j) + 5:.1f}" y="{mt - dy + 2}">{esc(lab)}</text>')
     fmt = lambda v: "niet" if v is None else nl(v, 1)
@@ -226,20 +229,17 @@ def payback(rows, pakket_normaal):
         else:
             o.append(f'<circle class="dot-end" cx="{xp:.1f}" cy="{y}" r="4.5"/>')
         o.append(f'<circle class="dot-end" cx="{xo:.1f}" cy="{y}" r="4.5"/>')
-        xn = X(cap + 1.6) if norm is None else X(norm)
+        xn = X(cap + zone / 2) if norm is None else X(norm)
         o.append(f'<circle class="dot-norm" cx="{xn:.1f}" cy="{y}" r="7.5" data-tip="{esc(label)}: '
                  f'pessimistisch {fmt(pess)}, normaal {"meer dan 25" if norm is None else nl(norm, 1)}, optimistisch {nl(opt, 1)} jaar"/>')
-        o.append(f'<text class="dot-label" x="{xn:.1f}" y="{y - 13}" text-anchor="middle">{"> 25" if norm is None else nl(norm, 1)}</text>')
+        o.append(f'<text class="dot-label" x="{xn:.1f}" y="{y - 13}" text-anchor="middle">{f"> {cap}" if norm is None else nl(norm, 1)}</text>')
         if (xp - xo) > 40:
             o.append(f'<text class="end-sub" x="{xo:.1f}" y="{y + 19}" text-anchor="middle">{nl(opt, 1)}</text>')
             if pess is not None:
                 o.append(f'<text class="end-sub" x="{xp:.1f}" y="{y + 19}" text-anchor="middle">{nl(pess, 1)}</text>')
     o.append("</svg><div class=\"tooltip\" hidden></div>")
-    legend = sw("dot", "Normaal") + sw("range", "Optimistisch tot pessimistisch") + sw("hatch-red", "Niet of na meer dan 25 jaar")
-    return figure("payback-chart", "Terugverdientijd per maatregel",
-                  "Laadpalen, smart control en zon zijn snel terug; de airco's niet",
-                  "Netto, na jaarlijkse kosten · meten per unit en inspectie hebben geen eigen opbrengst",
-                  "".join(o), legend)
+    legend = sw("dot", "Normaal") + sw("range", "Optimistisch tot pessimistisch") + sw("hatch-red", f"Niet of na meer dan {cap} jaar")
+    return figure(fid, eyebrow, title, sub, "".join(o), legend)
 
 
 # ════════════════════════════════════════════════ Laadplan

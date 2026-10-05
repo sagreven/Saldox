@@ -4,7 +4,7 @@
 
 ## Samenvatting
 
-Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.630 tot 9.670 per jaar op; de terugverdientijd is 5 tot 13,5 jaar, normaal ca. 7,5 jaar. Dat geldt voor het dynamische stroomcontract dat de klant nu heeft en houdt; met een vast contract zou het normaal ca. 8,4 jaar zijn. Blijven gas en stroom na de prijsstijging door de oorlog met Iran op het niveau van de termijnmarkt voor 2027, dan wordt het ca. 6,4 jaar. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in ca. 3 tot 6,5 jaar terug.
+Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.630 tot 9.670 per jaar op; de terugverdientijd is 5 tot 13,5 jaar, normaal ca. 7,5 jaar. Dat geldt voor het dynamische stroomcontract dat de klant nu heeft en houdt; met een vast contract zou het normaal ca. 8,4 jaar zijn. Blijven gas en stroom na de prijsstijging door de oorlog met Iran op het niveau van de termijnmarkt voor 2027, dan wordt het ca. 6,4 jaar. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in ca. 3 tot 6,5 jaar terug, normaal in ca. 4,2 jaar; met EIA en KIA ca. 3,8 jaar (zie 'Optie: terugverdientijd van 5 jaar').
 
 - **Zonnestroom:** 40 panelen van 450 Wp (18 kWp) met een Sofar HYD 15KTL-3PH hybride omvormer, ca. 16.500 kWh per jaar, ca. 45% van het verbruik.
 - **Batterij 50 kWh:** vangt in de winter pieken boven 3x25 A op en laadt de rest van het jaar op goedkope uren. Inkoop €2.500, nog te bevestigen.
@@ -202,6 +202,41 @@ Bedragen per scenario: pessimistisch / normaal / optimistisch. De batterij, de E
 - **Onderbouwing:** gas €1,40 = €1,66 tot 1,69 incl. btw volgens de termijnmarkt, gedeeld door 1,21. Stroom €0,23 = groothandelsprijs 2027 ca. €0,016 per kWh hoger dan in 2026, energiebelasting ca. €0,004 lager, plus de opslag die leveranciers nu doorvoeren (Greenchoice verhoogde in september de variabele tarieven met ca. 20%).
 
 Bronnen: [Keuze.nl gasprijsverwachting](https://www.keuze.nl/energie/gasprijs-verwachting), [Trading Economics TTF](https://tradingeconomics.com/commodity/eu-natural-gas), [Elexys marktupdate 1 oktober 2026](https://www.elexys.be/sites/default/files/marketupdates/01102026---elexys_market_updates_.pdf), [Overstappen.nl energiebelasting 2027](https://www.overstappen.nl/nieuws/gasbelasting-stijgt-stroombelasting-daalt-energierekening-euro-180-hoger-in-2027/), [Rabobank via FXStreet](https://www.fxstreet.com/news/natural-gas-higher-winter-curve-and-risk-ranges-rabobank-202609151151).
+
+## Optie: terugverdientijd van 5 jaar
+
+Met de airco's buiten de business case verdient het energiedeel zich in het normale scenario in ca. 4,2 jaar terug, ook als het stroomverbruik veel lager uitvalt. Met EIA en KIA wordt het ca. 3,8 jaar. Het volledige pakket inclusief airco's haalt 5 jaar alleen in het optimistische scenario.
+
+| Variant | Investering | Netto per jaar | Terugverdientijd |
+| --- | --- | --- | --- |
+| Volledig pakket (hoofdscenario) | €48.987,80 | €3.631 / €6.563 / €9.673 | 13,5 / 7,5 / 5,1 jaar |
+| Volledig pakket, EIA/KIA en prijzen 2027 | €43.471,80 | €4.405 / €7.697 / €11.125 | 9,9 / 5,6 / 3,9 jaar |
+| Energiedeel zonder airco's | €25.500 | €3.991 / €6.053 / €8.403 | 6,4 / 4,2 / 3,0 jaar |
+| Energiedeel + EIA/KIA | €23.019 | €3.991 / €6.053 / €8.403 | 5,8 / 3,8 / 2,7 jaar |
+| Energiedeel + EIA/KIA + prijzen 2027 | €23.019 | €4.255 / €6.417 / €8.825 | 5,4 / 3,6 / 2,6 jaar |
+
+Bedragen per scenario: pessimistisch / normaal / optimistisch.
+
+**Voorwaarden**
+
+1. **De airco's vallen buiten de business case.** Ze moeten toch vervangen worden en worden apart begroot, bijvoorbeeld uit het onderhoudsbudget. Het energiedeel kost dan €25.500. De besparing van de airco's (stroom en gas) en hun onderhoudskosten tellen dan ook niet mee.
+2. **Het stroomcontract blijft dynamisch** voor afname en teruglevering, zodat de batterij goedkoop laadt en duur ontlaadt. De klant heeft dat al.
+3. **De laadpalen zijn 3 tot 4 dagen per week bezet,** tegen €0,39 tot 0,49 per kWh, en het tarief stijgt mee als de stroomprijs stijgt.
+4. **De batterij van 50 kWh past op de Sofar** en kost €2.500 via de relatie.
+5. **EIA en KIA:** melden binnen 3 maanden na de opdracht, zonnepanelen zonder SDE++, en de verhuurder betaalt vennootschapsbelasting (gerekend met 19%). Voor het energiedeel is het belastingvoordeel ca. €2.480: EIA over €14.800 (panelen en batterij) en KIA 28% over €25.500. Voor het volledige pakket is het ca. €5.520, mits de airco's boven 12 kW thermisch zitten en een SCOP van ten minste 4,0 hebben.
+
+**Aannames**
+
+- Stroom €0,21 per kWh, ERE €0,10 tot 0,13 per geladen kWh, teruglevering €0,03 tot 0,05 per kWh; prijzen 2027 volgens de termijnmarkt (stroom €0,23, gas €1,40).
+- **Minder stroomverbruik mag.** Zonder airco's telt het verbruik alleen nog mee via het deel van de zonnestroom dat direct wordt gebruikt:
+
+| Jaarverbruik | Direct verbruik met batterij (simulatie) | Netto energiedeel (normaal) | Terugverdientijd (normaal) |
+| --- | --- | --- | --- |
+| 25.000 kWh of meer | 88% of meer (gerekend met 85%) | €6.053 | 4,2 jaar |
+| 20.000 kWh | 81% | €5.941 | 4,3 jaar |
+| 15.000 kWh | 68% | €5.576 | 4,6 jaar |
+
+- **Pessimistisch haalt 5 jaar niet** (5,4 tot 6,4 jaar): dan zijn de laadpalen weinig bezet en verdient de batterij weinig. Stuur daarom op de bezetting van de laadpalen en laat het EMS de batterij op de uurprijs sturen.
 
 ## Verdienmodel verhuurder: wie betaalt, wie bespaart
 

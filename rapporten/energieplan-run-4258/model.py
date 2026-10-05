@@ -128,6 +128,39 @@ def varianten():
     return {k: bereken(a) for k, a in v.items()}
 
 
+# ── Optie: terugverdientijd van 5 jaar ─────────────────────────────────────────
+# Airco's buiten de business case (noodzakelijke vervanging); energiedeel €25.500.
+ENERGIEDEEL = INVESTERING - 23487.80
+EIA_ENERGIE = 10800 + 4000     # zonnepanelen (251102) en batterij incl. opstelling (251118)
+EIA_AIRCO = 23487.80           # alleen bij > 12 kW thermisch en SCOP ≥ 4,0 (211108)
+VPB = 0.19                     # vennootschapsbelasting 2026 tot €200.000 winst
+
+
+def fiscaal(eia_basis, kia_basis, tarief=VPB):
+    """Belastingvoordeel van EIA (40%) en KIA (28% bij €2.901–71.683 aan investeringen)."""
+    kia = 0.28 * kia_basis if 2901 <= kia_basis <= 71683 else 0
+    return round((0.40 * eia_basis + kia) * tarief)
+
+
+def zonder_airco(res):
+    return tuple(n - a for n, a in zip(res["netto"], res["per"]["airco"]))
+
+
+def vijf_jaar():
+    basis, p27 = bereken(ACTUEEL), bereken(PRIJZEN_2027)
+    f_e = fiscaal(EIA_ENERGIE, ENERGIEDEEL)
+    f_all = fiscaal(EIA_ENERGIE + EIA_AIRCO, INVESTERING)
+    rijen = [
+        ("Volledig pakket (hoofdscenario)", INVESTERING, basis["netto"]),
+        ("Volledig pakket, EIA/KIA en prijzen 2027", INVESTERING - f_all, p27["netto"]),
+        ("Energiedeel zonder airco's", ENERGIEDEEL, zonder_airco(basis)),
+        ("Energiedeel + EIA/KIA", ENERGIEDEEL - f_e, zonder_airco(basis)),
+        ("Energiedeel + EIA/KIA + prijzen 2027", ENERGIEDEEL - f_e, zonder_airco(p27)),
+    ]
+    return dict(fiscaal_energie=f_e, fiscaal_alles=f_all,
+                rijen=[(n, round(i, 2), net, tuple(jaren(i, x) for x in net)) for n, i, net in rijen])
+
+
 def jaren(inv, netto):
     return "niet" if netto <= 0 else f"{inv / netto:.1f}".replace(".", ",")
 
@@ -144,6 +177,10 @@ if __name__ == "__main__":
         print(f"{k:13} {v}")
     print("terugverdientijd", [jaren(INVESTERING, n) for n in m["netto"]])
     print()
+    v5 = vijf_jaar()
+    print("\nfiscaal energiedeel", v5["fiscaal_energie"], "alles", v5["fiscaal_alles"])
+    for r_ in v5["rijen"]:
+        print(r_)
     for k, v in varianten().items():
         print(f"{k:20} zon {v['zon']} batterij {v['batterij']} batt-netto {v['per']['batt']} netto {v['netto']} "
               f"jaren {[jaren(INVESTERING, n) for n in v['netto']]}")

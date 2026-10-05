@@ -201,6 +201,15 @@ for i, a_ in enumerate([model.ACTUEEL, model.PRIJZEN_2027]):
        f"prijsscenario {pt[0][i + 1]}: netto {v['netto']}")
     ok(build.PRIJS[i][1] == v["netto"], "  grafiekdata prijsscenario")
 
+vt = next(t for t in md_tables if t[0] == ["Variant", "Investering", "Netto per jaar", "Terugverdientijd"])
+v5 = model.vijf_jaar()
+for r, (naam, inv, net, jr) in zip(vt[1:], v5["rijen"]):
+    inv_s = "€" + (f"{inv:,.2f}" if inv % 1 else f"{inv:,.0f}").replace(",", "X").replace(".", ",").replace("X", ".")
+    ok(r[0] == naam and r[1] == inv_s and r[2] == fmt(net) and r[3] == " / ".join(jr) + " jaar", f"5-jaarsoptie {naam}: {' / '.join(jr)}")
+for (lab, p_, n_, o_), (_, _, _, jr) in zip(build.VIJF_JAAR, v5["rijen"]):
+    ok(tuple(model.jaren(1, 1 / x) for x in (p_, n_, o_)) == jr, f"  grafiekdata {lab}")
+ok(len(vt) - 1 == len(v5["rijen"]), "5-jaarsoptie: alle varianten")
+
 print("\n4. Grafiekdata = tabellen")
 ok(near(sum(v for _, v in build.MAATREGELEN), 48987.80), "begrotingsgrafiek telt op tot €48.987,80")
 wf = build.WATERVAL
