@@ -37,7 +37,7 @@ HEADLINES = {
     "Terugverdientijd per maatregel": "Niet elke maatregel hoeft zich terug te verdienen.",
     "Verdienmodel verhuurder: wie betaalt, wie bespaart": "Wie betaalt de rekening, wie houdt de besparing?",
     "Waarom de airco's geen terugverdientijd hebben": "Vervangen moet. De vraag is alleen: welke vervanging.",
-    "Toegevoegde waarde van inkoop en verkoop": "Inkoopprijs is de grootste hefboom.",
+    "Inkoopprijzen via een relatie": "Het inkoopvoordeel gaat volledig naar de verhuurder.",
     "Laadplan en tariefopties voor de klant": "Twee laadpalen, drie tarieven.",
     "Netaansluiting 3x25 A en meten per unit": "Krap in de winter, haalbaar met de batterij.",
     "EMS: slim verwarmen en koelen": "Warm als u er bent, zuinig als u weg bent.",

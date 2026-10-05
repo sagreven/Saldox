@@ -21,7 +21,7 @@ Alle bedragen en totalen in het rapport kloppen rekenkundig (`check.py`: begroti
 2. **Verbruik 36.000 kWh: wat zit erin?** De extra airco-verwarming (ca. 5.000 kWh) en de laadpalen (7.800 tot 10.400 kWh) lijken er niet in te zitten. Voor de zon is dat gunstig (meer eigen verbruik), maar voor de 3x25 A en de energieprijs niet. Bevestig het verbruik met meetdata (slimme meter, 15-minutenwaarden).
 3. **Terugleverkosten.** Na het einde van de saldering rekenen veel leveranciers terugleverkosten. Dan kan €0,08 per teruggeleverde kWh netto ook €0 of minder worden.
 4. **Stroomprijs vast op €0,25, geen indexatie of disconto.** Het gaat om een eenvoudige terugverdientijd. Voor een investeringsbeslissing is een NCW/IRR over 15 jaar met degradatie van de panelen (ca. 0,5% per jaar) beter verdedigbaar.
-5. **Batterij €50 per kWh.** Al gemarkeerd in het rapport. Dit is de grootste hefboom: tegen marktprijs (€500 per kWh) wordt het normale scenario ca. 10,6 jaar (€71.488 / €6.762).
+5. **Batterij €50 per kWh via de relatie.** Dit is de grootste hefboom in de business case: tegen marktprijs (€500 per kWh) wordt het normale scenario ca. 10,6 jaar (€71.487,80 / €6.762). Leg de prijsafspraak met de relatie schriftelijk vast, inclusief wat er bij de batterij is inbegrepen (omvormer, BMS, certificering).
 
 ## C. Ontbrekend in begroting of planning
 
@@ -35,7 +35,11 @@ Alle bedragen en totalen in het rapport kloppen rekenkundig (`check.py`: begroti
 - **Energiewet (2026):** zelf stroom leveren aan huurders in model B kan onder de nieuwe leveringsregels vallen. Het rapport noemt dit al als juridisch controlepunt; zet het als blokkerend punt vóór de keuze A/B.
 - **EIA/KIA** zijn niet meegerekend. Dat is voordeel voor de verhuurder, maar de 3-maandentermijn voor de EIA maakt het een harde planningsmijlpaal.
 
-## D. Stijl
+## D. Gecorrigeerd in het rapport
+
+- De sectie "Toegevoegde waarde van inkoop en verkoop" ging uit van doorverkoop met marge (€22.500 als "grootste winstpost"). Dat klopt niet: de inkoopprijzen lopen via een relatie en Saldox verdient er niet aan. De sectie heet nu "Inkoopprijzen via een relatie", de margetabel is vervallen en het voordeel staat volledig bij de verhuurder. Het controlepunt "inkoop en verkoopprijs ... voor de margeberekening" is vervangen door de vraag of de omvormerprijs ook een relatieprijs is.
+
+## E. Stijl
 
 - De opdracht noemt themakleur `#0f7a3e`. De site gebruikt in de CSS `#0b3d2e`, `#1f6f4a` en `#2fa56b` (die kleur komt alleen uit het manifest). Het rapport volgt de CSS-tokens van de site.
 - Saldox spreekt de lezer aan met "u". De drie keer "jullie" in de bron zijn in de HTML/PDF omgezet naar "u" (zie `TONE` in `build.py`); verder is de tekst letterlijk.

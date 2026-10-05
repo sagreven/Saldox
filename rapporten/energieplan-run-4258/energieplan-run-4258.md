@@ -153,19 +153,14 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 
 **Gasbesparing telt ook mee.** Doordat de nieuwe airco's ook kunnen verwarmen, hoeft de gasketel in de winter minder te draaien en daalt het gasverbruik. Die besparing komt bovenop de stroombesparing en kan de terugverdientijd flink verkorten. Om de investering in 15 jaar (aanname levensduur) terug te verdienen is ca. €1.570 per jaar besparing nodig, stroom en gas samen. Schatting (aannames, geen meting): twee kantoorlagen van samen ca. 400 m², 10 m³ gas per m² is 4.000 m³ per jaar, gasprijs €1,00 per m³, airco's nemen 50% van de verwarming over met een rendement van 3,5. Dat bespaart 2.000 m³ gas (€2.000) maar kost ca. 5.000 kWh extra stroom (ca. €1.250), dus netto ca. €750 per jaar. Samen met de stroombesparing van ca. €900 (zie hierboven) is dat ca. €1.650 per jaar, een terugverdientijd van ca. 14 jaar. De kelder (grote ruimte met vloerverwarming) valt hier buiten: die blijft op gas. Daar wordt alleen gekeken naar slimme zonenregeling, die we als aparte post zien en nog niet in de begroting hebben. Vervang deze aannames door het werkelijke gasverbruik en oppervlak zodra die bekend zijn.
 
-## Toegevoegde waarde van inkoop en verkoop
+## Inkoopprijzen via een relatie
 
-Doordat het bedrijf panelen en batterijen tegen inkoopprijs krijgt, is de investering lager en kan er marge worden gemaakt als het project of onderdelen worden doorverkocht.
+Panelen en batterij zijn geprijsd tegen inkoopprijs via een relatie van Saldox. Saldox verdient hier niet aan: er zit geen marge op, en het voordeel gaat volledig naar de verhuurder in de vorm van een lagere investering.
 
-- **Eigen pand:** het voordeel is de lagere investering. De batterij van 50 kWh kost €2.500 in plaats van €25.000 tegen €500 per kWh, dus €22.500 minder. Dit brengt de terugverdientijd van zon en batterij van ca. 7 jaar naar ca. 2,5 jaar.
-- **Verkoop aan derden:** bij verkoop van de batterij tegen €500 per kWh (€25.000) en een inkoop van €2.500 is de marge €22.500 per 50 kWh. Dat is de grootste winstpost van het project.
-- **Panelen en omvormer:** hier is de marge nog niet te berekenen. We hebben alleen €65 per paneel en €3.700 voor de omvormer, en weten niet of dat inkoop of verkoop is.
-
-| Onderdeel | Inkoop | Verkoop | Marge |
-| --- | --- | --- | --- |
-| Batterij 50 kWh | €2.500 | €25.000 | €22.500 |
-| Panelen (40 stuks) | nog invullen | nog invullen | nog invullen |
-| Omvormer 15 kW | nog invullen | nog invullen | nog invullen |
+- **Batterij:** de batterij van 50 kWh kost €2.500 in plaats van €25.000 tegen een marktprijs van €500 per kWh, dus €22.500 minder. Dit brengt de terugverdientijd van zon en batterij van ca. 7 jaar naar ca. 2,5 jaar.
+- **Panelen:** €65 per paneel is eveneens de inkoopprijs via de relatie.
+- **Omvormer:** de €3.700 is opgegeven; nog te bevestigen of dit ook een inkoopprijs via de relatie is.
+- **Zonder dit voordeel:** geldt voor de batterij de marktprijs, dan wordt de investering €71.487,80 en de terugverdientijd in het normale scenario ca. 10,6 jaar.
 
 Controleer bij zo'n lage batterijprijs (€50 per kWh) of omvormer, batterijbeheer (BMS) en brandveiligheidscertificering zijn inbegrepen. Zonder dat kan de verzekeraar of netbeheerder problemen maken.
 
@@ -382,7 +377,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 - [ ] Dakkeuring: het dak moet jonger zijn dan 5 jaar, met voldoende draagkracht en ca. 120 tot 150 m² ruimte
 - [ ] Capaciteit netaansluiting bij Enexis (15 kW terugleveren plus laadpalen)
 - [ ] Is de Sofar 15 kW een hybride model dat de batterij aankan, en zit er een omvormer, BMS en brandveiligheidscertificering bij de batterij?
-- [ ] Inkoop en verkoopprijs van panelen en omvormer voor de margeberekening
+- [ ] Is de prijs van de omvormer (€3.700) ook een inkoopprijs via de relatie?
 
 - [ ] Btw-positie van de verhuur (accountant)
 - [ ] EIA en KIA vooraf laten beoordelen (accountant)
