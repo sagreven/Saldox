@@ -51,9 +51,9 @@ HEADLINES = {
 # ── Grafiek 1 (CLAUDE.md)
 INVESTERING = 48987.80
 SCENARIOS = [  # (naam, netto per jaar, terugverdiend na, nadruk)
-    ("Pessimistisch", 3809, "12,9", False),
-    ("Normaal", 6762, "7,2", True),
-    ("Optimistisch", 9732, "5,0", False),
+    ("Pessimistisch", 3751, "13,1", False),
+    ("Normaal", 6663, "7,4", True),
+    ("Optimistisch", 9743, "5,0", False),
 ]
 
 # ── Diagram 2 (CLAUDE.md)
@@ -72,20 +72,20 @@ MAATREGELEN = [  # Terugverdientijd per maatregel: investering
     ("Meten per unit", 3350), ("Smart control", 2100), ("Inspectie elektra", 750),
 ]
 PAYBACK = [  # (maatregel, pess, normaal, opt) in jaren; None = niet / meer dan 25
-    ("Zonnepanelen", 4.0, 3.6, 3.4), ("Smart control", 5.8, 2.7, 1.8), ("Laadpalen", 4.0, 2.1, 1.4),
-    ("Batterij", None, 8.0, 3.7), ("Airco's", None, None, 20),
+    ("Zonnepanelen", 4.9, 4.4, 4.1), ("Smart control", 6.9, 3.0, 2.0), ("Laadpalen", 2.7, 1.7, 1.1),
+    ("Batterij", None, 8.0, 3.7), ("Airco's", None, None, 18),
 ]
 WATERVAL = [  # scenariotabel, kolom Normaal
-    ("Zon", 3650, "plus"), ("Batterij", 1000, "plus"), ("Airco (stroom + gas)", 1650, "plus"),
-    ("EMS", 740, "plus"), ("Bewegingssensoren", 350, "plus"), ("Laadpalen", 2282, "plus"),
-    ("Bruto", 9672, "totaal"),
+    ("Zon", 3100, "plus"), ("Batterij", 1000, "plus"), ("Airco (stroom + gas)", 1710, "plus"),
+    ("EMS", 670, "plus"), ("Bewegingssensoren", 320, "plus"), ("Laadpalen", 2773, "plus"),
+    ("Bruto", 9573, "totaal"),
     ("Onderhoud airco's, F-gas", -1200, "min"), ("Onderhoud zon en batterij", -200, "min"),
     ("Verzekering", -300, "min"), ("Backoffice laadpalen", -360, "min"), ("Software", -300, "min"),
-    ("Reservering vervanging", -550, "min"), ("Netto per jaar", 6762, "totaal"),
+    ("Reservering vervanging", -550, "min"), ("Netto per jaar", 6663, "totaal"),
 ]
 LAADPLAN = [  # (tarief en bezetting, marge stroom, ERE min, ERE max)
-    ("€0,39 · 3 dagen", 1092, 546, 780), ("€0,39 · 4 dagen", 1456, 728, 1040),
-    ("€0,49 · 3 dagen", 1872, 546, 780), ("€0,49 · 4 dagen", 2496, 728, 1040),
+    ("€0,39 · 3 dagen", 1404, 780, 1014), ("€0,39 · 4 dagen", 1872, 1040, 1352),
+    ("€0,49 · 3 dagen", 2184, 780, 1014), ("€0,49 · 4 dagen", 2912, 1040, 1352),
 ]
 WERKDAG = {
     "Winter": {"vraag": [("Verbruik pand (incl. airco)", 170), ("Laadpalen", 50)],
@@ -100,7 +100,7 @@ def inserts():
     return {
         "Begroting (excl. btw)": [("lede", charts.begroting(MAATREGELEN, INVESTERING))],
         "Scenario's terugverdientijd": [("table:1", charts.waterval(WATERVAL))],
-        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 7.2))],
+        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 7.4))],
         "Laadplan en tariefopties voor de klant": [("table:2", charts.laadplan(LAADPLAN, 4000))],
         "Netaansluiting 3x25 A en meten per unit": [("table:2", charts.werkdag(WERKDAG))],
         "EMS: slim verwarmen en koelen": [("table:1", charts.dagschema())],

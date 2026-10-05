@@ -11,6 +11,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import build
+import model
 
 HERE = Path(__file__).parent
 fails = []
@@ -127,35 +128,43 @@ for k, naam in enumerate(["pessimistisch", "normaal", "optimistisch"]):
     want = eur(mt[-1][2].replace("**", "").split(" / ")[k])
     ok(near(s, want), f"netto per maatregel {naam}: {s:.0f} = {want:.0f}")
 
-print("\n3. Interne optellingen")
+print("\n3. Interne optellingen en rekenmodel (model.py, actuele aannames)")
+m = model.bereken(model.ACTUEEL)
 sc = tbl_starting("Per jaar")
 names = [plain(r[0]) for r in sc]
 bi, ni = names.index("Bruto besparing en opbrengst"), names.index("Netto per jaar")
+rows_model = [m["zon"], model.BATTERIJ, m["airco"], m["ems"], m["sens"], m["laadpalen"]]
 for k in (1, 2, 3):
     bruto = sum(eur(r[k]) for r in sc[1:bi])
     netto = bruto + sum(eur(r[k]) for r in sc[bi + 1:ni])
     ok(near(bruto, eur(sc[bi][k])) and near(netto, eur(sc[ni][k])),
        f"scenario {sc[0][k]}: bruto {bruto:.0f}, netto {netto:.0f}")
-    t = 48987.80 / netto
-    ok(f"{t:.1f}".replace(".", ",") in {"12,9", "7,2", "5,0"}, f"terugverdientijd {sc[0][k]}: {t:.2f} jaar")
+    ok([eur(r[k]) for r in sc[1:bi]] == [x[k - 1] for x in rows_model], f"  regels = model.py")
+    ok(netto == m["netto"][k - 1], f"  netto = model.py ({m['netto'][k - 1]})")
+    ok(model.jaren(48987.80, netto) in mt[-1][3], f"  terugverdientijd {model.jaren(48987.80, netto)} jaar")
 
 zl = tbl_starting("Scenario")
-for r, netto in zip(zl[1:], (3809, 6762, 9732)):
-    lp = {3809: 994, 6762: 1922, 9732: 2942}[netto]
-    ok(near(eur(r[1]), netto - lp), f"zonder laadpalen {r[0]}: {netto} − {lp} = {eur(r[1]):.0f}")
-    ok(f"{44987.80 / eur(r[1]):.1f}".replace(".", ",") == r[2].split()[0], f"  terugverdientijd {r[2]}")
+for i, r in enumerate(zl[1:]):
+    want = m["netto"][i] - m["per"]["laad"][i]
+    ok(near(eur(r[1]), want) and r[2].startswith(model.jaren(44987.80, want)),
+       f"zonder laadpalen {r[0]}: {want} → {model.jaren(44987.80, want)} jaar")
 
 ok(near(48987.80 - 23487.80, 25500), "zonder airco's: €25.500")
-for netto, airco, want in ((3809, -400, 4209), (6762, 450, 6312), (9732, 1200, 8532)):
-    ok(netto - airco == want, f"  netto zonder airco's {want} ({netto} − {airco})")
+zonder = [n - a for n, a in zip(m["netto"], m["per"]["airco"])]
+txt = "€" + " / €".join(f"{v:,}".replace(",", ".") for v in zonder)
+ok(txt in md, f"  netto zonder airco's {txt}")
+ok(" / ".join(model.jaren(25500, v) for v in zonder) + " jaar" in md, "  terugverdientijd zonder airco's")
 
 lp = tbl_starting("Tarief")
 for r in lp[1:]:
-    tarief, kwh = eur(r[0]), eur(r[2])
-    marge = round(kwh * (tarief - 0.25))
-    e_lo, e_hi = round(kwh * 0.07), round(kwh * 0.10)
-    ok(marge == eur(r[3]) and f"€{e_lo:,}".replace(",", ".") in r[4] and f"{e_hi:,}".replace(",", ".") in r[4],
-       f"laadplan {r[0]} {r[1]}: marge {marge}, ERE {e_lo}–{e_hi}")
+    kwh, marge, e_lo, e_hi, t_lo, t_hi = m["laadplan"][(eur(r[0]), int(r[1][0]))]
+    ok(marge == eur(r[3]) and r[4] == f"€{e_lo:,} tot {e_hi:,}".replace(",", ".")
+       and r[5] == f"€{t_lo:,} tot {t_hi:,}".replace(",", "."), f"laadplan {r[0]} {r[1]}: marge {marge}, ERE {e_lo}–{e_hi}")
+
+for naam, key in [("Zonnepanelen", "zon"), ("Smart control", "smart"), ("Laadpalen", "laad"), ("Batterij", "batt"), ("Airco's", "airco")]:
+    r = next(r for r in mt if r[0].startswith(naam))
+    want = " / ".join(eur_s for eur_s in [("−€" if v < 0 else "€") + f"{abs(v):,}".replace(",", ".") for v in m["per"][key]])
+    ok(r[2] == want, f"per maatregel {naam}: {want}")
 
 wd = [t for t in md_tables if t[0] == ["", "Winter", "Zomer"]][0]
 for k in (1, 2):
@@ -165,6 +174,7 @@ for k in (1, 2):
 ems = [t for t in md_tables if t[0][1:] == ["Pessimistisch", "Normaal", "Optimistisch"] and t[0][0] == ""][0]
 for k in (1, 2, 3):
     ok(near(eur(ems[1][k]) + eur(ems[2][k]), eur(ems[3][k])), f"EMS-besparing {ems[0][k]}")
+    ok((eur(ems[1][k]), eur(ems[2][k])) == (m["ems_v"][k - 1], m["ems_k"][k - 1]), f"  EMS = model.py")
 
 print("\n4. Grafiekdata = tabellen")
 ok(near(sum(v for _, v in build.MAATREGELEN), 48987.80), "begrotingsgrafiek telt op tot €48.987,80")

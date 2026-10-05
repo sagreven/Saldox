@@ -77,7 +77,7 @@ def kasstroom(investering, scenarios):
     Y = lambda v: mt + (y1 - v) / (y1 - y0) * ph
     end = {n: -investering + v * 15 for n, v, *_ in scenarios}
     o = [svg_open(W, H, "Netto cumulatieve kasstroom per scenario",
-                  "Lijngrafiek van jaar 0 tot 15. Pessimistisch terugverdiend na 12,9 jaar, normaal na 7,2 jaar, optimistisch na 5,0 jaar.")]
+                  "Lijngrafiek van jaar 0 tot 15. " + ", ".join(f"{n} terugverdiend na {j} jaar" for n, _, j, _ in scenarios) + ".")]
     # zone onder nul
     o.append(f'<rect x="{ml}" y="{Y(0):.1f}" width="{pw}" height="{Y(y0) - Y(0):.1f}" fill="#fbf3ef"/>')
     o.append(f'<text class="zone-label" x="{X(14.8):.1f}" y="{Y(y0) - 10:.1f}" text-anchor="end">nog niet terugverdiend</text>')
@@ -161,7 +161,8 @@ def waterval(items):
         prev = run
     o.append("</svg><div class=\"tooltip\" hidden></div>")
     legend = sw("plus", "Besparing of opbrengst") + sw("min", "Jaarlijkse kosten") + sw("total", "Totaal")
-    return figure("waterval", "Normaal scenario · per jaar", "Van €9.672 bruto naar €6.762 netto per jaar",
+    bruto = next(v for _, v, s in items if s == "totaal")
+    return figure("waterval", "Normaal scenario · per jaar", f"Van {eur(bruto)} bruto naar {eur(items[-1][1])} netto per jaar",
                   "Bedragen uit de scenariotabel, kolom Normaal", "".join(o), legend)
 
 
@@ -248,10 +249,10 @@ def laadplan(rows, investering):
     lw, ml, mr, mt, rh = 150, 160, 150, 26, 44
     H = mt + rh * len(rows) + 8
     pw = W - ml - mr
-    vmax = 3600
+    vmax = 4800
     X = lambda v: ml + v / vmax * pw
     o = [svg_open(W, H, "Opbrengst laadpalen per jaar", "Gestapelde staven: marge op stroom plus ERE-opbrengst, met bandbreedte.")]
-    for v in range(0, vmax + 1, 600):
+    for v in range(0, vmax + 1, 800):
         o.append(f'<line class="grid" x1="{X(v):.1f}" x2="{X(v):.1f}" y1="{mt - 6}" y2="{H - 8}"/>')
         o.append(f'<text class="tick" x="{X(v):.1f}" y="{mt - 12}" text-anchor="middle">{eur(v)}</text>')
     o.append(f'<text class="tick" x="{W - 4}" y="{mt - 12}" text-anchor="end" font-weight="700">terugverdientijd</text>')
@@ -263,7 +264,8 @@ def laadplan(rows, investering):
         o.append(f'<rect class="seg-sun" x="{X(marge) + 2:.1f}" y="{y + 7}" width="{X(lo) - X(marge) - 2:.1f}" height="20" rx="4" data-tip="ERE minimaal: {eur(emin)}"/>')
         o.append(f'<rect x="{X(lo) + 2:.1f}" y="{y + 7}" width="{X(hi) - X(lo) - 2:.1f}" height="20" rx="4" fill="url(#hatch-sun)" data-tip="ERE bandbreedte tot {eur(emax)}"/>')
         o.append(f'<text class="wf-val strong" x="{X(hi) + 8:.1f}" y="{y + 21.5}">{eur(lo)}–{nl(hi)}</text>')
-        o.append(f'<text class="wf-val" x="{W - 4}" y="{y + 21.5}" text-anchor="end">{nl(investering / hi, 1)}–{nl(investering / lo, 1)} jaar</text>')
+        a_, b_ = nl(investering / hi, 1), nl(investering / lo, 1)
+        o.append(f'<text class="wf-val" x="{W - 4}" y="{y + 21.5}" text-anchor="end">{a_ if a_ == b_ else a_ + "–" + b_} jaar</text>')
     o.append("</svg><div class=\"tooltip\" hidden></div>")
     legend = sw("plus", "Marge stroom") + sw("sun", "ERE (minimaal)") + sw("hatch-sun", "ERE (bandbreedte)")
     return figure("laadplan-chart", "Laadplan · 2 palen per jaar", "Tarief en bezetting bepalen samen de opbrengst",
