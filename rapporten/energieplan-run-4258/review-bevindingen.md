@@ -46,6 +46,7 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 - **ACM:** internet alleen voor eigen huurders is in de regel geen openbare dienst; registratie dan niet nodig.
 - **PGS 37-1:2023:** geldt vanaf 20 kWh per ruimte; nog niet wettelijk verplicht.
 - **F-gassen:** gecertificeerde monteur bij een gecertificeerd bedrijf (verordening (EU) 2024/573).
+- **Weekenden** (`weekend.py`, simulatie per uur): weekendopwek ca. 3.900 kWh (24%), weekendverbruik ca. 700–2.000 kWh. Direct verbruik zonder batterij 75–83%, met batterij 90–95% bij een basislast van 0,5–1,5 kW. Het eerdere reviewpunt dat 85% optimistisch was, klopt niet: met batterij is 85% voorzichtig.
 - **Rekenfouten in de tekst:** laadpalen "1,5 tot 4 jaar" was 1,4; 3-fase meters "€1.200–2.000 extra" was €800–1.400; model B miste de teruglevering (ca. €200).
 - **Begrippenlijst:** BMS, EIA, F-gassen, KIA, Modbus, PGS 37-1 en SCOP toegevoegd; DC/AC-verhouding staat nu ook in de tekst.
 
@@ -53,8 +54,7 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 
 - Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per binnenunit ca. €3.300. Hangt af van het type units.
 - Bewegingssensoren: €600 past bij Aqara-klasse; met Philips Hue ca. €1.000.
-- 85% direct verbruik van zonnestroom is optimistisch door de weekenden (ca. 4.700 kWh opwek). Per 10 procentpunt minder: ca. 1.650 kWh × (€0,21 − €0,04) ≈ €280 per jaar.
-- Het verbruik van 36.000 kWh: bevatten die de extra airco-verwarming en de laadpalen? Bevestigen met meetdata.
+- Jaarverbruik: de werkdagtabel komt over ca. 250 werkdagen al op ca. 38.000 kWh in kantoortijd; met nachten en weekenden 39.000–43.000 kWh, niet 36.000. Bevatten de 36.000 kWh de extra airco-verwarming en de laadpalen? Bevestigen met meetdata.
 - Geen post onvoorzien op ca. €13.200 aan stelposten.
 - Energiewet: doorlevering aan huurders in model B juridisch laten toetsen.
 - Laadtarief: meestijgen met de stroomprijs (bijv. €0,41 / €0,51) als de prijzen van 2027 uitkomen.

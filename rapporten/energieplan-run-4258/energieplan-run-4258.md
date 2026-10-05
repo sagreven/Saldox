@@ -59,6 +59,16 @@ Zon en batterij verdienen zich samen in ca. 2,9 tot 3,9 jaar terug; de turbine i
 
 De batterij maakt zelf geen stroom en heeft twee taken: in de winter vangt hij pieken boven 3x25 A op, de rest van het jaar laadt hij op goedkope uren. Door die piekfunctie is de opbrengst uit goedkope uren lager dan bij een vrije batterij. In de winter levert de zon slechts ca. 10% van het verbruik; de rest komt uit het net. Volgens PVGIS levert 18 kWp in december en januari ca. 8 tot 10 kWh per dag bij oost-west op een plat dak en ca. 17 tot 21 kWh bij panelen op het zuiden.
 
+**Weekenden.** In het weekend zijn de kantoren leeg, staat de koeling uit en laden de laadpalen niet. Toch wekken de panelen dan ca. 3.900 kWh per jaar op (24%). Een simulatie per uur (zonneprofiel Nederland 2025, verbruik op werkdagen volgens de tabel bij de netaansluiting, buiten kantoortijd een basislast van 0,5 tot 1,5 kW voor servers, koelkasten en ventilatie) geeft:
+
+| Basislast buiten kantoortijd | Direct verbruik zonder batterij | Met batterij | Teruglevering |
+| --- | --- | --- | --- |
+| 0,5 kW | 75% | 90% | ca. 1.440 kWh |
+| 1,0 kW | 79% | 93% | ca. 950 kWh |
+| 1,5 kW | 83% | 95% | ca. 620 kWh |
+
+Zonder batterij gaat het weekendoverschot grotendeels terug het net op. De batterij slaat het op en levert het 's nachts, op zondag en op maandagochtend. Met batterij is 85% direct verbruik daarom een voorzichtige aanname. Meet de basislast buiten kantoortijd, bijvoorbeeld uit de 15-minutenwaarden van de slimme meter.
+
 ## Scenario's terugverdientijd
 
 Het totale pakket van €48.987,80 verdient zich na jaarlijkse kosten normaal in ca. 7,5 jaar terug; pessimistisch in 13,5 jaar en optimistisch in 5,1 jaar. Dit geldt voor model A, waarin de verhuurder de energie betaalt (zie het verdienmodel), en voor het dynamische stroomcontract dat de klant heeft (zie 'Stroomcontract: nu en straks').
@@ -454,6 +464,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 - [ ] Inspectie elektrische installatie na oplevering
 - [ ] Prijs per Mbit en kosten glasvezel voor de netwerkdienst
 - [ ] Verdeelsleutel of meting per huurder voor de airco's
+- [ ] Jaarverbruik en basislast: de werkdagtabel (170 en 130 kWh tussen 08:00 en 18:00) komt over ca. 250 werkdagen al op ca. 38.000 kWh; met nachten en weekenden wordt het 39.000 tot 43.000 kWh, niet 36.000. Bevestig met de meetdata van de slimme meter.
 
 **Aannames**
 
