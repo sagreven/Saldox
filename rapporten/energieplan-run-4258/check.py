@@ -176,6 +176,19 @@ for k in (1, 2, 3):
     ok(near(eur(ems[1][k]) + eur(ems[2][k]), eur(ems[3][k])), f"EMS-besparing {ems[0][k]}")
     ok((eur(ems[1][k]), eur(ems[2][k])) == (m["ems_v"][k - 1], m["ems_k"][k - 1]), f"  EMS = model.py")
 
+ct = next(t for t in md_tables if t[0][1:2] == ["Nu vast, straks vast"])
+vs = model.varianten()
+fmt = lambda xs: " / ".join(("−€" if v < 0 else "€") + f"{abs(v):,}".replace(",", ".") for v in xs)
+rows_ct = {r[0]: r[1:] for r in ct}
+for i, k in enumerate(["vast/vast", "vast/dynamisch", "dynamisch/dynamisch"]):
+    v = vs[k]
+    ok(rows_ct["Batterij per jaar"][i] == fmt(v["batterij"]) and rows_ct["Zon per jaar"][i] == fmt(v["zon"])
+       and rows_ct["Netto per jaar"][i] == fmt(v["netto"])
+       and rows_ct["Terugverdientijd"][i] == " / ".join(model.jaren(48987.80, n) for n in v["netto"]) + " jaar",
+       f"stroomcontract {k}: netto {v['netto']}")
+    ok(build.CONTRACT[i][1] == v["netto"], f"  grafiekdata {k}")
+ok(vs["dynamisch/dynamisch"]["netto"] == m["netto"], "hoofdscenario = dynamisch/dynamisch")
+
 print("\n4. Grafiekdata = tabellen")
 ok(near(sum(v for _, v in build.MAATREGELEN), 48987.80), "begrotingsgrafiek telt op tot €48.987,80")
 wf = build.WATERVAL

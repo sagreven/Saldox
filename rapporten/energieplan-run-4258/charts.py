@@ -118,7 +118,7 @@ def kasstroom(investering, scenarios):
     o.append("</svg><div class=\"tooltip\" hidden></div>")
     legend = sw("accent", "Normaal") + sw("pess", "Pessimistisch") + sw("opt", "Optimistisch") + sw("band", "Bandbreedte")
     return figure("grafiek-1", "Grafiek 1 · netto cumulatieve kasstroom",
-                  "Normaal is het pakket na ca. 7 jaar terugverdiend",
+                  "Normaal is het pakket na ca. 7,5 jaar terugverdiend",
                   f"Investering {eur(investering, 2)} · kasstroom = −investering + netto per jaar × jaar",
                   "".join(o), legend)
 
@@ -322,6 +322,42 @@ def werkdag(data):
     return figure("werkdag-chart", "Netaansluiting 3x25 A · per werkdag 08:00 tot 18:00",
                   "In de winter blijft er maar 7 kWh over",
                   "Uit de tabel ‘Energie per werkdag’", "".join(o))
+
+
+# ════════════════════════════════════════════════ Stroomcontract-varianten
+def contract(rows, investering):
+    """rows: (variant, (netto pess, norm, opt), (jaren pess, norm, opt))."""
+    W = 760
+    lw, ml, mr, mt, rh = 168, 178, 150, 30, 50
+    H = mt + rh * len(rows) + 10
+    pw = W - ml - mr
+    vmax = 10000
+    X = lambda v: ml + v / vmax * pw
+    o = [svg_open(W, H, "Netto per jaar per stroomcontract",
+                  "Per contractvariant een staaf voor het normale scenario en een lijn van pessimistisch tot optimistisch.")]
+    for v in range(0, vmax + 1, 2000):
+        o.append(f'<line class="grid" x1="{X(v):.1f}" x2="{X(v):.1f}" y1="{mt - 6}" y2="{H - 8}"/>')
+        o.append(f'<text class="tick" x="{X(v):.1f}" y="{mt - 12}" text-anchor="middle">{eur(v)}</text>')
+    o.append(f'<text class="tick" x="{W - 4}" y="{mt - 12}" text-anchor="end" font-weight="700">terugverdientijd</text>')
+    for i, (naam, netto, jaren) in enumerate(rows):
+        y = mt + i * rh
+        best = i == len(rows) - 1
+        fw = ' font-weight="700"' if best else ""
+        o.append(f'<text class="wf-label"{fw} x="{lw}" y="{y + 22}" text-anchor="end">{esc(naam)}</text>')
+        o.append(f'<rect class="track" x="{ml}" y="{y + 9}" width="{pw}" height="20" rx="10"/>')
+        o.append(f'<rect class="{"bar-green" if best else "bar-muted"}" x="{ml}" y="{y + 9}" width="{X(netto[1]) - ml:.1f}" height="20" rx="10" '
+                 f'data-tip="{esc(naam)}: netto {eur(netto[0])} / {eur(netto[1])} / {eur(netto[2])} per jaar"/>')
+        o.append(f'<line class="range" x1="{X(netto[0]):.1f}" x2="{X(netto[2]):.1f}" y1="{y + 19}" y2="{y + 19}" stroke-width="2.5"/>')
+        for v in (netto[0], netto[2]):
+            o.append(f'<circle class="dot-end" cx="{X(v):.1f}" cy="{y + 19}" r="4"/>')
+        o.append(f'<text class="seg-val{" on-dark" if best else ""}" x="{ml + 12}" y="{y + 23.5}">{eur(netto[1])}</text>')
+        o.append(f'<text class="wf-val{" strong" if best else ""}" x="{W - 4}" y="{y + 23.5}" text-anchor="end">{jaren[1]} jaar'
+                 f'<tspan class="muted-t" dx="5">({jaren[2]}–{jaren[0]})</tspan></text>')
+    o.append("</svg><div class=\"tooltip\" hidden></div>")
+    legend = sw("plus", "Netto per jaar, normaal") + sw("range", "Pessimistisch tot optimistisch")
+    return figure("contract-chart", "Stroomcontract · nu → straks",
+                  f"Dynamisch straks levert ca. {eur(rows[-1][1][1] - rows[0][1][1])} per jaar meer op",
+                  f"Investering {eur(investering, 2)} · deze klant: dynamisch → dynamisch · verschil zit in de batterij en de teruglevering", "".join(o), legend)
 
 
 # ════════════════════════════════════════════════ EMS-dagschema

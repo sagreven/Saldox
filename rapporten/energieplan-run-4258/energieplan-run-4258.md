@@ -4,10 +4,11 @@
 
 ## Samenvatting
 
-Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.750 tot 9.740 per jaar op; de terugverdientijd is 5 tot 13 jaar, normaal ca. 7,4 jaar. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in 3 tot 6 jaar terug.
+Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.630 tot 9.670 per jaar op; de terugverdientijd is 5 tot 13,5 jaar, normaal ca. 7,5 jaar. Dat geldt voor het dynamische stroomcontract dat de klant nu heeft en houdt; met een vast contract zou het normaal ca. 8,4 jaar zijn. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in ca. 3 tot 6,5 jaar terug.
 
 - **Zonnestroom:** 40 panelen van 450 Wp (18 kWp) met een Sofar HYD 15KTL-3PH hybride omvormer, ca. 16.500 kWh per jaar, ca. 45% van het verbruik.
 - **Batterij 50 kWh:** vangt in de winter pieken boven 3x25 A op en laadt de rest van het jaar op goedkope uren. Inkoop €2.500, nog te bevestigen.
+- **Stroomcontract:** de klant heeft nu een dynamisch contract en houdt dat. Daardoor verdient de batterij aan goedkoop laden en duur ontladen; met een vast contract zou hij vooral dienen om binnen 3x25 A te blijven.
 - **Laadpalen:** 2 Zaptec Pro, stroomverkoop tegen €0,39 tot 0,49 per kWh plus ERE.
 - **EMS, app en sensoren:** nachtverlaging, eco bij afwezigheid, meting en doorberekening per unit.
 - **Airco's:** noodzakelijke vervanging en de grootste post (€23.487,80).
@@ -44,67 +45,67 @@ Nog niet meegerekend: zonenregeling kelder (prijs opvragen), aanpassing van de v
 
 ## Terugverdientijd per onderdeel
 
-Zon en batterij verdienen zich samen in ca. 2,8 tot 3,7 jaar terug; de turbine is de zwakste post met 20 tot 30 jaar. Dit zijn bruto bedragen; de jaarlijkse kosten staan bij de scenario's.
+Zon en batterij verdienen zich samen in ca. 2,9 tot 3,9 jaar terug; de turbine is de zwakste post met 20 tot 30 jaar. Dit zijn bruto bedragen; de jaarlijkse kosten staan bij de scenario's.
 
 | Onderdeel | Investering | Besparing of opbrengst per jaar | Terugverdientijd |
 | --- | --- | --- | --- |
-| Zon 18 kWp (panelen, montage, omvormer, bevestiging, kabel) | €10.800 | €2.970 tot 3.220 | ca. 3,4 tot 3,6 jaar |
+| Zon 18 kWp (panelen, montage, omvormer, bevestiging, kabel) | €10.800 | €2.850 tot 3.150 | ca. 3,4 tot 3,8 jaar |
 | Batterij 50 kWh | €2.500 | €600 tot 1.500 (lager door piekafvlakking in de winter) | ca. 2 tot 4 jaar |
-| Zon + batterij samen | €13.300 | €3.570 tot 4.720 | ca. 2,8 tot 3,7 jaar |
+| Zon + batterij samen | €13.300 | €3.450 tot 4.650 | ca. 2,9 tot 3,9 jaar |
 | Laadpalen (2 stuks, incl. installatie) | €4.000 | €1.490 tot 3.600 netto (verkoop + ERE − backoffice) | ca. 1,1 tot 2,7 jaar |
 | Windturbine (optie) | €25.000 | €840 tot 1.260 | 20 tot 30 jaar |
 
-**Uitgangspunten:** verbruik 36.000 kWh per jaar, stroomprijs €0,21 per kWh excl. btw (variabel leveringstarief van ca. €0,12 volgens CBS, augustus 2026, plus energiebelasting 2026 van €0,0916 tot 10.000 kWh en €0,0667 daarboven), 85% direct verbruik van zonstroom en de rest teruggeleverd tegen ca. €0,08, zonder saldering. De salderingsregeling stopt per 1 januari 2027; tot 2030 moet de leverancier voor teruglevering ten minste 50% van de kale leveringsprijs vergoeden, maar terugleverkosten blijven toegestaan. De batterijbesparing gaat uit van een prijsverschil van €0,10 tot 0,15 per kWh op een dynamisch contract.
+**Uitgangspunten:** verbruik 36.000 kWh per jaar, stroomprijs €0,21 per kWh excl. btw (variabel leveringstarief van ca. €0,12 volgens CBS, augustus 2026, plus energiebelasting 2026 van €0,0916 tot 10.000 kWh en €0,0667 daarboven), een dynamisch contract voor afname en teruglevering, 85% direct verbruik van zonstroom en de rest teruggeleverd tegen de uurprijs (ca. €0,03 tot 0,05 per kWh, zie 'Stroomcontract: nu en straks'), zonder saldering. De salderingsregeling stopt per 1 januari 2027; bij een vast contract moet de leverancier tot 2030 voor teruglevering ten minste 50% van de kale leveringsprijs vergoeden, maar terugleverkosten blijven toegestaan. De batterijbesparing gaat uit van een prijsverschil van €0,10 tot 0,15 per kWh op een dynamisch contract; in 2026 was het verschil tussen de 4 duurste en de 4 goedkoopste uren gemiddeld €0,13 per kWh.
 
 De batterij maakt zelf geen stroom en heeft twee taken: in de winter vangt hij pieken boven 3x25 A op, de rest van het jaar laadt hij op goedkope uren. Door die piekfunctie is de opbrengst uit goedkope uren lager dan bij een vrije batterij. In de winter levert de zon slechts ca. 10% van het verbruik; de rest komt uit het net. Volgens PVGIS levert 18 kWp in december en januari ca. 8 tot 10 kWh per dag bij oost-west op een plat dak en ca. 17 tot 21 kWh bij panelen op het zuiden.
 
 ## Scenario's terugverdientijd
 
-Het totale pakket van €48.987,80 verdient zich na jaarlijkse kosten normaal in ca. 7,4 jaar terug; pessimistisch in 13,1 jaar en optimistisch in 5,0 jaar. Dit geldt voor model A, waarin de verhuurder de energie betaalt (zie het verdienmodel hieronder).
+Het totale pakket van €48.987,80 verdient zich na jaarlijkse kosten normaal in ca. 7,5 jaar terug; pessimistisch in 13,5 jaar en optimistisch in 5,1 jaar. Dit geldt voor model A, waarin de verhuurder de energie betaalt (zie het verdienmodel), en voor het dynamische stroomcontract dat de klant heeft (zie 'Stroomcontract: nu en straks').
 
 <!-- GRAFIEK: scenario-kasstroom. Zie CLAUDE.md, sectie 'Grafiek 1'. -->
 
 | Per jaar | Pessimistisch | Normaal | Optimistisch |
 | --- | --- | --- | --- |
-| Zon | €2.970 | €3.100 | €3.220 |
+| Zon | €2.850 | €3.000 | €3.150 |
 | Batterij (slim laden, na piekafvlakking) | €600 | €1.000 | €1.500 |
 | Airco (stroom + gas) | €1.140 | €1.710 | €2.270 |
 | EMS (slim verwarmen en koelen) | €430 | €670 | €905 |
 | Bewegingssensoren (eco bij afwezigheid) | €175 | €320 | €450 |
 | Laadpalen (verkoop + ERE, na wintercorrectie) | €1.966 | €2.773 | €3.838 |
-| **Bruto besparing en opbrengst** | **€7.281** | **€9.573** | **€12.183** |
+| **Bruto besparing en opbrengst** | **€7.161** | **€9.473** | **€12.113** |
 | Onderhoud airco's en F-gaskeuring | −€1.500 | −€1.200 | −€1.000 |
 | Onderhoud en monitoring zon en batterij | −€300 | −€200 | −€150 |
 | Verzekering (uitbreiding) | −€400 | −€300 | −€200 |
 | Backoffice laadpalen | −€480 | −€360 | −€240 |
 | Software (hosting en onderhoud) | −€300 | −€300 | −€300 |
 | Reservering vervanging omvormer en batterij | −€550 | −€550 | −€550 |
-| **Netto per jaar** | **€3.751** | **€6.663** | **€9.743** |
+| **Netto per jaar** | **€3.631** | **€6.563** | **€9.673** |
 
 De bedragen voor batterij, airco en de jaarlijkse kosten zijn inschattingen. Niet meegerekend: de opties (grote ruimte airco's, windturbine, zonenregeling kelder), de netwerkdienst, prijsveranderingen, fiscale regelingen (EIA, KIA) en de eigen uren voor het bouwen van de software.
 
-**Zonder laadpalen** duurt het terugverdienen 2,3 tot 6,8 jaar langer. De investering daalt met €4.000 naar €44.987,80, maar de netto opbrengst van de laadpalen valt weg. De meters per unit blijven erin, omdat die ook nodig zijn om stroom aan de units door te berekenen.
+**Zonder laadpalen** duurt het terugverdienen 2,3 tot 7,5 jaar langer. De investering daalt met €4.000 naar €44.987,80, maar de netto opbrengst van de laadpalen valt weg. De meters per unit blijven erin, omdat die ook nodig zijn om stroom aan de units door te berekenen.
 
 | Scenario | Netto per jaar zonder laadpalen | Terugverdientijd zonder laadpalen | Met laadpalen |
 | --- | --- | --- | --- |
-| Pessimistisch | €2.265 | 19,9 jaar | 13,1 jaar |
-| Normaal | €4.250 | 10,6 jaar | 7,4 jaar |
-| Optimistisch | €6.145 | 7,3 jaar | 5,0 jaar |
+| Pessimistisch | €2.145 | 21,0 jaar | 13,5 jaar |
+| Normaal | €4.150 | 10,8 jaar | 7,5 jaar |
+| Optimistisch | €6.075 | 7,4 jaar | 5,1 jaar |
 
 ## Terugverdientijd per maatregel
 
-Zonnepanelen, smart control en laadpalen verdienen zich snel terug; de batterij alleen in het normale of optimistische scenario, en de airco's niet.
+Zonnepanelen, smart control en laadpalen verdienen zich snel terug; de batterij alleen met een dynamisch contract in het normale of optimistische scenario, en de airco's niet.
 
 | Maatregel | Investering | Netto per jaar (pess. / normaal / opt.) | Terugverdientijd (pess. / normaal / opt.) |
 | --- | --- | --- | --- |
-| Zonnepanelen (panelen, montage, omvormer, dak en kabel, dakinspectie) | €11.300 | €2.320 / €2.550 / €2.745 | 4,9 / 4,4 / 4,1 jaar |
+| Zonnepanelen (panelen, montage, omvormer, dak en kabel, dakinspectie) | €11.300 | €2.200 / €2.450 / €2.675 | 5,1 / 4,6 / 4,2 jaar |
 | Smart control (EMS-hardware, bewegingssensoren) | €2.100 | €305 / €690 / €1.055 | 6,9 / 3,0 / 2,0 jaar |
 | Laadpalen (incl. installatie) | €4.000 | €1.486 / €2.413 / €3.598 | 2,7 / 1,7 / 1,1 jaar |
 | Batterij (incl. brandveilige opstelling) | €4.000 | €0 / €500 / €1.075 | niet / 8,0 / 3,7 jaar |
 | Airco's | €23.487,80 | −€360 / €510 / €1.270 | niet / meer dan 25 / ca. 18 jaar |
 | Meten per unit | €3.350 | geen besparing in model A | voorwaarde voor doorbelasting (model B) |
 | Inspectie elektrische installatie | €750 | n.v.t. | algemene kosten |
-| **Totaal** | **€48.987,80** | **€3.751 / €6.663 / €9.743** | **13,1 / 7,4 / 5,0 jaar** |
+| **Totaal** | **€48.987,80** | **€3.631 / €6.563 / €9.673** | **13,5 / 7,5 / 5,1 jaar** |
 
 **Hoe de jaarlijkse kosten zijn verdeeld:** onderhoud airco's en F-gaskeuring bij de airco's; onderhoud, verzekering en reservering vervanging verdeeld over zonnepanelen (omvormer) en batterij; backoffice bij de laadpalen; software bij smart control.
 
@@ -114,6 +115,39 @@ Zonnepanelen, smart control en laadpalen verdienen zich snel terug; de batterij 
 - **De batterij** maakt het mogelijk om met 3x25 A te werken. Zonder batterij is waarschijnlijk een zwaardere netaansluiting nodig. Die is door de aansluitpauze van Enexis mogelijk niet te krijgen, en 3x35 A kost aan netbeheer ca. €1.240 per jaar meer dan 3x25 A (Enexis-tarieven 2026, excl. btw). Die vermeden kosten zijn niet meegerekend.
 - **Smart control** werkt alleen goed met de nieuwe airco's, en in model B gaat de besparing grotendeels naar de huurders.
 - **Meten per unit** levert in model A niets op, maar is nodig om stroom, laadpalen en verbruik per huurder te kunnen afrekenen.
+
+## Stroomcontract: nu en straks
+
+Wat de batterij oplevert, hangt af van het stroomcontract na de investering. De klant heeft nu een dynamisch contract en houdt dat; daarop is het hoofdscenario gebaseerd (normaal ca. 7,5 jaar). Met een vast contract zou het ca. 8,4 jaar zijn.
+
+| | Nu vast, straks vast | Nu vast, straks dynamisch | Nu dynamisch, blijft dynamisch (deze klant) |
+| --- | --- | --- | --- |
+| Afname van het net | Vaste prijs per kWh | Van vast naar uurprijs | Uurprijs plus opslag |
+| Teruglevering aan het net | Vaste vergoeding, ca. €0,08 per kWh | Uurprijs, ca. €0,03 tot 0,05 per kWh | Uurprijs, ca. €0,03 tot 0,05 per kWh |
+| Wat de batterij doet | Zonne-overschot opslaan, pieken opvangen | Goedkoop laden, duur ontladen, pieken opvangen | Goedkoop laden, duur ontladen, pieken opvangen |
+| Batterij per jaar | €160 / €200 / €240 | €600 / €1.000 / €1.500 | €600 / €1.000 / €1.500 |
+| Zon per jaar | €2.970 / €3.100 / €3.220 | €2.850 / €3.000 / €3.150 | €2.850 / €3.000 / €3.150 |
+| Netto per jaar | €3.311 / €5.863 / €8.483 | €3.631 / €6.563 / €9.673 | €3.631 / €6.563 / €9.673 |
+| Terugverdientijd | 14,8 / 8,4 / 5,8 jaar | 13,5 / 7,5 / 5,1 jaar | 13,5 / 7,5 / 5,1 jaar |
+| Daarnaast | Geen prijsrisico | Effect van de overstap zelf, los van de investering | Geen verandering |
+
+Bedragen per scenario: pessimistisch / normaal / optimistisch. Alle andere posten (airco, EMS, sensoren, laadpalen, jaarlijkse kosten) zijn gelijk; de afnameprijs is in alle varianten gemiddeld €0,21 per kWh.
+
+**Wat de marktprijzen laten zien** (EPEX day-ahead Nederland):
+
+| | 2025 | 2026 (januari tot september) |
+| --- | --- | --- |
+| Gemiddelde uurprijs | €0,087 per kWh | €0,108 per kWh |
+| Gemiddelde prijs als de zon schijnt | €0,053 per kWh (62%) | €0,065 per kWh (60%) |
+| Uren met een negatieve prijs | 584 | 389 |
+| Verschil 4 duurste en 4 goedkoopste uren per dag | €0,100 per kWh | €0,133 per kWh |
+
+- **Teruglevering tegen de uurprijs** is weinig waard: zonnestroom komt op het net als iedereen levert. Na de opslag van de leverancier blijft ca. €0,03 tot 0,05 per kWh over. Bij een negatieve prijs zet het EMS de teruglevering stop via de Sofar.
+- **De batterij met een vast contract** slaat alleen zonne-overschot op dat anders wordt teruggeleverd: 60 tot 90% van ca. 2.475 kWh, met een rendement van 90%. Netto na onderhoud, verzekering en reservering verdient hij zich dan niet terug (−€440 tot −€185 per jaar). Hij blijft wel nodig om binnen 3x25 A te blijven.
+- **Van vast naar dynamisch:** het overstapeffect zelf hoort niet bij de investering. Tijdens kantoortijd was de uurprijs in 2026 gemiddeld €0,087 per kWh, tegen ca. €0,12 leveringstarief bij een variabel contract (CBS). Een vast contract betaalt voor zekerheid.
+- **Voor deze klant** verandert er niets aan het contract. Het EMS stuurt de batterij, de laadpalen en het voorverwarmen op de uurprijs.
+
+Bronnen: [Energy-Charts](https://api.energy-charts.info/) (EPEX day-ahead NL en zonne-opwek NL, eigen berekening), [CBS](https://www.cbs.nl/nl-nl/cijfers/detail/85592NED).
 
 ## Verdienmodel verhuurder: wie betaalt, wie bespaart
 
@@ -130,14 +164,14 @@ Of de verhuurder de besparingen krijgt, hangt af van hoe de energie met de huurd
 
 - Zonnestroom die direct wordt verbruikt: ca. 14.000 kWh × €0,24 = ca. €3.400 per jaar.
 - Netstroom doorverkocht: ca. 22.000 kWh × €0,03 marge = ca. €660 per jaar.
-- Teruggeleverde zonnestroom: ca. 2.500 kWh × €0,08 = ca. €200 per jaar.
-- Samen ca. €4.200 per jaar, tegen ca. €3.100 voor zon in model A. De besparingen door EMS en sensoren gaan in model B grotendeels naar de huurders; voor de verhuurder maken ze vooral het pand aantrekkelijker.
+- Teruggeleverde zonnestroom: ca. 2.500 kWh × €0,04 = ca. €100 per jaar.
+- Samen ca. €4.100 per jaar, tegen ca. €3.000 voor zon in model A. De besparingen door EMS en sensoren gaan in model B grotendeels naar de huurders; voor de verhuurder maken ze vooral het pand aantrekkelijker.
 
-**Zonder de airco's.** De airco's moeten toch vervangen worden. Het energiedeel zonder airco's kost €25.500 en levert netto €4.111 / €6.153 / €8.473 per jaar op (pessimistisch / normaal / optimistisch). Dat is een terugverdientijd van 6,2 / 4,1 / 3,0 jaar.
+**Zonder de airco's.** De airco's moeten toch vervangen worden. Het energiedeel zonder airco's kost €25.500 en levert netto €3.991 / €6.053 / €8.403 per jaar op (pessimistisch / normaal / optimistisch). Dat is een terugverdientijd van 6,4 / 4,2 / 3,0 jaar.
 
 **Btw.** Is de verhuur btw-vrijgesteld, bijvoorbeeld bij huurders die zelf geen btw rekenen, dan kan de verhuurder de btw op de investering niet terugvragen. De basis kost dan €59.275,24 in plaats van €48.987,80. Bij belaste verhuur kan dat wel; daarvoor moet de huurder de ruimte voor ten minste 90% gebruiken voor btw-belaste prestaties, vastgelegd in het huurcontract. Stroom die per meter apart aan huurders wordt afgerekend, is een zelfstandige levering met 21% btw. Laat de accountant dit beoordelen.
 
-**Leegstand.** Staan bijvoorbeeld 3 van de 10 units leeg, dan dalen de opbrengsten uit de laadpalen (en in model B uit stroomverkoop) met ca. 30%. In het normale scenario is dat ca. €830 minder per jaar en wordt de terugverdientijd ca. 8,4 jaar. Lege units staan wel in eco, dus de energiekosten dalen ook.
+**Leegstand.** Staan bijvoorbeeld 3 van de 10 units leeg, dan dalen de opbrengsten uit de laadpalen (en in model B uit stroomverkoop) met ca. 30%. In het normale scenario is dat ca. €830 minder per jaar en wordt de terugverdientijd ca. 8,5 jaar. Lege units staan wel in eco, dus de energiekosten dalen ook.
 
 **Huurcontract.** Leg vast: de verrekening van energie (model A of B) en het tarief, temperatuurgrenzen en nachtstand, de EMS-sturing, het gebruik van data (AVG), het laadpaaltarief, de internetdienst met 90e-percentiel, de patchpoort en aansprakelijkheid voor eigen apparatuur. Bij bedrijfsruimte is er veel contractvrijheid, maar laat de opzet juridisch controleren, ook in verband met de Energiewet (sinds 1 januari 2026 van kracht), zeker bij doorlevering van stroom in model B.
 
@@ -158,10 +192,10 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 
 Panelen en batterij zijn geprijsd tegen inkoopprijs via een relatie van Saldox. Saldox verdient hier niet aan: er zit geen marge op, en het voordeel gaat volledig naar de verhuurder in de vorm van een lagere investering.
 
-- **Batterij:** de batterij van 50 kWh kost €2.500 in plaats van €25.000 tegen een marktprijs van €500 per kWh, dus €22.500 minder. Dit brengt de terugverdientijd van zon en batterij van ca. 7,6 tot 10 jaar naar ca. 2,8 tot 3,7 jaar.
+- **Batterij:** de batterij van 50 kWh kost €2.500 in plaats van €25.000 tegen een marktprijs van €500 per kWh, dus €22.500 minder. Dit brengt de terugverdientijd van zon en batterij van ca. 7,7 tot 10,4 jaar naar ca. 2,9 tot 3,9 jaar.
 - **Panelen:** €65 per paneel is eveneens de inkoopprijs via de relatie.
 - **Omvormer:** de €3.700 is opgegeven; nog te bevestigen of dit ook een inkoopprijs via de relatie is.
-- **Zonder dit voordeel:** geldt voor de batterij de marktprijs, dan wordt de investering €71.487,80 en de terugverdientijd in het normale scenario ca. 10,7 jaar.
+- **Zonder dit voordeel:** geldt voor de batterij de marktprijs, dan wordt de investering €71.487,80 en de terugverdientijd in het normale scenario ca. 10,9 jaar.
 
 Controleer of batterijbeheer (BMS) en brandveiligheidscertificering bij de batterij zijn inbegrepen, en of de batterij op de compatibiliteitslijst van Sofar staat: de HYD 15KTL-3PH werkt alleen met een hoogspanningsbatterij (180 tot 800 V). Zonder dat kan de verzekeraar of netbeheerder problemen maken.
 
@@ -391,7 +425,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 **Aannames**
 
 - €65 per paneel is de inkoopprijs; montage €1.500 voor alle panelen
-- Stroomprijs €0,21 per kWh excl. btw (variabel tarief plus energiebelasting 2026) en een dynamisch contract voor de batterij; gasprijs €1,00 per m³
+- Stroomprijs €0,21 per kWh excl. btw (variabel tarief plus energiebelasting 2026) en een dynamisch contract voor afname en teruglevering (teruglevering ca. €0,03 tot 0,05 per kWh); gasprijs €1,00 per m³
 - ERE-opbrengst €0,10 tot 0,13 per geladen kWh (netto)
 - Stelposten: dakbevestiging en kabel (€3.000) en turbine (€25.000)
 - 18 kWp levert ca. 16.500 kWh per jaar (PVGIS voor Veldhoven: ca. 15.500 kWh bij oost-west, ca. 18.600 kWh op het zuiden); het verbruik is 36.000 kWh per jaar
@@ -407,7 +441,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 - Leegstand verlaagt de opbrengst uit stroom, laadpalen en internet, terwijl de vaste kosten blijven.
 - De batterij moet in de winter pieken opvangen; de opbrengst uit goedkope uren is dan lager.
 - Software van eigen makelij: uitval van EMS of app raakt verwarming, laadpalen en facturatie. Zorg voor een veilige noodstand (vaste temperatuur, laadpalen op laag vermogen).
-- Prijzen voor stroom, gas en ERE kunnen dalen; de scenario's rekenen met vaste prijzen. Terugleverkosten van de leverancier kunnen de vergoeding van €0,08 voor teruggeleverde stroom verlagen.
+- Prijzen voor stroom, gas en ERE kunnen dalen; de scenario's rekenen met vaste prijzen. Een dynamisch contract geeft prijsrisico: een koude, windstille week kan duur uitvallen. Het EMS beperkt dat door de batterij en de laadpalen op de uurprijs te sturen.
 
 ## Begrippenlijst
 
@@ -421,7 +455,7 @@ De technische termen in dit rapport, in gewone taal uitgelegd.
 | BMS | Batterijbeheersysteem: de elektronica die de batterijcellen bewaakt en beschermt tegen overladen, diep ontladen en oververhitting. |
 | DC/AC-verhouding | Verhouding tussen het vermogen van de panelen en de omvormer. Rond 1,2 is gangbaar; veel hoger betekent dat de omvormer op zonnige dagen opbrengst afkapt. |
 | Dubbele NAT | Het internetverkeer gaat door twee routers (onze gateway en de firewall van de huurder). Werkt voor normaal gebruik, maar sommige diensten van buitenaf zijn lastiger in te stellen. |
-| Dynamisch contract | Stroomcontract met een prijs die elk uur verandert. De batterij laadt op goedkope uren en levert op dure uren. |
+| Dynamisch contract | Stroomcontract met een prijs die elk uur verandert, voor afname en meestal ook voor teruglevering. De batterij laadt op goedkope uren en levert op dure uren. |
 | EIA | Energie-investeringsaftrek: fiscale aftrek (2026: 40%) voor investeringen die op de Energielijst van RVO staan. |
 | EMS | Energiemanagementsysteem: de software die zon, batterij, net, laadpalen en airco's aanstuurt, zodat de aansluiting niet overbelast raakt en er zo weinig mogelijk dure stroom wordt gebruikt. |
 | ERE | Emissiereductie-eenheid: een certificaat dat je krijgt voor stroom die in elektrische auto's wordt geladen. Wordt via een inboekdienstverlener verkocht aan brandstofleveranciers. |

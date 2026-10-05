@@ -35,6 +35,7 @@ HEADLINES = {
     "Terugverdientijd per onderdeel": "Zon en batterij doen het zware werk.",
     "Scenario's terugverdientijd": "Wat er na de jaarlijkse kosten overblijft.",
     "Terugverdientijd per maatregel": "Niet elke maatregel hoeft zich terug te verdienen.",
+    "Stroomcontract: nu en straks": "Dynamisch blijft dynamisch, en dat laat de batterij verdienen.",
     "Verdienmodel verhuurder: wie betaalt, wie bespaart": "Wie betaalt de rekening, wie houdt de besparing?",
     "Waarom de airco's geen terugverdientijd hebben": "Vervangen moet. De vraag is alleen: welke vervanging.",
     "Inkoopprijzen via een relatie": "Het inkoopvoordeel gaat volledig naar de verhuurder.",
@@ -51,9 +52,9 @@ HEADLINES = {
 # ── Grafiek 1 (CLAUDE.md)
 INVESTERING = 48987.80
 SCENARIOS = [  # (naam, netto per jaar, terugverdiend na, nadruk)
-    ("Pessimistisch", 3751, "13,1", False),
-    ("Normaal", 6663, "7,4", True),
-    ("Optimistisch", 9743, "5,0", False),
+    ("Pessimistisch", 3631, "13,5", False),
+    ("Normaal", 6563, "7,5", True),
+    ("Optimistisch", 9673, "5,1", False),
 ]
 
 # ── Diagram 2 (CLAUDE.md)
@@ -72,16 +73,16 @@ MAATREGELEN = [  # Terugverdientijd per maatregel: investering
     ("Meten per unit", 3350), ("Smart control", 2100), ("Inspectie elektra", 750),
 ]
 PAYBACK = [  # (maatregel, pess, normaal, opt) in jaren; None = niet / meer dan 25
-    ("Zonnepanelen", 4.9, 4.4, 4.1), ("Smart control", 6.9, 3.0, 2.0), ("Laadpalen", 2.7, 1.7, 1.1),
+    ("Zonnepanelen", 5.1, 4.6, 4.2), ("Smart control", 6.9, 3.0, 2.0), ("Laadpalen", 2.7, 1.7, 1.1),
     ("Batterij", None, 8.0, 3.7), ("Airco's", None, None, 18),
 ]
 WATERVAL = [  # scenariotabel, kolom Normaal
-    ("Zon", 3100, "plus"), ("Batterij", 1000, "plus"), ("Airco (stroom + gas)", 1710, "plus"),
+    ("Zon", 3000, "plus"), ("Batterij", 1000, "plus"), ("Airco (stroom + gas)", 1710, "plus"),
     ("EMS", 670, "plus"), ("Bewegingssensoren", 320, "plus"), ("Laadpalen", 2773, "plus"),
-    ("Bruto", 9573, "totaal"),
+    ("Bruto", 9473, "totaal"),
     ("Onderhoud airco's, F-gas", -1200, "min"), ("Onderhoud zon en batterij", -200, "min"),
     ("Verzekering", -300, "min"), ("Backoffice laadpalen", -360, "min"), ("Software", -300, "min"),
-    ("Reservering vervanging", -550, "min"), ("Netto per jaar", 6663, "totaal"),
+    ("Reservering vervanging", -550, "min"), ("Netto per jaar", 6563, "totaal"),
 ]
 LAADPLAN = [  # (tarief en bezetting, marge stroom, ERE min, ERE max)
     ("€0,39 · 3 dagen", 1404, 780, 1014), ("€0,39 · 4 dagen", 1872, 1040, 1352),
@@ -95,15 +96,23 @@ WERKDAG = {
 }
 
 
+CONTRACT = [  # (variant, netto pess/norm/opt, terugverdientijd pess/norm/opt) — zie model.varianten()
+    ("Nu vast → vast", (3311, 5863, 8483), ("14,8", "8,4", "5,8")),
+    ("Nu vast → dynamisch", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
+    ("Dynamisch → dynamisch", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
+]
+
+
 def inserts():
     """Per sectie: (anker, html). Anker 'lede' = na de eerste alinea, 'table:N' = na de N-de tabel (1-based)."""
     return {
         "Begroting (excl. btw)": [("lede", charts.begroting(MAATREGELEN, INVESTERING))],
         "Scenario's terugverdientijd": [("table:1", charts.waterval(WATERVAL))],
-        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 7.4))],
+        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 7.5))],
         "Laadplan en tariefopties voor de klant": [("table:2", charts.laadplan(LAADPLAN, 4000))],
         "Netaansluiting 3x25 A en meten per unit": [("table:2", charts.werkdag(WERKDAG))],
         "EMS: slim verwarmen en koelen": [("table:1", charts.dagschema())],
+        "Stroomcontract: nu en straks": [("table:1", charts.contract(CONTRACT, INVESTERING))],
     }
 
 
