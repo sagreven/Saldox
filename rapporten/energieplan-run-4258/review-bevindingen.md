@@ -1,45 +1,59 @@
-# Review energieplan Run 4258: fouten, inconsistenties en ontbrekende punten
+# Review energieplan Run 4258: validatie en correcties
 
-Alle bedragen en totalen in het rapport kloppen rekenkundig (`check.py`: begroting, btw, opties, per maatregel, scenario's, laadplan, energie per werkdag, EMS). De punten hieronder gaan over aannames, interne tegenstrijdigheden en wat er nog ontbreekt. Het rapport zelf is níet aangepast, omdat de inhoud en cijfers gelijk moesten blijven.
+Stand 5 oktober 2026. Alle uitspraken in het rapport zijn gecontroleerd: rekenkundig met `check.py` en `model.py`, inhoudelijk met bronnen. De prijzen van airco's, zonnepanelen, batterij en omvormer zijn gegeven door de opdrachtgever en zijn niet gecontroleerd.
 
-## A. Inconsistenties in de tekst
+## 1. Herberekend (rekenmodel)
 
-| # | Waar | Wat | Voorstel |
+`model.py` reproduceert met de oorspronkelijke aannames exact de oude getallen en rekent daarna met de actuele aannames.
+
+| Aanname | Was | Nu | Bron |
 |---|---|---|---|
-| A1 | Samenvatting/§03 vs §05 | Zon + batterij "ca. 2,5 tot 3 jaar" (bruto, zonder dakinspectie en brandveilige opstelling) tegenover zon 3,4–4,0 jaar en batterij 3,7 jaar/niet in §05 (netto). Twee terugverdientijden voor dezelfde onderdelen verwarren de lezer. | Zet in §03 duidelijk "bruto" in de kop, of laat §03 weg en houd §05 aan. |
-| A2 | ERE-alinea vs laadplan | ERE-voorbeeld rekent met 5.000 kWh per jaar; het laadplan met 7.800 tot 10.400 kWh. | Gebruik in beide hetzelfde laadvolume. |
-| A3 | Laadplan "Nog niet meegerekend" | Zegt dat de backoffice niet is meegerekend; de scenario's trekken wel €240–480 backoffice af. | Verduidelijk dat dit alleen voor het rekenmodel in dat hoofdstuk geldt. |
-| A4 | Leegstand | Spreekt van minder "stroomverkoop", maar de scenario's zijn model A (geen stroomverkoop). | Splits: model A alleen laadpalen, model B ook stroom. |
-| A5 | Netwerk: poorten | "Poorten" telt 15 (4 AP + 10 patch + uplink); "Bekabeling" telt 14 en vergeet de uplink. Bekabelde aansluiting én patchpoort per unit komt uit op 25 poorten. | Eén telling; bij beide diensten tegelijk is een tweede switch nodig. De uplink kan via SFP+, dan vervalt één RJ45. |
-| A6 | Airco's | "ca. 12 binnenunits voor 10 units", maar de projectomschrijving noemt 5 wijzigingen (1 nieuw, 1 naar verwarmen, 3 wand→plafond). Onduidelijk wat de offerte van €23.487,80 precies dekt. | Aantal binnenunits per offerteregel vermelden. |
-| A7 | Model B-rekenvoorbeeld | Teruglevering (ca. 2.475 kWh × €0,08 ≈ €200) ontbreekt in model B en zit wel in model A (€3.650). Het verschil tussen de modellen lijkt daardoor ca. €200 kleiner dan het is. | Teruglevering toevoegen of vermelden. |
-| A8 | Begrippenlijst | "DC/AC-verhouding" staat erin maar komt in de tekst niet voor. Er ontbreken: EIA, KIA, PGS 37-1, BMS, F-gas, Modbus/RS485, AVG, ACM, rendement/COP, netcongestie, Energiewet. | Aanvullen. |
+| Stroomprijs excl. btw | €0,25 | €0,21 | CBS 85592NED (variabel leveringstarief augustus 2026 ca. €0,12) + energiebelasting 2026 (€0,0916 tot 10.000 kWh, €0,0667 daarboven) |
+| ERE per geladen kWh (netto) | €0,07–0,10 | €0,10–0,13 | Uitbetalingen inboekdienstverleners juli 2026 ca. €0,12–0,13 (keuze.nl: Joulo, Laadloon, Zeres) |
 
-## B. Aannames die het resultaat sterk beïnvloeden
+| Gevolg | Was | Nu |
+|---|---|---|
+| Netto per jaar (pess. / normaal / opt.) | €3.809 / €6.762 / €9.732 | €3.751 / €6.663 / €9.743 |
+| Terugverdientijd | 12,9 / 7,2 / 5,0 jaar | 13,1 / 7,4 / 5,0 jaar |
+| Zon per jaar | €3.500–3.800 | €2.970–3.220 |
+| Laadpalen per jaar (scenario's) | €1.474–3.182 | €1.966–3.838 |
+| Airco stroom + gas (normaal) | €1.650 | €1.710 (goedkopere stroom maakt verwarmen met de airco gunstiger) |
+| EMS + sensoren | €665–1.490 | €605–1.355 |
 
-1. **85% direct verbruik van zonnestroom is optimistisch.** Ca. 2/7 van de opwek (≈ 4.700 kWh) valt in het weekend, terwijl kantoren leeg zijn en de koeling volledig uit staat. Een zomerse weekenddag levert ca. 90 kWh, de batterij neemt er ca. 45 op. Per 10 procentpunt minder direct verbruik gaat er ca. 1.650 kWh × (€0,25 − €0,08) ≈ **€280 per jaar** af.
-2. **Verbruik 36.000 kWh: wat zit erin?** De extra airco-verwarming (ca. 5.000 kWh) en de laadpalen (7.800 tot 10.400 kWh) lijken er niet in te zitten. Voor de zon is dat gunstig (meer eigen verbruik), maar voor de 3x25 A en de energieprijs niet. Bevestig het verbruik met meetdata (slimme meter, 15-minutenwaarden).
-3. **Terugleverkosten.** Na het einde van de saldering rekenen veel leveranciers terugleverkosten. Dan kan €0,08 per teruggeleverde kWh netto ook €0 of minder worden.
-4. **Stroomprijs vast op €0,25, geen indexatie of disconto.** Het gaat om een eenvoudige terugverdientijd. Voor een investeringsbeslissing is een NCW/IRR over 15 jaar met degradatie van de panelen (ca. 0,5% per jaar) beter verdedigbaar.
-5. **Batterij €50 per kWh via de relatie.** Dit is de grootste hefboom in de business case: tegen marktprijs (€500 per kWh) wordt het normale scenario ca. 10,6 jaar (€71.487,80 / €6.762). Leg de prijsafspraak met de relatie schriftelijk vast, inclusief wat er bij de batterij is inbegrepen (omvormer, BMS, certificering).
+De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op; de conclusie (normaal ca. 7 jaar) blijft staan.
 
-## C. Ontbrekend in begroting of planning
+## 2. Gecorrigeerd of aangevuld in de tekst
 
-- **Post onvoorzien.** Ca. €13.200 bestaat uit stelposten en er is geen onvoorzien. Gebruikelijk is 10% (ca. €4.900); bij de normale opbrengst wordt de terugverdientijd dan ca. 8,0 jaar.
-- **Elektra rond omvormer en batterij:** AC-kabel, groepenkast/aardlek, overspanningsbeveiliging. Nu is alleen de verdeelkast voor de units genoemd.
-- **Engineering en projectbegeleiding**, plus de aanmelding bij Enexis en het energieloket.
-- **Overstap naar een dynamisch contract**, de voorwaarde voor de batterijbesparing, en de looptijd van het huidige contract.
-- **Zonenregeling kelder** en **zwaardere aansluiting**: al genoemd als "nog niet meegerekend", maar zonder bandbreedte.
-- **Planning zonder speling:** levertijd van een F-gas-gecertificeerde installateur, PGS 37-1-goedkeuring van de batterijruimte vóór week 9 en de testperiode van EMS/app (1 week) zitten krap in 14 weken.
-- **Weekend zonder koeling, ook niet handmatig:** dit botst met huurders die in het weekend werken. Leg het vast in het huurcontract of maak een uitzondering op verzoek.
-- **Energiewet (2026):** zelf stroom leveren aan huurders in model B kan onder de nieuwe leveringsregels vallen. Het rapport noemt dit al als juridisch controlepunt; zet het als blokkerend punt vóór de keuze A/B.
-- **EIA/KIA** zijn niet meegerekend. Dat is voordeel voor de verhuurder, maar de 3-maandentermijn voor de EIA maakt het een harde planningsmijlpaal.
+- **Inkoopprijzen:** via een relatie, geen marge voor Saldox. Margetabel en "verkoop aan derden" geschrapt.
+- **Saldering:** stopt per 1-1-2027 (klopt). Toegevoegd: tot 2030 minimaal 50% van de kale leveringsprijs als terugleververgoeding; terugleverkosten blijven toegestaan (Rijksoverheid, ACM).
+- **ERE:** vervangt de HBE; NEa-register open sinds augustus 2026, inboeken over 2026 vóór 26-2-2027. Eigen zonnestroom telt alleen als 100% hernieuwbaar bij directe koppeling, zonder SDE++ en met garanties van oorsprong. Voorbeeld met 5.000 kWh vervangen door 7.800–10.400 kWh, gelijk aan het laadplan.
+- **Zaptec Pro:** MID-uitvoering bestaat sinds augustus 2023; die moet expliciet besteld worden. Begrenzen via Zaptec API of OCPP.
+- **Sofar HYD 15KTL-3PH:** hybride, batterij max. 15 kW, alleen hoogspanningsbatterij (180–800 V), max. 22,5 kWp PV (DC/AC 1,2 is in orde). Nieuw open punt: met de Sofar BTS-batterij gaat één omvormer tot ca. 38 kWh bruikbaar, dus 50 kWh op één omvormer moet bevestigd worden.
+- **EIA 2026:** 40%. Wel op de Energielijst: zonnepanelen (251102), batterij (251118), lucht-luchtwarmtepomp boven 12 kW thermisch met SCOP ≥ 4,0 (211108). Niet: laadpalen, algemeen EMS, tussenmeters. KIA 2026: 28% bij €2.901–71.683.
+- **Btw:** belaste verhuur vereist ≥90% btw-belast gebruik door de huurder. Apart afgerekende stroom is een zelfstandige levering met 21% btw.
+- **Netcongestie:** aansluitpauze van Enexis sinds 1-7-2026 rond Eindhoven-West en Helmond-Zuid, ook voor delen van Veldhoven; verzwaren is daar niet mogelijk. 3x35 A kost aan netbeheer ca. €1.240 per jaar meer dan 3x25 A. Dat versterkt de rol van de batterij.
+- **Windturbine:** KNMI Eindhoven gemiddeld 3,8 m/s op 10 m, dus ca. 4,3–4,5 m/s op 20 m; onder de drempel. De "Windviewer van RVO" bestaat niet meer. Hoogtebeperkingen: Luchthavenbesluit Eindhoven, toets via de Luchtvaartbeperkingenkaart, verklaring van geen bezwaar van Defensie. Opbrengst €840–1.260 per jaar, terugverdientijd 20–30 jaar.
+- **Airco:** SCOP in de praktijk 3,5–4,5; de berekening houdt voorzichtig 3,5 aan.
+- **Gas:** €1,00 per m³ is voorzichtig (CBS + energiebelasting: ca. €1,10). 10 m³ per m² is aan de lage kant (CBS: 11–17 voor kleinere kantoren).
+- **Zon:** PVGIS Veldhoven: 861 kWh/kWp oost-west, 1.032 kWh/kWp zuid; 917 kWh/kWp (16.500 kWh) is een redelijk gemiddelde. Winterdag 10 kWh geldt voor oost-west; zuid geeft 17–21 kWh. Dakruimte 120–150 m² geldt voor zuid; oost-west ca. 90–100 m².
+- **UniFi:** U7 Pro €160, switch €359, gateway €180–250; switch heeft 2 SFP+-uplinks, dus 14 van 16 poorten in gebruik (de oude tekst telde 14 en 15). PPSK werkt alleen met WPA2. Netwerk totaal ca. €1.180–1.250.
+- **ACM:** internet alleen voor eigen huurders is in de regel geen openbare dienst; registratie dan niet nodig.
+- **PGS 37-1:2023:** geldt vanaf 20 kWh per ruimte; nog niet wettelijk verplicht.
+- **F-gassen:** gecertificeerde monteur bij een gecertificeerd bedrijf (verordening (EU) 2024/573).
+- **Rekenfouten in de tekst:** laadpalen "1,5 tot 4 jaar" was 1,4; 3-fase meters "€1.200–2.000 extra" was €800–1.400; model B miste de teruglevering (ca. €200).
+- **Begrippenlijst:** BMS, EIA, F-gassen, KIA, Modbus, PGS 37-1 en SCOP toegevoegd; DC/AC-verhouding staat nu ook in de tekst.
 
-## D. Gecorrigeerd in het rapport
+## 3. Nog open (niet uit te zoeken zonder de opdrachtgever)
 
-- De sectie "Toegevoegde waarde van inkoop en verkoop" ging uit van doorverkoop met marge (€22.500 als "grootste winstpost"). Dat klopt niet: de inkoopprijzen lopen via een relatie en Saldox verdient er niet aan. De sectie heet nu "Inkoopprijzen via een relatie", de margetabel is vervallen en het voordeel staat volledig bij de verhuurder. Het controlepunt "inkoop en verkoopprijs ... voor de margeberekening" is vervangen door de vraag of de omvormerprijs ook een relatieprijs is.
+- Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per binnenunit ca. €3.300. Hangt af van het type units.
+- Bewegingssensoren: €600 past bij Aqara-klasse; met Philips Hue ca. €1.000.
+- 85% direct verbruik van zonnestroom is optimistisch door de weekenden (ca. 4.700 kWh opwek). Per 10 procentpunt minder: ca. 1.650 kWh × (€0,21 − €0,08) ≈ €215 per jaar.
+- Het verbruik van 36.000 kWh: bevatten die de extra airco-verwarming en de laadpalen? Bevestigen met meetdata.
+- Geen post onvoorzien op ca. €13.200 aan stelposten.
+- Energiewet: doorlevering aan huurders in model B juridisch laten toetsen.
+- Contractvorm (vast of dynamisch, bij inkoop en bij doorlevering): zie de vraag aan de opdrachtgever.
 
-## E. Stijl
+## 4. Stijl
 
-- De opdracht noemt themakleur `#0f7a3e`. De site gebruikt in de CSS `#0b3d2e`, `#1f6f4a` en `#2fa56b` (die kleur komt alleen uit het manifest). Het rapport volgt de CSS-tokens van de site.
-- Saldox spreekt de lezer aan met "u". De drie keer "jullie" in de bron zijn in de HTML/PDF omgezet naar "u" (zie `TONE` in `build.py`); verder is de tekst letterlijk.
+- Het rapport volgt de CSS-tokens van saldox.nl (`#0b3d2e`, `#1f6f4a`, `#2fa56b`); `#0f7a3e` komt alleen uit het manifest.
+- "Jullie" is omgezet naar "u", zoals op saldox.nl (`TONE` in `build.py`).
