@@ -54,7 +54,7 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 
 - Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per binnenunit ca. €3.300. Hangt af van het type units.
 - Bewegingssensoren: €600 past bij Aqara-klasse; met Philips Hue ca. €1.000.
-- Jaarverbruik: de werkdagtabel komt over ca. 250 werkdagen al op ca. 38.000 kWh in kantoortijd; met nachten en weekenden 39.000–43.000 kWh, niet 36.000. Bevatten de 36.000 kWh de extra airco-verwarming en de laadpalen? Bevestigen met meetdata.
+- Jaarverbruik: 36.000 kWh is waarschijnlijk te hoog. CBS-kentallen (83374NED, kantoren 250–1.000 m²: 51–55 kWh/m²) geven voor 400 m² ca. 21.000 kWh; met kelder en nieuwe airco-verwarming ca. 25.000–30.000 kWh. De werkdagtabel gaat uit van gemiddeld 13–14 kW in kantoortijd, bijna het piekvermogen. Gevoeligheid (`weekend.py`): 30.000 kWh → ca. 7,5 jaar, 25.000 → ca. 7,7, 20.000 → ca. 8,0. Bevestigen met de meetdata van de slimme meter.
 - Geen post onvoorzien op ca. €13.200 aan stelposten.
 - Energiewet: doorlevering aan huurders in model B juridisch laten toetsen.
 - Laadtarief: meestijgen met de stroomprijs (bijv. €0,41 / €0,51) als de prijzen van 2027 uitkomen.
