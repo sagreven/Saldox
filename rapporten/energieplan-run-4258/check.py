@@ -189,6 +189,18 @@ for i, k in enumerate(["vast/vast", "vast/dynamisch", "dynamisch/dynamisch"]):
     ok(build.CONTRACT[i][1] == v["netto"], f"  grafiekdata {k}")
 ok(vs["dynamisch/dynamisch"]["netto"] == m["netto"], "hoofdscenario = dynamisch/dynamisch")
 
+pt = next(t for t in md_tables if t[0][1:] == ["Basis (huidige aannames)", "2027 volgens termijnmarkt"])
+rp = {r[0]: r[1:] for r in pt}
+for i, a_ in enumerate([model.ACTUEEL, model.PRIJZEN_2027]):
+    v = model.bereken(a_)
+    es = tuple(e + s_ for e, s_ in zip(v["ems"], v["sens"]))
+    ok(rp["Zon per jaar"][i] == fmt(v["zon"]) and rp["Airco (stroom + gas)"][i] == fmt(v["airco"])
+       and rp["EMS en sensoren"][i] == fmt(es) and rp["Laadpalen"][i] == fmt(v["laadpalen"])
+       and rp["Netto per jaar"][i] == fmt(v["netto"])
+       and rp["Terugverdientijd"][i] == " / ".join(model.jaren(48987.80, n) for n in v["netto"]) + " jaar",
+       f"prijsscenario {pt[0][i + 1]}: netto {v['netto']}")
+    ok(build.PRIJS[i][1] == v["netto"], "  grafiekdata prijsscenario")
+
 print("\n4. Grafiekdata = tabellen")
 ok(near(sum(v for _, v in build.MAATREGELEN), 48987.80), "begrotingsgrafiek telt op tot €48.987,80")
 wf = build.WATERVAL

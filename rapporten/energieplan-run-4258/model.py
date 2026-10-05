@@ -35,6 +35,9 @@ OORSPRONKELIJK = Aannames(stroom=0.25, ere_lo=0.07, ere_hi=0.10)
 TERUG_DYN = (0.03, 0.04, 0.05)
 ACTUEEL = Aannames(stroom=0.21, ere_lo=0.10, ere_hi=0.13, teruglever=TERUG_DYN)
 
+# Prijsscenario 2027 volgens de termijnmarkt (oorlog met Iran): stroom €0,23, gas €1,40 excl. btw.
+PRIJZEN_2027 = Aannames(stroom=0.23, ere_lo=0.10, ere_hi=0.13, teruglever=TERUG_DYN, gas=1.40)
+
 # Batterij zonder prijsverschil: alleen zonne-overschot opslaan i.p.v. terugleveren.
 # 60 / 75 / 90% van het overschot (2.475 kWh), rendement 90%.
 OPSLAG_AANDEEL = (0.60, 0.75, 0.90)

@@ -4,7 +4,7 @@
 
 ## Samenvatting
 
-Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.630 tot 9.670 per jaar op; de terugverdientijd is 5 tot 13,5 jaar, normaal ca. 7,5 jaar. Dat geldt voor het dynamische stroomcontract dat de klant nu heeft en houdt; met een vast contract zou het normaal ca. 8,4 jaar zijn. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in ca. 3 tot 6,5 jaar terug.
+Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten netto ca. €3.630 tot 9.670 per jaar op; de terugverdientijd is 5 tot 13,5 jaar, normaal ca. 7,5 jaar. Dat geldt voor het dynamische stroomcontract dat de klant nu heeft en houdt; met een vast contract zou het normaal ca. 8,4 jaar zijn. Blijven gas en stroom na de prijsstijging door de oorlog met Iran op het niveau van de termijnmarkt voor 2027, dan wordt het ca. 6,4 jaar. Zonder de airco's, die toch vervangen moeten worden, verdient het energiedeel zich in ca. 3 tot 6,5 jaar terug.
 
 - **Zonnestroom:** 40 panelen van 450 Wp (18 kWp) met een Sofar HYD 15KTL-3PH hybride omvormer, ca. 16.500 kWh per jaar, ca. 45% van het verbruik.
 - **Batterij 50 kWh:** vangt in de winter pieken boven 3x25 A op en laadt de rest van het jaar op goedkope uren. Inkoop €2.500, nog te bevestigen.
@@ -149,6 +149,39 @@ Bedragen per scenario: pessimistisch / normaal / optimistisch. Alle andere poste
 
 Bronnen: [Energy-Charts](https://api.energy-charts.info/) (EPEX day-ahead NL en zonne-opwek NL, eigen berekening), [CBS](https://www.cbs.nl/nl-nl/cijfers/detail/85592NED).
 
+## Prijsontwikkeling: oorlog en einde saldering
+
+Door de oorlog met Iran zijn gas en stroom sinds maart 2026 flink duurder geworden. Blijven de prijzen in 2027 op het niveau van de termijnmarkt, dan levert het pakket normaal ca. €7.700 per jaar op en is het in ca. 6,4 jaar terugverdiend.
+
+**Wat er is gebeurd**
+
+- **Gas:** na de aanvallen op Iran (vanaf 28 februari 2026) en het sluiten van de Straat van Hormuz ligt de LNG-productie van Qatar stil. De Nederlandse gasprijs (TTF) steeg van ca. €31 per MWh eind februari naar ca. €74 op 5 oktober 2026. Voor levering in 2027 noteert de termijnmarkt ca. €55.
+- **Stroom volgt gas:** de termijnprijs voor stroom in 2027 is ca. €125 per MWh, tegen gemiddeld ca. €109 op de day-aheadmarkt in 2026 tot nu toe.
+- **Tarieven:** variabele gastarieven liggen gemiddeld rond €1,70 per m³ inclusief belastingen en btw (20 leveranciers, 5 oktober 2026); de termijnmarkt wijst voor begin 2027 op €1,66 tot 1,69.
+- **Energiebelasting 2027:** gas stijgt naar €0,6163 per m³, stroom daalt naar €0,0880 per kWh (eerste schijf, excl. btw).
+- **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent nergens met saldering. Leveranciers schuiven kosten deels naar vaste leveringskosten en terugleverkosten. Die veranderen de besparing van het pakket niet.
+
+| | Basis (huidige aannames) | 2027 volgens termijnmarkt |
+| --- | --- | --- |
+| Stroomprijs excl. btw | €0,21 per kWh | €0,23 per kWh |
+| Gasprijs excl. btw | €1,00 per m³ | €1,40 per m³ |
+| Zon per jaar | €2.850 / €3.000 / €3.150 | €3.110 / €3.270 / €3.440 |
+| Airco (stroom + gas) | €1.140 / €1.710 / €2.270 | €1.650 / €2.480 / €3.300 |
+| EMS en sensoren | €605 / €990 / €1.355 | €750 / €1.225 / €1.675 |
+| Laadpalen | €1.966 / €2.773 / €3.838 | €1.825 / €2.632 / €3.650 |
+| Netto per jaar | €3.631 / €6.563 / €9.673 | €4.405 / €7.697 / €11.125 |
+| Terugverdientijd | 13,5 / 7,5 / 5,1 jaar | 11,1 / 6,4 / 4,4 jaar |
+
+Bedragen per scenario: pessimistisch / normaal / optimistisch. De batterij, de ERE-opbrengst, de teruglevering en de jaarlijkse kosten zijn gelijk gehouden.
+
+- **De airco's winnen het meest:** met duur gas wordt verwarmen met de airco veel gunstiger (normaal €2.480 in plaats van €1.710 per jaar).
+- **De laadpalen leveren iets minder op,** omdat het laadtarief vaststaat en de inkoop duurder wordt. Verhoog het tarief mee met de stroomprijs, bijvoorbeeld naar €0,41 en €0,51 per kWh, om de marge te houden.
+- **De batterij is voorzichtig gerekend:** de prijsverschillen binnen een dag zijn door de hoge gasprijs juist groter geworden.
+- **Het kan ook terugvallen:** Rabobank verwacht voor 2027 gemiddeld €42 per MWh als de spanningen afnemen. Daarom blijft het hoofdscenario op de huidige aannames.
+- **Onderbouwing:** gas €1,40 = €1,66 tot 1,69 incl. btw volgens de termijnmarkt, gedeeld door 1,21. Stroom €0,23 = groothandelsprijs 2027 ca. €0,016 per kWh hoger dan in 2026, energiebelasting ca. €0,004 lager, plus de opslag die leveranciers nu doorvoeren (Greenchoice verhoogde in september de variabele tarieven met ca. 20%).
+
+Bronnen: [Keuze.nl gasprijsverwachting](https://www.keuze.nl/energie/gasprijs-verwachting), [Trading Economics TTF](https://tradingeconomics.com/commodity/eu-natural-gas), [Elexys marktupdate 1 oktober 2026](https://www.elexys.be/sites/default/files/marketupdates/01102026---elexys_market_updates_.pdf), [Overstappen.nl energiebelasting 2027](https://www.overstappen.nl/nieuws/gasbelasting-stijgt-stroombelasting-daalt-energierekening-euro-180-hoger-in-2027/), [Rabobank via FXStreet](https://www.fxstreet.com/news/natural-gas-higher-winter-curve-and-risk-ranges-rabobank-202609151151).
+
 ## Verdienmodel verhuurder: wie betaalt, wie bespaart
 
 Of de verhuurder de besparingen krijgt, hangt af van hoe de energie met de huurders wordt verrekend; de scenario's hierboven gaan uit van model A.
@@ -186,7 +219,7 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 - **Wat het wel oplevert:** een betrouwbaar klimaat in het pand, minder storingen en onderhoud, en verwarmen met een seizoensrendement (SCOP) van ca. 3,5 tot 4,5 in de praktijk (1 kWh stroom geeft ca. 4 kWh warmte). Dat verlaagt in de winter de stookkosten.
 - **Synergie met de zonnepanelen.** Koelen in de zomer valt samen met de zonopbrengst. Daardoor wordt meer zonstroom direct gebruikt, wat het financiële resultaat van de panelen verbetert.
 
-**Gasbesparing telt ook mee.** Doordat de nieuwe airco's ook kunnen verwarmen, hoeft de gasketel in de winter minder te draaien en daalt het gasverbruik. Die besparing komt bovenop de stroombesparing en kan de terugverdientijd flink verkorten. Om de investering in 15 jaar (aanname levensduur) terug te verdienen is ca. €1.570 per jaar besparing nodig, stroom en gas samen. Schatting (aannames, geen meting): twee kantoorlagen van samen ca. 400 m², 10 m³ gas per m² is 4.000 m³ per jaar (CBS noemt voor kleinere kantoren 11 tot 17 m³ per m², dus dit is aan de lage kant), gasprijs €1,00 per m³ (CBS augustus 2026 plus energiebelasting: ca. €1,10, dus voorzichtig), airco's nemen 50% van de verwarming over met een rendement van 3,5 (voorzichtig gekozen). Dat bespaart 2.000 m³ gas (€2.000) maar kost ca. 5.000 kWh extra stroom (ca. €1.050), dus netto ca. €950 per jaar. Samen met de stroombesparing van ca. €760 (zie hierboven) is dat ca. €1.710 per jaar, een terugverdientijd van ca. 14 jaar. De kelder (grote ruimte met vloerverwarming) valt hier buiten: die blijft op gas. Daar wordt alleen gekeken naar slimme zonenregeling, die we als aparte post zien en nog niet in de begroting hebben. Vervang deze aannames door het werkelijke gasverbruik en oppervlak zodra die bekend zijn.
+**Gasbesparing telt ook mee.** Doordat de nieuwe airco's ook kunnen verwarmen, hoeft de gasketel in de winter minder te draaien en daalt het gasverbruik. Die besparing komt bovenop de stroombesparing en kan de terugverdientijd flink verkorten. Om de investering in 15 jaar (aanname levensduur) terug te verdienen is ca. €1.570 per jaar besparing nodig, stroom en gas samen. Schatting (aannames, geen meting): twee kantoorlagen van samen ca. 400 m², 10 m³ gas per m² is 4.000 m³ per jaar (CBS noemt voor kleinere kantoren 11 tot 17 m³ per m², dus dit is aan de lage kant), gasprijs €1,00 per m³ (CBS augustus 2026 plus energiebelasting: ca. €1,10; door de oorlog met Iran ligt de markt nu rond €1,40, dus voorzichtig), airco's nemen 50% van de verwarming over met een rendement van 3,5 (voorzichtig gekozen). Dat bespaart 2.000 m³ gas (€2.000) maar kost ca. 5.000 kWh extra stroom (ca. €1.050), dus netto ca. €950 per jaar. Samen met de stroombesparing van ca. €760 (zie hierboven) is dat ca. €1.710 per jaar, een terugverdientijd van ca. 14 jaar. De kelder (grote ruimte met vloerverwarming) valt hier buiten: die blijft op gas. Daar wordt alleen gekeken naar slimme zonenregeling, die we als aparte post zien en nog niet in de begroting hebben. Vervang deze aannames door het werkelijke gasverbruik en oppervlak zodra die bekend zijn.
 
 ## Inkoopprijzen via een relatie
 
@@ -441,7 +474,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 - Leegstand verlaagt de opbrengst uit stroom, laadpalen en internet, terwijl de vaste kosten blijven.
 - De batterij moet in de winter pieken opvangen; de opbrengst uit goedkope uren is dan lager.
 - Software van eigen makelij: uitval van EMS of app raakt verwarming, laadpalen en facturatie. Zorg voor een veilige noodstand (vaste temperatuur, laadpalen op laag vermogen).
-- Prijzen voor stroom, gas en ERE kunnen dalen; de scenario's rekenen met vaste prijzen. Een dynamisch contract geeft prijsrisico: een koude, windstille week kan duur uitvallen. Het EMS beperkt dat door de batterij en de laadpalen op de uurprijs te sturen.
+- Prijzen voor stroom, gas en ERE kunnen stijgen of dalen; de scenario's rekenen met vaste prijzen. Zie 'Prijsontwikkeling: oorlog en einde saldering' voor het effect van de huidige prijsstijging. Een dynamisch contract geeft prijsrisico: een koude, windstille week kan duur uitvallen. Het EMS beperkt dat door de batterij en de laadpalen op de uurprijs te sturen.
 
 ## Begrippenlijst
 

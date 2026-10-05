@@ -36,6 +36,7 @@ HEADLINES = {
     "Scenario's terugverdientijd": "Wat er na de jaarlijkse kosten overblijft.",
     "Terugverdientijd per maatregel": "Niet elke maatregel hoeft zich terug te verdienen.",
     "Stroomcontract: nu en straks": "Dynamisch blijft dynamisch, en dat laat de batterij verdienen.",
+    "Prijsontwikkeling: oorlog en einde saldering": "Duurder gas maakt het pakket juist sneller terugverdiend.",
     "Verdienmodel verhuurder: wie betaalt, wie bespaart": "Wie betaalt de rekening, wie houdt de besparing?",
     "Waarom de airco's geen terugverdientijd hebben": "Vervangen moet. De vraag is alleen: welke vervanging.",
     "Inkoopprijzen via een relatie": "Het inkoopvoordeel gaat volledig naar de verhuurder.",
@@ -103,6 +104,12 @@ CONTRACT = [  # (variant, netto pess/norm/opt, terugverdientijd pess/norm/opt) �
 ]
 
 
+PRIJS = [  # zie model.PRIJZEN_2027
+    ("Basis", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
+    ("2027 termijnmarkt", (4405, 7697, 11125), ("11,1", "6,4", "4,4")),
+]
+
+
 def inserts():
     """Per sectie: (anker, html). Anker 'lede' = na de eerste alinea, 'table:N' = na de N-de tabel (1-based)."""
     return {
@@ -112,6 +119,10 @@ def inserts():
         "Laadplan en tariefopties voor de klant": [("table:2", charts.laadplan(LAADPLAN, 4000))],
         "Netaansluiting 3x25 A en meten per unit": [("table:2", charts.werkdag(WERKDAG))],
         "EMS: slim verwarmen en koelen": [("table:1", charts.dagschema())],
+        "Prijsontwikkeling: oorlog en einde saldering": [("table:1", charts.contract(
+            PRIJS, INVESTERING, "prijs-chart", "Prijsscenario · basis tegenover 2027",
+            "Met prijzen volgens de termijnmarkt ca. 6,4 jaar in plaats van 7,5",
+            "Stroom €0,21 → €0,23 per kWh, gas €1,00 → €1,40 per m³ (excl. btw)"))],
         "Stroomcontract: nu en straks": [("table:1", charts.contract(CONTRACT, INVESTERING))],
     }
 

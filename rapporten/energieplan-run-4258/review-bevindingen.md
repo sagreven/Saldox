@@ -20,7 +20,13 @@ Stand 5 oktober 2026. Alle uitspraken in het rapport zijn gecontroleerd: rekenku
 | Airco stroom + gas (normaal) | €1.650 | €1.710 (goedkopere stroom maakt verwarmen met de airco gunstiger) |
 | EMS + sensoren | €665–1.490 | €605–1.355 |
 
-De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op; de conclusie (normaal ca. 7 jaar) blijft staan.
+De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
+
+**Correctie teruglevering:** het model rekende met een dynamisch contract voor de batterij, maar met een vaste terugleververgoeding van €0,08. Bij een dynamisch contract krijgt u voor teruglevering de uurprijs. De gemiddelde prijs tijdens zonne-opwek was €53 per MWh in 2025 en €65 in 2026 (EPEX NL via energy-charts, eigen berekening); na de opslag van de leverancier blijft €0,03–0,05 per kWh over. Gevolg: zon €2.850–3.150 per jaar, netto €3.631 / €6.563 / €9.673, terugverdientijd **13,5 / 7,5 / 5,1 jaar** (hoofdscenario).
+
+**Stroomcontract nu → straks** (nieuwe sectie): de klant heeft nu dynamisch en houdt dat; daarop is het hoofdscenario gebaseerd. Ter vergelijking: vast → vast geeft 14,8 / 8,4 / 5,8 jaar. De batterij verdient zich met een vast contract niet terug (−€440 tot −€185 per jaar), maar blijft nodig voor 3x25 A. Vast → dynamisch levert voor de investering hetzelfde op als dynamisch → dynamisch; het overstapeffect telt niet mee.
+
+**Prijsscenario 2027** (nieuwe sectie): door de oorlog met Iran (vanaf 28-2-2026, Straat van Hormuz dicht) steeg TTF van ca. €31 naar €74 per MWh; Cal-2027 gas ca. €55, stroom ca. €125 per MWh. Met stroom €0,23 en gas €1,40 excl. btw: netto €4.405 / €7.697 / €11.125, terugverdientijd **11,1 / 6,4 / 4,4 jaar**. De airco's winnen het meest; de laadpalen leveren iets minder op zolang het laadtarief niet meestijgt. Energiebelasting 2027: gas €0,6163 per m³, stroom €0,0880 per kWh. Het einde van de saldering zat al in het model.
 
 ## 2. Gecorrigeerd of aangevuld in de tekst
 
@@ -47,11 +53,11 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op; d
 
 - Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per binnenunit ca. €3.300. Hangt af van het type units.
 - Bewegingssensoren: €600 past bij Aqara-klasse; met Philips Hue ca. €1.000.
-- 85% direct verbruik van zonnestroom is optimistisch door de weekenden (ca. 4.700 kWh opwek). Per 10 procentpunt minder: ca. 1.650 kWh × (€0,21 − €0,08) ≈ €215 per jaar.
+- 85% direct verbruik van zonnestroom is optimistisch door de weekenden (ca. 4.700 kWh opwek). Per 10 procentpunt minder: ca. 1.650 kWh × (€0,21 − €0,04) ≈ €280 per jaar.
 - Het verbruik van 36.000 kWh: bevatten die de extra airco-verwarming en de laadpalen? Bevestigen met meetdata.
 - Geen post onvoorzien op ca. €13.200 aan stelposten.
 - Energiewet: doorlevering aan huurders in model B juridisch laten toetsen.
-- Contractvorm (vast of dynamisch, bij inkoop en bij doorlevering): zie de vraag aan de opdrachtgever.
+- Laadtarief: meestijgen met de stroomprijs (bijv. €0,41 / €0,51) als de prijzen van 2027 uitkomen.
 
 ## 4. Stijl
 
