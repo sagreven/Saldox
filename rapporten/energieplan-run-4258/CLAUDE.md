@@ -21,7 +21,7 @@
 - Titel: "Normaal is het pakket na ca. 6,6 jaar terugverdiend"
 - Lijngrafiek, x-as 0 t/m 15 jaar, y-as in euro.
 - Formule per scenario: `kasstroom(jaar) = -investering + netto_per_jaar × jaar`
-- Investering: **€43.487,20** (airco's €17.987,20: 7 sets à €2.569,60 all-in)
+- Investering: **€43.487,20** (airco's €17.987,20: boven €7.708,80 + beneden €10.278,40)
 - Netto per jaar (na jaarlijkse kosten):
   - Pessimistisch: €3.631 → terugverdiend na 12,0 jaar
   - Normaal: €6.563 → terugverdiend na 6,6 jaar (accentkleur)

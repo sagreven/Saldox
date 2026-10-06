@@ -11,7 +11,7 @@ Het totale pakket kost €43.487,20 excl. btw en levert na jaarlijkse kosten net
 - **Stroomcontract:** de klant heeft nu een dynamisch contract en houdt dat. Daardoor verdient de batterij aan goedkoop laden en duur ontladen; met een vast contract zou hij vooral dienen om binnen 3x25 A te blijven.
 - **Laadpalen:** 2 Zaptec Pro, stroomverkoop tegen €0,39 tot 0,49 per kWh plus ERE.
 - **EMS, app en sensoren:** nachtverlaging, eco bij afwezigheid, meting en doorberekening per unit.
-- **Airco's:** noodzakelijke vervanging en de grootste post (€17.987,20): 7 Toshiba-sets van 3,6 kW koelen en 4,0 kW verwarmen à €2.569,60 all-in, 3 boven en 4 beneden, waarvan 2 nieuw. Boven wordt het leidingwerk vervangen, beneden komen infrarood afstandsbedieningen. Ruim onder de marktprijs.
+- **Airco's:** noodzakelijke vervanging en de grootste post (€17.987,20): 7 Toshiba-sets van 3,6 kW koelen en 4,0 kW verwarmen, gemiddeld €2.569,60 per set, 3 boven en 4 beneden, waarvan 2 nieuw. Boven wordt het leidingwerk vervangen, beneden komen infrarood afstandsbedieningen. Ruim onder de marktprijs.
 - **Open punten voor de verhuurder:** wie de energie betaalt (verdienmodel), btw op de investering, leegstand en de huurcontracten.
 - **Windturbine:** alleen als optie, na een positieve windmeting.
 
@@ -276,27 +276,37 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 - **Wat het wel oplevert:** een betrouwbaar klimaat in het pand, minder storingen en onderhoud, en verwarmen met een seizoensrendement (SCOP) van ca. 3,5 tot 4,5 in de praktijk (1 kWh stroom geeft ca. 4 kWh warmte). Dat verlaagt in de winter de stookkosten.
 - **Synergie met de zonnepanelen.** Koelen in de zomer valt samen met de zonopbrengst. Daardoor wordt meer zonstroom direct gebruikt, wat het financiële resultaat van de panelen verbetert.
 
-**Offerte: 7 Toshiba-sets à €2.569,60 all-in.** Elke set is een Toshiba Digital Inverter: cassette RAV-HM401MUTP-E (60x60, voor het systeemplafond) met buitenunit RAV-GM402ATP-E. Koelen 3,6 kW (0,9 tot 4,0), verwarmen 4,0 kW (0,8 tot 5,0, nog 2,5 kW bij −10 °C), SCOP 4,46 (A+), SEER 6,70 (A++), koudemiddel R32 (0,9 kg), 230 V 1-fase. Samen 28 kW verwarmen en 25 kW koelen ([Intercool](https://www.intercool.nl/rav-mutp/rav-hm401mutp-e-gm402atp-e)).
+**Offerte: 7 Toshiba-sets, gemiddeld €2.569,60 per set.** Elke set is een Toshiba Digital Inverter: cassette RAV-HM401MUTP-E (60x60, voor het systeemplafond) met buitenunit RAV-GM402ATP-E. Koelen 3,6 kW (0,9 tot 4,0), verwarmen 4,0 kW (0,8 tot 5,0, nog 2,5 kW bij −10 °C), SCOP 4,46 (A+), SEER 6,70 (A++), koudemiddel R32 (0,9 kg), 230 V 1-fase. Samen 28 kW verwarmen en 25 kW koelen ([Intercool](https://www.intercool.nl/rav-mutp/rav-hm401mutp-e-gm402atp-e)).
 
 *Deel 1: bovenverdieping (3 sets vervanging), €7.708,80 excl. btw*
 
 | Post | Omschrijving | Eenheidsprijs | Bedrag (excl. btw) |
 | --- | --- | --- | --- |
-| Toshiba-set compleet geplaatst (3 sets) | Set HM401MUTP-E + GM402ATP-E met vaste bediening; demontage en afvoer van de oude units (F-gassen afpompen); nieuw koelleidingwerk (vervangen, niet spoelen); montage met stikstoftest en vacumeren; inbedrijfstelling en F-gasoplevering; hoogwerker; ombouw systeemplafond 60x90 naar 60x60 (3 posities); trillingsdempende steunen, condensmateriaal en R32-aanvulling | €2.569,60 per set | €7.708,80 |
-| **Subtotaal boven** | **3 sets, all-in** | | **€7.708,80** |
+| Apparatuur (3 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) met vaste bediening | €1.450,00 per set | €4.350,00 |
+| Demontage en milieuafvoer | F-gassen afpompen koudemiddel, demonteren en afvoer (3 sets) | €142,39 per set | €427,17 |
+| Leidingwerk, montage en inbedrijfstelling | Koelleidingen vervangen (niet spoelen), monteren, stikstoftest, vacumeren en F-gasoplevering | Projectpost | €1.325,08 |
+| Materieel (hoogwerker) | Huur hoogwerker incl. transport en verzekering | Projectpost | €650,00 |
+| Aanpassing systeemplafond | Ombouw 3 posities 60x90 naar 60x60 incl. profielen en platen | €184,98 per positie | €554,94 |
+| Consoles en montagemateriaal | Trillingsdempende steunen, condensmateriaal en R32-aanvulling | Projectpost | €401,61 |
+| **Subtotaal boven** | **3 sets incl. hoogwerker** | | **€7.708,80** |
 
 *Deel 2: benedenverdieping (2 nieuw + 2 vervanging), €10.278,40 excl. btw*
 
 | Post | Omschrijving | Eenheidsprijs | Bedrag (excl. btw) |
 | --- | --- | --- | --- |
-| Toshiba-set compleet geplaatst (4 sets) | Set HM401MUTP-E + GM402ATP-E met infrarood afstandsbediening RBC-AXU31UM-E in plaats van een vaste bediening; demontage en afvoer van 2 oude units (F-gassen afpompen); 2 diamant-kernboringen (Ø 65 tot 80 mm) en 2 nieuwe leidingtrajecten (3 m) met kanalen, condens en voeding; montage met stikstoftest en vacumeren; inbedrijfstelling en F-gasoplevering; systeemplafond (2 ombouw 60x90 + 2 sparingen); steunen buiten, kabelgoten, condensafvoer en R32-aanvulling | €2.569,60 per set | €10.278,40 |
-| **Subtotaal beneden** | **4 sets (2 nieuw + 2 vervanging), all-in** | | **€10.278,40** |
+| Apparatuur (4 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) met infrarood afstandsbediening RBC-AXU31UM-E in plaats van vaste bediening | €1.450,00 per set | €5.800,00 |
+| Demontage en milieuafvoer | F-gassen afpompen koudemiddel, demonteren en afvoer (2 sets) | €140,95 per set | €281,90 |
+| Bouwkundig boorwerk (2 nieuw) | 2x diamant-kernboring (Ø 65 tot 80 mm) gevel/wand | €245,76 per stuk | €491,52 |
+| Nieuw leidingtraject (2 nieuw) | 2x nieuw leidingtraject (3 m), kanalen, condens en voeding | €281,91 per traject | €563,82 |
+| Montage en inbedrijfstelling (4 sets) | Plaatsen 4 sets, stikstoftest, vacumeren en F-gasoplevering | €510,61 per set | €2.042,44 |
+| Systeemplafond (4 posities) | 2x ombouw 60x90 + 2x sparing inpassen | €166,25 per positie | €665,00 |
+| Consoles en montagemateriaal | Steunen buiten, kabelgoten, condensafvoer en R32-aanvulling | Projectpost | €433,72 |
+| **Subtotaal beneden** | **4 sets (2 nieuw + 2 vervanging)** | | **€10.278,40** |
 
-- **Eén prijs per set:** alle bijkomende werkzaamheden (demontage, leidingwerk, hoogwerker, plafond, boorwerk) zijn over de sets verdeeld. Boven en beneden kost een set daardoor hetzelfde: €2.569,60 all-in.
 - **Boven nieuw leidingwerk:** de koelleidingen worden vervangen in plaats van gespoeld. Zo komen er geen vuil, vocht of resten van het oude koudemiddel in de nieuwe units, wat de compressor en de garantie ten goede komt.
 - **Beneden een infrarood afstandsbediening:** de RBC-AXU31UM-E heeft een ontvanger in het cassettepaneel en vervangt de vaste bediening aan de wand ([Toshiba](https://www.toshiba-aircon.co.uk/en/products/controls/wireless-remote-controller/rbc-axu31um-e-kit.html)). Het EMS stuurt de units via de Modbus-koppeling; stel de grenzen (verwarmen tot 22 °C, koelen niet onder 22 °C) in het EMS zo in dat ze ook gelden als iemand de afstandsbediening gebruikt.
 
-**Hoe de offerte zich verhoudt tot de markt.** Een turn-key project met 7 cassettes, plafondombouw, hoogwerker en boringen kost bij grote klimaatinstallateurs eerder €25.000 tot 29.000 excl. btw, ofwel ca. €3.570 tot 4.140 per set. Met €2.569,60 per set (€17.987,20 in totaal) ligt deze offerte ca. 28 tot 38% daaronder, terwijl het leidingwerk boven volledig wordt vervangen.
+**Hoe de offerte zich verhoudt tot de markt.** Een turn-key project met 7 cassettes, plafondombouw, hoogwerker en boringen kost bij grote klimaatinstallateurs eerder €25.000 tot 29.000 excl. btw, ofwel ca. €3.570 tot 4.140 per set. Met gemiddeld €2.569,60 per set (€17.987,20 in totaal) ligt deze offerte ca. 28 tot 38% daaronder, terwijl het leidingwerk boven volledig wordt vervangen.
 
 | Onderdeel | Marktprijs |
 | --- | --- |

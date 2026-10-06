@@ -14,7 +14,7 @@ Bronnen actuele aannames:
 """
 from dataclasses import dataclass
 
-AIRCO = 17987.20       # aanbod: 7 Toshiba-sets à €2.569,60 all-in (boven 3, beneden 4)
+AIRCO = 17987.20       # offerte: boven 3 sets €7.708,80, beneden 4 sets €10.278,40
 INVESTERING = 25500 + AIRCO   # energiedeel €25.500 + airco's = €43.487,20
 
 
