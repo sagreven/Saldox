@@ -52,11 +52,11 @@ HEADLINES = {
 }
 
 # ── Grafiek 1 (CLAUDE.md)
-INVESTERING = 48987.80
+INVESTERING = 43487.20
 SCENARIOS = [  # (naam, netto per jaar, terugverdiend na, nadruk)
-    ("Pessimistisch", 3631, "13,5", False),
-    ("Normaal", 6563, "7,5", True),
-    ("Optimistisch", 9673, "5,1", False),
+    ("Pessimistisch", 3631, "12,0", False),
+    ("Normaal", 6563, "6,6", True),
+    ("Optimistisch", 9673, "4,5", False),
 ]
 
 # ── Diagram 2 (CLAUDE.md)
@@ -71,12 +71,12 @@ TURBINE = ("Windturbine (optie, apart spoor)", "Maand 6 tot 12", "Alleen na posi
 
 # ── Extra grafieken: data letterlijk uit de tabellen in de markdown (check.py controleert dat)
 MAATREGELEN = [  # Terugverdientijd per maatregel: investering
-    ("Airco's", 23487.80), ("Zonnepanelen", 11300), ("Laadpalen", 4000), ("Batterij", 4000),
+    ("Airco's", 17987.20), ("Zonnepanelen", 11300), ("Laadpalen", 4000), ("Batterij", 4000),
     ("Meten per unit", 3350), ("Smart control", 2100), ("Inspectie elektra", 750),
 ]
 PAYBACK = [  # (maatregel, pess, normaal, opt) in jaren; None = niet / meer dan 25
     ("Zonnepanelen", 5.1, 4.6, 4.2), ("Smart control", 6.9, 3.0, 2.0), ("Laadpalen", 2.7, 1.7, 1.1),
-    ("Batterij", None, 8.0, 3.7), ("Airco's", None, None, 18),
+    ("Batterij", None, 8.0, 3.7), ("Airco's", None, None, 14.2),
 ]
 WATERVAL = [  # scenariotabel, kolom Normaal
     ("Zon", 3000, "plus"), ("Batterij", 1000, "plus"), ("Airco (stroom + gas)", 1710, "plus"),
@@ -99,21 +99,21 @@ WERKDAG = {
 
 
 CONTRACT = [  # (variant, netto pess/norm/opt, terugverdientijd pess/norm/opt) — zie model.varianten()
-    ("Nu vast → vast", (3311, 5863, 8483), ("14,8", "8,4", "5,8")),
-    ("Nu vast → dynamisch", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
-    ("Dynamisch → dynamisch", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
+    ("Nu vast → vast", (3311, 5863, 8483), ("13,1", "7,4", "5,1")),
+    ("Nu vast → dynamisch", (3631, 6563, 9673), ("12,0", "6,6", "4,5")),
+    ("Dynamisch → dynamisch", (3631, 6563, 9673), ("12,0", "6,6", "4,5")),
 ]
 
 
 PRIJS = [  # zie model.PRIJZEN_2027
-    ("Basis", (3631, 6563, 9673), ("13,5", "7,5", "5,1")),
-    ("2027 termijnmarkt", (4405, 7697, 11125), ("11,1", "6,4", "4,4")),
+    ("Basis", (3631, 6563, 9673), ("12,0", "6,6", "4,5")),
+    ("2027 termijnmarkt", (4405, 7697, 11125), ("9,9", "5,6", "3,9")),
 ]
 
 
 VIJF_JAAR = [  # zie model.vijf_jaar(); (variant, pess, normaal, opt) in jaren
-    ("Volledig pakket", 13.5, 7.5, 5.1),
-    ("Volledig + EIA/KIA + prijzen 2027", 10.3, 5.9, 4.1),
+    ("Volledig pakket", 12.0, 6.6, 4.5),
+    ("Volledig + EIA/KIA + prijzen 2027", 9.1, 5.2, 3.6),
     ("Energiedeel zonder airco's", 6.4, 4.2, 3.0),
     ("Energiedeel + EIA/KIA", 5.8, 3.8, 2.7),
     ("Energiedeel + EIA/KIA + prijzen 2027", 5.4, 3.6, 2.6),
@@ -125,13 +125,13 @@ def inserts():
     return {
         "Begroting (excl. btw)": [("lede", charts.begroting(MAATREGELEN, INVESTERING))],
         "Scenario's terugverdientijd": [("table:1", charts.waterval(WATERVAL))],
-        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 7.5))],
+        "Terugverdientijd per maatregel": [("lede", charts.payback(PAYBACK, 6.6))],
         "Laadplan en tariefopties voor de klant": [("table:2", charts.laadplan(LAADPLAN, 4000))],
         "Netaansluiting 3x25 A en meten per unit": [("table:2", charts.werkdag(WERKDAG))],
         "EMS: slim verwarmen en koelen": [("table:1", charts.dagschema())],
         "Prijsontwikkeling: oorlog en einde saldering": [("table:1", charts.contract(
             PRIJS, INVESTERING, "prijs-chart", "Prijsscenario · basis tegenover 2027",
-            "Met prijzen volgens de termijnmarkt ca. 6,4 jaar in plaats van 7,5",
+            "Met prijzen volgens de termijnmarkt ca. 5,6 jaar in plaats van 6,6",
             "Stroom €0,21 → €0,23 per kWh, gas €1,00 → €1,40 per m³ (excl. btw)"))],
         "Optie: terugverdientijd van 5 jaar": [("table:1", charts.payback(
             VIJF_JAAR, 5, refs=[(5, "doel 5 jaar", "ref-sun", 20)], lw=250, cap=15, fid="vijf-jaar-chart",

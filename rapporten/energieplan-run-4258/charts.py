@@ -118,7 +118,7 @@ def kasstroom(investering, scenarios):
     o.append("</svg><div class=\"tooltip\" hidden></div>")
     legend = sw("accent", "Normaal") + sw("pess", "Pessimistisch") + sw("opt", "Optimistisch") + sw("band", "Bandbreedte")
     return figure("grafiek-1", "Grafiek 1 · netto cumulatieve kasstroom",
-                  "Normaal is het pakket na ca. 7,5 jaar terugverdiend",
+                  "Normaal is het pakket na ca. 6,6 jaar terugverdiend",
                   f"Investering {eur(investering, 2)} · kasstroom = −investering + netto per jaar × jaar",
                   "".join(o), legend)
 
@@ -186,7 +186,7 @@ def begroting(items, totaal):
                  f'<tspan class="muted-t" dx="6">{nl(pct, 0)}%</tspan></text>')
     o.append("</svg><div class=\"tooltip\" hidden></div>")
     return figure("begroting-chart", "Basispakket · investering per maatregel",
-                  "Bijna de helft van het budget gaat naar de airco's",
+                  "Ruim 40% van het budget gaat naar de airco's",
                   f"Totaal basis {eur(totaal, 2)} excl. btw · indeling volgens de tabel ‘Terugverdientijd per maatregel’",
                   "".join(o))
 

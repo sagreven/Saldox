@@ -14,7 +14,8 @@ Bronnen actuele aannames:
 """
 from dataclasses import dataclass
 
-INVESTERING = 48987.80
+AIRCO = 17987.20       # aanbod: 7 Toshiba-sets à €2.569,60 all-in (boven 3, beneden 4)
+INVESTERING = 25500 + AIRCO   # energiedeel €25.500 + airco's = €43.487,20
 
 
 @dataclass
@@ -130,7 +131,7 @@ def varianten():
 
 # ── Optie: terugverdientijd van 5 jaar ─────────────────────────────────────────
 # Airco's buiten de business case (noodzakelijke vervanging); energiedeel €25.500.
-ENERGIEDEEL = INVESTERING - 23487.80
+ENERGIEDEEL = INVESTERING - AIRCO
 EIA_ENERGIE = 10800 + 4000     # zonnepanelen (251102) en batterij incl. opstelling (251118)
 EIA_AIRCO = 0                  # code 211108 vraagt > 12 kW thermisch; de Toshiba-sets zijn 4 kW per stuk
 VPB = 0.19                     # vennootschapsbelasting 2026 tot €200.000 winst

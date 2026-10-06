@@ -109,16 +109,17 @@ beg = tbl_starting("Post")
 rows = {plain(r[0]): r for r in beg[1:]}
 basis_idx = [plain(r[0]) for r in beg].index("Totaal basis")
 basis_sum = sum(eur(r[1]) for r in beg[1:basis_idx])
-ok(near(basis_sum, 48987.80), f"begroting basis telt op: {basis_sum:.2f} = 48.987,80")
-ok(near(eur(rows["Totaal basis"][1]), 48987.80), "totaalregel basis = €48.987,80")
-ok(near(round(48987.80 * 1.21, 2), 59275.24), f"incl. 21% btw: {48987.80 * 1.21:.2f} → €59.275,24")
+I = model.INVESTERING
+ok(near(basis_sum, I), f"begroting basis telt op: {basis_sum:.2f} = {I:.2f}")
+ok(near(eur(rows["Totaal basis"][1]), I), f"totaalregel basis = {I:.2f}")
+btw_s = f"€{I * 1.21:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+ok(btw_s in md, f"incl. 21% btw: {btw_s} staat in de tekst")
 opties = eur(rows["Optie: grote ruimte airco's (2 units i.p.v. 1)"][1]) + eur(rows["Optie: windturbine Fortis Montana 5 kW met mast"][1])
-ok(near(48987.80 + opties, eur(rows["Totaal met beide opties"][1])) and near(48987.80 + opties, 80768.20),
-   f"met beide opties: {48987.80 + opties:.2f} = 80.768,20")
+ok(near(I + opties, eur(rows["Totaal met beide opties"][1])), f"met beide opties: {I + opties:.2f}")
 
 mt = tbl_starting("Maatregel")
 inv = sum(eur(r[1]) for r in mt[1:-1])
-ok(near(inv, 48987.80), f"investering per maatregel telt op: {inv:.2f}")
+ok(near(inv, I), f"investering per maatregel telt op: {inv:.2f}")
 for k, naam in enumerate(["pessimistisch", "normaal", "optimistisch"]):
     s = 0
     for r in mt[1:-1]:
@@ -134,7 +135,7 @@ for t in offertes:
     som = sum(eur(r[3]) for r in t[1:-1])
     subt.append(eur(t[-1][3]))
     ok(near(som, subt[-1]), f"airco-offerte {plain(t[-1][0])}: posten {som:.2f} = {subt[-1]:.2f}")
-ok(len(offertes) == 2 and near(sum(subt), 23487.80), f"airco-offerte totaal {sum(subt):.2f} = begroting €23.487,80")
+ok(len(offertes) == 2 and near(sum(subt), model.AIRCO), f"airco-offerte totaal {sum(subt):.2f} = begroting {model.AIRCO:.2f}")
 
 print("\n3. Interne optellingen en rekenmodel (model.py, actuele aannames)")
 m = model.bereken(model.ACTUEEL)
@@ -149,15 +150,15 @@ for k in (1, 2, 3):
        f"scenario {sc[0][k]}: bruto {bruto:.0f}, netto {netto:.0f}")
     ok([eur(r[k]) for r in sc[1:bi]] == [x[k - 1] for x in rows_model], f"  regels = model.py")
     ok(netto == m["netto"][k - 1], f"  netto = model.py ({m['netto'][k - 1]})")
-    ok(model.jaren(48987.80, netto) in mt[-1][3], f"  terugverdientijd {model.jaren(48987.80, netto)} jaar")
+    ok(model.jaren(model.INVESTERING, netto) in mt[-1][3], f"  terugverdientijd {model.jaren(model.INVESTERING, netto)} jaar")
 
 zl = tbl_starting("Scenario")
 for i, r in enumerate(zl[1:]):
     want = m["netto"][i] - m["per"]["laad"][i]
-    ok(near(eur(r[1]), want) and r[2].startswith(model.jaren(44987.80, want)),
-       f"zonder laadpalen {r[0]}: {want} → {model.jaren(44987.80, want)} jaar")
+    ok(near(eur(r[1]), want) and r[2].startswith(model.jaren(model.INVESTERING - 4000, want)),
+       f"zonder laadpalen {r[0]}: {want} → {model.jaren(model.INVESTERING - 4000, want)} jaar")
 
-ok(near(48987.80 - 23487.80, 25500), "zonder airco's: €25.500")
+ok(near(model.INVESTERING - model.AIRCO, 25500), "zonder airco's: €25.500")
 zonder = [n - a for n, a in zip(m["netto"], m["per"]["airco"])]
 txt = "€" + " / €".join(f"{v:,}".replace(",", ".") for v in zonder)
 ok(txt in md, f"  netto zonder airco's {txt}")
@@ -192,7 +193,7 @@ for i, k in enumerate(["vast/vast", "vast/dynamisch", "dynamisch/dynamisch"]):
     v = vs[k]
     ok(rows_ct["Batterij per jaar"][i] == fmt(v["batterij"]) and rows_ct["Zon per jaar"][i] == fmt(v["zon"])
        and rows_ct["Netto per jaar"][i] == fmt(v["netto"])
-       and rows_ct["Terugverdientijd"][i] == " / ".join(model.jaren(48987.80, n) for n in v["netto"]) + " jaar",
+       and rows_ct["Terugverdientijd"][i] == " / ".join(model.jaren(model.INVESTERING, n) for n in v["netto"]) + " jaar",
        f"stroomcontract {k}: netto {v['netto']}")
     ok(build.CONTRACT[i][1] == v["netto"], f"  grafiekdata {k}")
 ok(vs["dynamisch/dynamisch"]["netto"] == m["netto"], "hoofdscenario = dynamisch/dynamisch")
@@ -205,7 +206,7 @@ for i, a_ in enumerate([model.ACTUEEL, model.PRIJZEN_2027]):
     ok(rp["Zon per jaar"][i] == fmt(v["zon"]) and rp["Airco (stroom + gas)"][i] == fmt(v["airco"])
        and rp["EMS en sensoren"][i] == fmt(es) and rp["Laadpalen"][i] == fmt(v["laadpalen"])
        and rp["Netto per jaar"][i] == fmt(v["netto"])
-       and rp["Terugverdientijd"][i] == " / ".join(model.jaren(48987.80, n) for n in v["netto"]) + " jaar",
+       and rp["Terugverdientijd"][i] == " / ".join(model.jaren(model.INVESTERING, n) for n in v["netto"]) + " jaar",
        f"prijsscenario {pt[0][i + 1]}: netto {v['netto']}")
     ok(build.PRIJS[i][1] == v["netto"], "  grafiekdata prijsscenario")
 
@@ -219,7 +220,7 @@ for (lab, p_, n_, o_), (_, _, _, jr) in zip(build.VIJF_JAAR, v5["rijen"]):
 ok(len(vt) - 1 == len(v5["rijen"]), "5-jaarsoptie: alle varianten")
 
 print("\n4. Grafiekdata = tabellen")
-ok(near(sum(v for _, v in build.MAATREGELEN), 48987.80), "begrotingsgrafiek telt op tot €48.987,80")
+ok(near(sum(v for _, v in build.MAATREGELEN), model.INVESTERING), "begrotingsgrafiek telt op tot de investering")
 wf = build.WATERVAL
 ok(sum(v for _, v, s in wf[:6]) == wf[6][1] and wf[6][1] + sum(v for _, v, s in wf[7:13]) == wf[13][1],
    "waterval: bruto 9.672, netto 6.762")
