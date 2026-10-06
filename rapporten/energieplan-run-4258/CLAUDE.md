@@ -13,6 +13,7 @@
    - Gebruik de tekst en tabellen uit `energieplan-run-4258.md` letterlijk; verander geen bedragen.
    - Teken Grafiek 1 en Diagram 2 opnieuw met de data hieronder.
    - Pas de schrijfstijl aan de toon van saldox.nl aan, maar houd de cijfers en de inhoud gelijk.
+   - **Saldox is de adviserende partij.** Schrijf vanuit Saldox als adviseur. Geen voorbehouden of disclaimers die afstand nemen van het advies, zoals "niet door Saldox gecontroleerd" of "volgens opgave van de opdrachtgever". Prijzen die de klant aanlevert (airco's, panelen, batterij, omvormer) worden niet ter discussie gesteld.
 3. **Controleer** na het bouwen of alle totalen in de tabellen nog optellen (zie "Controletotalen").
 
 ## Grafiek 1 — netto cumulatieve kasstroom (scenario's)
