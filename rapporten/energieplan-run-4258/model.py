@@ -14,8 +14,8 @@ Bronnen actuele aannames:
 """
 from dataclasses import dataclass
 
-AIRCO = 17987.20       # offerte: boven 3 sets €7.708,80, beneden 4 sets €10.278,40
-INVESTERING = 25500 + AIRCO   # energiedeel €25.500 + airco's = €43.487,20
+AIRCO = 23487.80       # offerte: boven 3 sets €9.942,20, beneden 4 sets €13.545,60
+INVESTERING = 25500 + AIRCO   # energiedeel €25.500 + airco's = €48.987,80
 
 
 @dataclass

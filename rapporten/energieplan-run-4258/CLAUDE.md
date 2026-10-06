@@ -18,14 +18,14 @@
 
 ## Grafiek 1 — netto cumulatieve kasstroom (scenario's)
 
-- Titel: "Normaal is het pakket na ca. 6,6 jaar terugverdiend"
+- Titel: "Normaal is het pakket na ca. 7,5 jaar terugverdiend"
 - Lijngrafiek, x-as 0 t/m 15 jaar, y-as in euro.
 - Formule per scenario: `kasstroom(jaar) = -investering + netto_per_jaar × jaar`
-- Investering: **€43.487,20** (airco's €17.987,20: boven €7.708,80 + beneden €10.278,40)
+- Investering: **€48.987,80**
 - Netto per jaar (na jaarlijkse kosten):
-  - Pessimistisch: €3.631 → terugverdiend na 12,0 jaar
-  - Normaal: €6.563 → terugverdiend na 6,6 jaar (accentkleur)
-  - Optimistisch: €9.673 → terugverdiend na 4,5 jaar
+  - Pessimistisch: €3.631 → terugverdiend na 13,5 jaar
+  - Normaal: €6.563 → terugverdiend na 7,5 jaar (accentkleur)
+  - Optimistisch: €9.673 → terugverdiend na 5,1 jaar
   - (herberekend oktober 2026: stroom €0,21, ERE €0,10–0,13, dynamisch contract met teruglevering tegen de uurprijs; zie `model.py`)
 - Markeer de nullijn ("Terugverdiend") en het snijpunt per scenario met het aantal jaren.
 
@@ -42,7 +42,7 @@
 
 ## Controletotalen
 
-- Begroting basis: €43.487,20 excl. btw (incl. 21% btw: €52.619,51)
-- Met beide opties (grote ruimte airco's €6.780,40 + windturbine €25.000): €75.267,60
-- Per maatregel optellen tot €43.487,20: zonnepanelen €11.300 + smart control €2.100 + laadpalen €4.000 + batterij €4.000 + airco's €17.987,20 + meten per unit €3.350 + inspectie €750
+- Begroting basis: €48.987,80 excl. btw (incl. 21% btw: €59.275,24)
+- Met beide opties (grote ruimte airco's €6.780,40 + windturbine €25.000): €80.768,20
+- Per maatregel optellen tot €48.987,80: zonnepanelen €11.300 + smart control €2.100 + laadpalen €4.000 + batterij €4.000 + airco's €23.487,80 + meten per unit €3.350 + inspectie €750
 - Netto per jaar per maatregel telt op tot €3.631 / €6.563 / €9.673
