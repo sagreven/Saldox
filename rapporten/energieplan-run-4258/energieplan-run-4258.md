@@ -11,7 +11,7 @@ Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten net
 - **Stroomcontract:** de klant heeft nu een dynamisch contract en houdt dat. Daardoor verdient de batterij aan goedkoop laden en duur ontladen; met een vast contract zou hij vooral dienen om binnen 3x25 A te blijven.
 - **Laadpalen:** 2 Zaptec Pro, stroomverkoop tegen €0,39 tot 0,49 per kWh plus ERE.
 - **EMS, app en sensoren:** nachtverlaging, eco bij afwezigheid, meting en doorberekening per unit.
-- **Airco's:** noodzakelijke vervanging en de grootste post (€23.487,80): 7 Toshiba-sets van 3,6 kW koelen en 4,0 kW verwarmen, 3 boven en 4 beneden, waarvan 2 nieuw. Boven wordt het leidingwerk vervangen, beneden komen infrarood afstandsbedieningen in plaats van wandbedieningen. De offerte ligt onder de marktprijs.
+- **Airco's:** noodzakelijke vervanging en de grootste post (€23.487,80): 7 Toshiba-sets van 3,6 kW koelen en 4,0 kW verwarmen, 3 boven en 4 beneden, waarvan 2 nieuw. Boven wordt het leidingwerk vervangen; alle sets krijgen een infrarood afstandsbediening in plaats van een wandbediening. De offerte ligt onder de marktprijs.
 - **Open punten voor de verhuurder:** wie de energie betaalt (verdienmodel), btw op de investering, leegstand en de huurcontracten.
 - **Windturbine:** alleen als optie, na een positieve windmeting.
 
@@ -21,7 +21,7 @@ Het basispakket is €48.987,80; met beide opties €80.768,20. Bij btw-vrijgest
 
 | Post | Bedrag | Status |
 | --- | --- | --- |
-| Airco's bovenverdieping: 3 sets vervanging, nieuw leidingwerk (offerte Jos) | €9.942,20 | Offerte |
+| Airco's bovenverdieping: 3 sets vervanging, nieuw leidingwerk, afstandsbediening (offerte Jos) | €9.942,20 | Offerte |
 | Airco's benedenverdieping: 2 nieuw + 2 vervanging, afstandsbediening (offerte Jos) | €13.545,60 | Offerte |
 | 40 panelen × €65 | €2.600,00 | Inkoopprijs |
 | Montage panelen | €1.500,00 | Opgegeven |
@@ -282,7 +282,7 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 
 | Post | Omschrijving | Eenheidsprijs | Bedrag (excl. btw) |
 | --- | --- | --- | --- |
-| Apparatuur (3 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) met wandbediening | €2.569,60 per set | €7.708,80 |
+| Apparatuur (3 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) met infrarood afstandsbediening RBC-AXU31UM-E in plaats van wandbediening | €2.569,60 per set | €7.708,80 |
 | Demontage en milieuafvoer | F-gassen afpompen koudemiddel, demonteren en afvoer (3 sets) | €83,23 per set | €249,69 |
 | Leidingwerk, montage en inbedrijfstelling | Koelleidingen vervangen (niet spoelen), monteren, stikstoftest, vacumeren en F-gasoplevering | Projectpost | €774,56 |
 | Materieel (hoogwerker) | Huur hoogwerker incl. transport en verzekering | Projectpost | €650,00 |
@@ -304,7 +304,7 @@ De oude airco's werken niet of matig. Het project is dus deels vervanging en dee
 | **Subtotaal beneden** | **4 sets (2 nieuw + 2 vervanging)** | | **€13.545,60** |
 
 - **Boven nieuw leidingwerk:** de koelleidingen worden vervangen in plaats van gespoeld. Zo komen er geen vuil, vocht of resten van het oude koudemiddel in de nieuwe units, wat de compressor en de garantie ten goede komt.
-- **Beneden een infrarood afstandsbediening in plaats van wandbediening:** de RBC-AXU31UM-E heeft een ontvanger in het cassettepaneel ([Toshiba](https://www.toshiba-aircon.co.uk/en/products/controls/wireless-remote-controller/rbc-axu31um-e-kit.html)). Het EMS stuurt de units via de Modbus-koppeling; stel de grenzen (verwarmen tot 22 °C, koelen niet onder 22 °C) in het EMS zo in dat ze ook gelden als iemand de afstandsbediening gebruikt.
+- **Infrarood afstandsbediening in plaats van wandbediening (alle 7 sets):** de RBC-AXU31UM-E heeft een ontvanger in het cassettepaneel ([Toshiba](https://www.toshiba-aircon.co.uk/en/products/controls/wireless-remote-controller/rbc-axu31um-e-kit.html)). Het EMS stuurt de units via de Modbus-koppeling; stel de grenzen (verwarmen tot 22 °C, koelen niet onder 22 °C) in het EMS zo in dat ze ook gelden als iemand de afstandsbediening gebruikt.
 
 **Hoe de offerte zich verhoudt tot de markt.** De offerte is scherp: een turn-key project met 7 cassettes, plafondombouw, hoogwerker en boringen kost bij grote klimaatinstallateurs eerder €25.000 tot 29.000 excl. btw. Met €23.487,80 zit de offerte daar ruim onder. De apparatuur staat op het niveau van de catalogusprijs; de installatieposten liggen daardoor ver onder de markt, terwijl boven het leidingwerk volledig wordt vervangen.
 
