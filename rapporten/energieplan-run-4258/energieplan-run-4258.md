@@ -11,7 +11,7 @@ Het totale pakket kost €48.987,80 excl. btw en levert na jaarlijkse kosten net
 - **Stroomcontract:** de klant heeft nu een dynamisch contract en houdt dat. Daardoor verdient de batterij aan goedkoop laden en duur ontladen; met een vast contract zou hij vooral dienen om binnen 3x25 A te blijven.
 - **Laadpalen:** 2 Zaptec Pro, stroomverkoop tegen €0,39 tot 0,49 per kWh plus ERE.
 - **EMS, app en sensoren:** nachtverlaging, eco bij afwezigheid, meting en doorberekening per unit.
-- **Airco's:** noodzakelijke vervanging en de grootste post (€23.487,80).
+- **Airco's:** noodzakelijke vervanging en de grootste post (€23.487,80): 7 Toshiba-sets van 3,6 kW koelen en 4,0 kW verwarmen, 3 boven en 4 beneden, waarvan 2 nieuw. De offerte ligt onder de marktprijs.
 - **Open punten voor de verhuurder:** wie de energie betaalt (verdienmodel), btw op de investering, leegstand en de huurcontracten.
 - **Windturbine:** alleen als optie, na een positieve windmeting.
 
@@ -21,7 +21,8 @@ Het basispakket is €48.987,80; met beide opties €80.768,20. Bij btw-vrijgest
 
 | Post | Bedrag | Status |
 | --- | --- | --- |
-| Airco's verdieping + begane grond (offerte Jos) | €23.487,80 | Offerte |
+| Airco's bovenverdieping: 3 sets vervanging (offerte Jos) | €9.942,20 | Offerte |
+| Airco's benedenverdieping: 2 nieuw + 2 vervanging (offerte Jos) | €13.545,60 | Offerte |
 | 40 panelen × €65 | €2.600,00 | Inkoopprijs |
 | Montage panelen | €1.500,00 | Opgegeven |
 | Omvormer Sofar 15 kW | €3.700,00 | Opgegeven |
@@ -210,7 +211,7 @@ Met de airco's buiten de business case verdient het energiedeel zich in het norm
 | Variant | Investering | Netto per jaar | Terugverdientijd |
 | --- | --- | --- | --- |
 | Volledig pakket (hoofdscenario) | €48.987,80 | €3.631 / €6.563 / €9.673 | 13,5 / 7,5 / 5,1 jaar |
-| Volledig pakket, EIA/KIA en prijzen 2027 | €43.471,80 | €4.405 / €7.697 / €11.125 | 9,9 / 5,6 / 3,9 jaar |
+| Volledig pakket, EIA/KIA en prijzen 2027 | €45.256,80 | €4.405 / €7.697 / €11.125 | 10,3 / 5,9 / 4,1 jaar |
 | Energiedeel zonder airco's | €25.500 | €3.991 / €6.053 / €8.403 | 6,4 / 4,2 / 3,0 jaar |
 | Energiedeel + EIA/KIA | €23.019 | €3.991 / €6.053 / €8.403 | 5,8 / 3,8 / 2,7 jaar |
 | Energiedeel + EIA/KIA + prijzen 2027 | €23.019 | €4.255 / €6.417 / €8.825 | 5,4 / 3,6 / 2,6 jaar |
@@ -223,7 +224,7 @@ Bedragen per scenario: pessimistisch / normaal / optimistisch.
 2. **Het stroomcontract blijft dynamisch** voor afname en teruglevering, zodat de batterij goedkoop laadt en duur ontlaadt. De klant heeft dat al.
 3. **De laadpalen zijn 3 tot 4 dagen per week bezet,** tegen €0,39 tot 0,49 per kWh, en het tarief stijgt mee als de stroomprijs stijgt.
 4. **De batterij van 50 kWh past op de Sofar** en kost €2.500 via de relatie.
-5. **EIA en KIA:** melden binnen 3 maanden na de opdracht, zonnepanelen zonder SDE++, en de verhuurder betaalt vennootschapsbelasting (gerekend met 19%). Voor het energiedeel is het belastingvoordeel ca. €2.480: EIA over €14.800 (panelen en batterij) en KIA 28% over €25.500. Voor het volledige pakket is het ca. €5.520, mits de airco's boven 12 kW thermisch zitten en een SCOP van ten minste 4,0 hebben.
+5. **EIA en KIA:** melden binnen 3 maanden na de opdracht, zonnepanelen zonder SDE++, en de verhuurder betaalt vennootschapsbelasting (gerekend met 19%). Voor het energiedeel is het belastingvoordeel ca. €2.480: EIA over €14.800 (panelen en batterij) en KIA 28% over €25.500. Voor het volledige pakket is het ca. €3.730; de airco's tellen niet mee voor de EIA, omdat elke set 4 kW warmte levert en de Energielijst meer dan 12 kW vraagt.
 
 **Aannames**
 
@@ -264,16 +265,59 @@ Of de verhuurder de besparingen krijgt, hangt af van hoe de energie met de huurd
 
 **Huurcontract.** Leg vast: de verrekening van energie (model A of B) en het tarief, temperatuurgrenzen en nachtstand, de EMS-sturing, het gebruik van data (AVG), het laadpaaltarief, de internetdienst met 90e-percentiel, de patchpoort en aansprakelijkheid voor eigen apparatuur. Bij bedrijfsruimte is er veel contractvrijheid, maar laat de opzet juridisch controleren, ook in verband met de Energiewet (sinds 1 januari 2026 van kracht), zeker bij doorlevering van stroom in model B.
 
-**Fiscale kansen.** De EIA (energie-investeringsaftrek) is in 2026 40% van het investeringsbedrag, bij minimaal €2.500 per melding. Volgens de Energielijst 2026 komen in aanmerking: zonnepanelen (code 251102, 15 tot 100 kWp, niet in combinatie met SDE++), de batterij (code 251118, vanaf 15 kWh en 5 kW, gekoppeld aan een duurzame installatie op dezelfde aansluiting) en lucht-luchtwarmtepompen voor verwarming (code 211108, alleen boven 12 kW thermisch en bij een SCOP van ten minste 4,0). Laadpalen, een algemeen EMS en tussenmeters staan niet op de Energielijst of Milieulijst. Daarnaast geldt de KIA (kleinschaligheidsinvesteringsaftrek): 28% bij een totaal aan investeringen in het jaar van €2.901 tot €71.683. Laat de accountant dit vooraf beoordelen: voor de EIA moet de investering binnen 3 maanden na de opdracht worden gemeld.
+**Fiscale kansen.** De EIA (energie-investeringsaftrek) is in 2026 40% van het investeringsbedrag, bij minimaal €2.500 per melding. Volgens de Energielijst 2026 komen in aanmerking: zonnepanelen (code 251102, 15 tot 100 kWp, niet in combinatie met SDE++), de batterij (code 251118, vanaf 15 kWh en 5 kW, gekoppeld aan een duurzame installatie op dezelfde aansluiting) en lucht-luchtwarmtepompen voor verwarming (code 211108, alleen boven 12 kW thermisch en bij een SCOP van ten minste 4,0). De Toshiba-sets uit de offerte leveren elk 4 kW warmte en vallen daar dus niet onder. Laadpalen, een algemeen EMS en tussenmeters staan niet op de Energielijst of Milieulijst. Daarnaast geldt de KIA (kleinschaligheidsinvesteringsaftrek): 28% bij een totaal aan investeringen in het jaar van €2.901 tot €71.683. Laat de accountant dit vooraf beoordelen: voor de EIA moet de investering binnen 3 maanden na de opdracht worden gemeld.
 
 ## Waarom de airco's geen terugverdientijd hebben
 
-De oude airco's werken niet of matig. Het project is dus deels vervanging en deels uitbreiding: één unit is nieuw, één gaat van alleen koelen naar verwarmen en drie gaan van wandunit naar plafondunit. In de scenario's zijn ze meegenomen; het verdienmodel toont ook de terugverdientijd zonder airco's.
+De oude airco's werken niet of matig. Het project is dus deels vervanging en deels uitbreiding: boven worden 3 sets vervangen, beneden 2 sets vervangen en 2 nieuw geplaatst. Alle 7 worden 60x60-cassettes in het systeemplafond. In de scenario's zijn ze meegenomen; het verdienmodel toont ook de terugverdientijd zonder airco's.
 
 - **Het is een noodzakelijke uitgave.** Zonder vervanging valt de klimaatregeling uit. De vraag is dus niet of het zich terugverdient, maar welke oplossing het goedkoopst blijft over de levensduur.
 - **De besparing is klein ten opzichte van de prijs.** Nieuwe units verbruiken minder stroom, maar dat is een deel van de energiekosten. Illustratie (aanname): bij 10% minder verbruik op 36.000 kWh is dat 3.600 kWh × €0,21 = ca. €760 per jaar. Tegen €23.487,80 is dat ca. 31 jaar, langer dan de levensduur.
 - **Wat het wel oplevert:** een betrouwbaar klimaat in het pand, minder storingen en onderhoud, en verwarmen met een seizoensrendement (SCOP) van ca. 3,5 tot 4,5 in de praktijk (1 kWh stroom geeft ca. 4 kWh warmte). Dat verlaagt in de winter de stookkosten.
 - **Synergie met de zonnepanelen.** Koelen in de zomer valt samen met de zonopbrengst. Daardoor wordt meer zonstroom direct gebruikt, wat het financiële resultaat van de panelen verbetert.
+
+**Offerte: 7 Toshiba-sets.** Elke set is een Toshiba Digital Inverter: cassette RAV-HM401MUTP-E (60x60, voor het systeemplafond) met buitenunit RAV-GM402ATP-E. Koelen 3,6 kW (0,9 tot 4,0), verwarmen 4,0 kW (0,8 tot 5,0, nog 2,5 kW bij −10 °C), SCOP 4,46 (A+), SEER 6,70 (A++), koudemiddel R32 (0,9 kg), 230 V 1-fase. Samen 28 kW verwarmen en 25 kW koelen ([Intercool](https://www.intercool.nl/rav-mutp/rav-hm401mutp-e-gm402atp-e)).
+
+*Deel 1: bovenverdieping (3 sets vervanging), €9.942,20 excl. btw*
+
+| Post | Omschrijving | Eenheidsprijs | Bedrag (excl. btw) |
+| --- | --- | --- | --- |
+| Apparatuur (3 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) | €1.837,50 per set | €5.512,50 |
+| Demontage en milieuafvoer | F-gassen afpompen koudemiddel, demonteren en afvoer (3 sets) | €195,00 per set | €585,00 |
+| Montage en inbedrijfstelling | Monteren, leidingen spoelen/flushen, stikstoftest en STEK-oplevering | Projectpost | €1.814,70 |
+| Materieel (hoogwerker) | Huur hoogwerker incl. transport en verzekering | Projectpost | €720,00 |
+| Aanpassing systeemplafond | Ombouw 3 posities 60x90 naar 60x60 incl. profielen en platen | €253,33 per positie | €760,00 |
+| Consoles en montagemateriaal | Trillingsdempende steunen, condensmateriaal en R32 aanvulling | Projectpost | €550,00 |
+| **Subtotaal boven** | **3 sets incl. hoogwerker** | | **€9.942,20** |
+
+*Deel 2: benedenverdieping (2 nieuw + 2 vervanging), €13.545,60 excl. btw*
+
+| Post | Omschrijving | Eenheidsprijs | Bedrag (excl. btw) |
+| --- | --- | --- | --- |
+| Apparatuur (4 sets) | Toshiba set compleet (HM401MUTP-E + GM402ATP-E) | €1.837,50 per set | €7.350,00 |
+| Demontage en milieuafvoer | F-gassen afpompen koudemiddel, demonteren en afvoer (2 sets) | €195,00 per set | €390,00 |
+| Bouwkundig boorwerk (2 nieuw) | 2x diamant-kernboring (Ø 65 tot 80 mm) gevel/wand | €340,00 per stuk | €680,00 |
+| Nieuw leidingtraject (2 nieuw) | 2x nieuw leidingtraject (3 m), kanalen, condens en voeding | €390,00 per traject | €780,00 |
+| Montage en inbedrijfstelling (4 sets) | Plaatsen 4 sets, stikstoftest, vacumeren en STEK-oplevering | €706,40 per set | €2.825,60 |
+| Systeemplafond (4 posities) | 2x ombouw 60x90 + 2x sparing inpassen | €230,00 per positie | €920,00 |
+| Consoles en montagemateriaal | Steunen buiten, kabelgoten, condensafvoer en R32 aanvulling | Projectpost | €600,00 |
+| **Subtotaal beneden** | **4 sets (2 nieuw + 2 vervanging)** | | **€13.545,60** |
+
+**Hoe de offerte zich verhoudt tot de markt.** De offerte is scherp: een turn-key project met 7 cassettes, plafondombouw, hoogwerker en boringen kost bij grote klimaatinstallateurs eerder €25.000 tot 29.000 excl. btw. Met €23.487,80 zit er geen overbodige lucht of overdreven winstopslag in de posten.
+
+| Onderdeel | Offerte | Markt | Oordeel |
+| --- | --- | --- | --- |
+| Apparatuur per set | €1.837,50 | Bruto catalogusprijs bij groothandels (zoals Wasco, Coolmark of Schiessl) €2.400 tot 2.900; netto inkoop installateur €1.450 tot 1.700 | Marge van ca. 10 tot 20%; zeer scherp voor A-merkapparatuur |
+| Demontage en F-gassen afvoer per set | €195 | €200 tot 350 | Bijzonder netjes geprijsd |
+| Hoogwerker | €720 | €180 tot 280 per dag, plus transport €150 tot 250 en verzekering €50 tot 80; voor 2 dagen €650 tot 900 | Conform de werkelijke kosten, zonder opslag |
+| Systeemplafond 60x90 naar 60x60 per positie | €230 tot 253 | €250 tot 400 per sparing | Schappelijk |
+| Boorwerk en leidingtraject per nieuwe unit | €340 + €390 = €730 | Kernboring €150 tot 250, leidingtraject €450 tot 650 | Reëel montagetarief |
+
+- **Apparatuur:** Toshiba hoort met Daikin en Mitsubishi Electric bij het topsegment.
+- **Demontage:** het koudemiddel moet wettelijk door een F-gasgecertificeerde monteur worden afgepompt; in de prijs zitten ook het afkoppelen, het naar beneden halen van de buitendelen en de afvoerkosten.
+- **Systeemplafond:** ombouwen van 60x90 naar 60x60 is bewerkelijk: hoofdprofielen controleren, tussenprofielen van 600 mm plaatsen, extra snelhangers boren en platen op maat snijden.
+
+Marktprijzen volgens opgave van de opdrachtgever; niet door Saldox gecontroleerd.
 
 **Gasbesparing telt ook mee.** Doordat de nieuwe airco's ook kunnen verwarmen, hoeft de gasketel in de winter minder te draaien en daalt het gasverbruik. Die besparing komt bovenop de stroombesparing en kan de terugverdientijd flink verkorten. Om de investering in 15 jaar (aanname levensduur) terug te verdienen is ca. €1.570 per jaar besparing nodig, stroom en gas samen. Schatting (aannames, geen meting): twee kantoorlagen van samen ca. 400 m², 10 m³ gas per m² is 4.000 m³ per jaar (CBS noemt voor kleinere kantoren 11 tot 17 m³ per m², dus dit is aan de lage kant), gasprijs €1,00 per m³ (CBS augustus 2026 plus energiebelasting: ca. €1,10; door de oorlog met Iran ligt de markt nu rond €1,40, dus voorzichtig), airco's nemen 50% van de verwarming over met een rendement van 3,5 (voorzichtig gekozen). Dat bespaart 2.000 m³ gas (€2.000) maar kost ca. 5.000 kWh extra stroom (ca. €1.050), dus netto ca. €950 per jaar. Samen met de stroombesparing van ca. €760 (zie hierboven) is dat ca. €1.710 per jaar, een terugverdientijd van ca. 14 jaar. De kelder (grote ruimte met vloerverwarming) valt hier buiten: die blijft op gas. Daar wordt alleen gekeken naar slimme zonenregeling, die we als aparte post zien en nog niet in de begroting hebben. Vervang deze aannames door het werkelijke gasverbruik en oppervlak zodra die bekend zijn.
 
@@ -335,7 +379,7 @@ Met 3x25 A (ca. 17 kW) en de batterij is het pand haalbaar, maar op winterwerkda
 | Sofar 15 kW (zon + batterij samen) | 15 kW |
 | **Totaal beschikbaar** | **ca. 32 kW** |
 
-Verdeling bij piek: airco's tot ca. 15 kW, 10 units samen ca. 15 kW (gemiddeld 1,5 kW per unit), laadpalen flexibel 0 tot 22 kW met wat overblijft.
+Verdeling bij piek: airco's tot ca. 15 kW, 10 units samen ca. 15 kW (gemiddeld 1,5 kW per unit), laadpalen flexibel 0 tot 22 kW met wat overblijft. De 7 Toshiba-sets nemen elk ca. 1 kW op (koelen 0,9 tot 0,95 kW), samen ca. 7 kW; dat is ruim binnen de aangenomen 15 kW. Het zijn 1-fase units: verdeel ze over de drie fasen.
 
 **Energie per werkdag (08:00 tot 18:00)**
 
@@ -366,7 +410,7 @@ In de winter is er nauwelijks ruimte: het net moet de hele dag op het maximum dr
 
 Zijn de units 3-fase aangesloten, dan worden de meters duurder (ca. €800 tot 1.400 extra). Uitgangspunt is dat elke unit al een eigen groep in de verdeelkast heeft; anders komen er kosten voor het aanpassen van de verdeelkast bij. Per unit kost meten ca. €230 tot 440, terug te verdienen via het stroomtarief.
 
-**Airco's per huurder meten.** Er zijn ca. 12 binnenunits voor 10 units. Verdelen naar m² geeft snel discussie. Koppel daarom elke binnenunit aan één huurder en meet per huurder, of leg de verdeelsleutel vast in het huurcontract.
+**Airco's per huurder meten.** De offerte omvat 7 sets voor 10 units, dus niet elke unit heeft een eigen airco. Verdelen naar m² geeft snel discussie. Koppel daarom elke binnenunit aan één huurder en meet per huurder, of leg de verdeelsleutel vast in het huurcontract.
 
 ## EMS: slim verwarmen en koelen
 
@@ -401,7 +445,7 @@ Met temperatuursturing in het EMS bespaart het pand naar schatting €430 tot 90
 
 Uitgangspunten: verwarmingskosten kantoorlagen ca. €3.050 per jaar (2.000 m³ gas + 5.000 kWh airco-stroom, zie de airco-sectie) en koelstroom ca. 4.000 kWh (€840, aanname). De kelder is niet meegerekend omdat het gasverbruik daar nog onbekend is.
 
-**Kosten (stelpost):** ca. €1.500 voor een Modbus- of BMS-interface naar de Toshiba-units en een temperatuursensor per unit. Dat bedrag past bij één centrale gateway op de Toshiba-bus (bijvoorbeeld CoolMasterNet). Is per binnenunit een eigen Modbus-gateway nodig (ca. €270 per stuk), dan wordt het ca. €3.300. Prijzen nog opvragen.
+**Kosten (stelpost):** ca. €1.500 voor een Modbus- of BMS-interface naar de Toshiba-units en een temperatuursensor per unit. Dat bedrag past bij één centrale gateway op de Toshiba-bus (bijvoorbeeld CoolMasterNet). Is per set een eigen Modbus-gateway nodig (ca. €270 per stuk, 7 sets), dan wordt het ca. €1.900. Prijzen nog opvragen.
 
 **Effect op de totale terugverdientijd:** EMS en bewegingssensoren leveren samen €605 tot 1.355 per jaar op en zijn meegenomen in de scenario's. Het EMS verdient zichzelf in 1,7 tot 3,5 jaar terug. De koelbesparing hangt af van hoe de oude airco's werden gebruikt: draaiden die ook in het weekend, dan is de besparing eerder hoger. In model B (doorbelasten per meter) gaat een groot deel van deze besparing naar de huurders.
 
@@ -526,7 +570,7 @@ De cijfers zijn indicatief; de onderstaande punten moeten bevestigd worden voord
 - Netcongestie: Enexis heeft sinds 1 juli 2026 een aansluitpauze rond de stations Eindhoven-West en Helmond-Zuid, ook voor delen van Veldhoven. Nieuwe aansluitingen en verzwaringen gaan op een wachtlijst.
 - De laadpalen vragen load balancing, anders loopt de aansluiting vast bij piekverbruik.
 - Voor de turbine is een omgevingsvergunning nodig en de windopbrengst is onzeker.
-- Bij nieuwe airco's is een gecertificeerde monteur van een gecertificeerd bedrijf verplicht (F-gassenverordening (EU) 2024/573).
+- Bij nieuwe airco's is een gecertificeerde monteur van een gecertificeerd bedrijf verplicht (F-gassenverordening (EU) 2024/573). Een periodieke lekcontrole is niet verplicht: 0,9 kg R32 per set is ca. 0,6 ton CO₂-equivalent, onder de grens van 5 ton.
 
 - Leegstand verlaagt de opbrengst uit stroom, laadpalen en internet, terwijl de vaste kosten blijven.
 - De batterij moet in de winter pieken opvangen; de opbrengst uit goedkope uren is dan lager.

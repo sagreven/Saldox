@@ -128,6 +128,14 @@ for k, naam in enumerate(["pessimistisch", "normaal", "optimistisch"]):
     want = eur(mt[-1][2].replace("**", "").split(" / ")[k])
     ok(near(s, want), f"netto per maatregel {naam}: {s:.0f} = {want:.0f}")
 
+offertes = [t for t in md_tables if t[0] == ["Post", "Omschrijving", "Eenheidsprijs", "Bedrag (excl. btw)"]]
+subt = []
+for t in offertes:
+    som = sum(eur(r[3]) for r in t[1:-1])
+    subt.append(eur(t[-1][3]))
+    ok(near(som, subt[-1]), f"airco-offerte {plain(t[-1][0])}: posten {som:.2f} = {subt[-1]:.2f}")
+ok(len(offertes) == 2 and near(sum(subt), 23487.80), f"airco-offerte totaal {sum(subt):.2f} = begroting €23.487,80")
+
 print("\n3. Interne optellingen en rekenmodel (model.py, actuele aannames)")
 m = model.bereken(model.ACTUEEL)
 sc = tbl_starting("Per jaar")

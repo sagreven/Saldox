@@ -30,6 +30,8 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 
 **Optie 5 jaar** (nieuwe sectie, `model.vijf_jaar()`): met de airco's buiten de business case (energiedeel €25.500) normaal 4,2 jaar, met EIA/KIA (19% vpb, voordeel ca. €2.480) 3,8 jaar, met ook de prijzen van 2027 3,6 jaar. Minder stroomverbruik mag: bij 20.000 kWh 4,3 jaar, bij 15.000 kWh 4,6 jaar. Pessimistisch haalt 5 jaar niet (5,4–6,4). Het volledige pakket inclusief airco's haalt 5 jaar alleen optimistisch; met EIA/KIA en de prijzen van 2027 normaal 5,6 jaar.
 
+**Airco-offerte** (7 Toshiba-sets RAV-HM401MUTP-E + RAV-GM402ATP-E): posten tellen op tot €9.942,20 + €13.545,60 = €23.487,80, gelijk aan de begroting (3 × €253,33 = €759,99, in de offerte afgerond op €760,00). Specificaties volgens Intercool: 3,6 kW koelen, 4,0 kW verwarmen, SCOP 4,46, R32 0,9 kg, 1-fase. Gevolgen: geen EIA op de airco's (4 kW per set, grens 12 kW), dus het belastingvoordeel voor het volledige pakket wordt ca. €3.730 in plaats van €5.520 (5-jaarstabel: 10,3 / 5,9 / 4,1 jaar); geen verplichte lekcontrole (0,6 ton CO₂-eq per set); EMS-gateway per set ca. €1.900 voor 7 sets; 7 sets voor 10 units. De marktvergelijking van de prijzen is overgenomen zoals opgegeven en niet gecontroleerd. "STEK" in de offerte is de oude naam voor de F-gascertificering.
+
 ## 2. Gecorrigeerd of aangevuld in de tekst
 
 - **Inkoopprijzen:** via een relatie, geen marge voor Saldox. Margetabel en "verkoop aan derden" geschrapt.
@@ -54,7 +56,7 @@ De lagere stroomprijs en de hogere ERE-opbrengst heffen elkaar grotendeels op.
 
 ## 3. Nog open (niet uit te zoeken zonder de opdrachtgever)
 
-- Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per binnenunit ca. €3.300. Hangt af van het type units.
+- Toshiba-interface: €1.500 past bij één centrale gateway; met een gateway per set (7 stuks) ca. €1.900.
 - Bewegingssensoren: €600 past bij Aqara-klasse; met Philips Hue ca. €1.000.
 - Jaarverbruik: 36.000 kWh is waarschijnlijk te hoog. CBS-kentallen (83374NED, kantoren 250–1.000 m²: 51–55 kWh/m²) geven voor 400 m² ca. 21.000 kWh; met kelder en nieuwe airco-verwarming ca. 25.000–30.000 kWh. De werkdagtabel gaat uit van gemiddeld 13–14 kW in kantoortijd, bijna het piekvermogen. Gevoeligheid (`weekend.py`): 30.000 kWh → ca. 7,5 jaar, 25.000 → ca. 7,7, 20.000 → ca. 8,0. Bevestigen met de meetdata van de slimme meter.
 - Geen post onvoorzien op ca. €13.200 aan stelposten.

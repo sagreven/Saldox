@@ -132,7 +132,7 @@ def varianten():
 # Airco's buiten de business case (noodzakelijke vervanging); energiedeel €25.500.
 ENERGIEDEEL = INVESTERING - 23487.80
 EIA_ENERGIE = 10800 + 4000     # zonnepanelen (251102) en batterij incl. opstelling (251118)
-EIA_AIRCO = 23487.80           # alleen bij > 12 kW thermisch en SCOP ≥ 4,0 (211108)
+EIA_AIRCO = 0                  # code 211108 vraagt > 12 kW thermisch; de Toshiba-sets zijn 4 kW per stuk
 VPB = 0.19                     # vennootschapsbelasting 2026 tot €200.000 winst
 
 

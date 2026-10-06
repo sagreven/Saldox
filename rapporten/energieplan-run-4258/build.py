@@ -113,7 +113,7 @@ PRIJS = [  # zie model.PRIJZEN_2027
 
 VIJF_JAAR = [  # zie model.vijf_jaar(); (variant, pess, normaal, opt) in jaren
     ("Volledig pakket", 13.5, 7.5, 5.1),
-    ("Volledig + EIA/KIA + prijzen 2027", 9.9, 5.6, 3.9),
+    ("Volledig + EIA/KIA + prijzen 2027", 10.3, 5.9, 4.1),
     ("Energiedeel zonder airco's", 6.4, 4.2, 3.0),
     ("Energiedeel + EIA/KIA", 5.8, 3.8, 2.7),
     ("Energiedeel + EIA/KIA + prijzen 2027", 5.4, 3.6, 2.6),
@@ -155,7 +155,8 @@ def style_tables(h: str) -> str:
         numeric = []
         for ci in range(ncol):
             body = [r[ci][1].strip() for r in cells[1:] if ci < len(r) and r[ci][1].strip()]
-            numeric.append(ci > 0 and body and sum(bool(NUM_RE.search(b)) for b in body) / len(body) >= 0.6)
+            short = sum(len(re.sub(r"<[^>]+>", "", b_)) for b_ in body) / max(len(body), 1) <= 32
+            numeric.append(ci > 0 and body and short and sum(bool(NUM_RE.search(b)) for b in body) / len(body) >= 0.6)
         new_rows = []
         for ri, r in enumerate(cells):
             vals = [c[1].strip() for c in r]
