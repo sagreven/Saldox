@@ -1,16 +1,16 @@
 {
  "offerte": {
-  "inv": 5701.62,
-  "inv_ex": 5124.85,
+  "inv": 5528.24,
+  "inv_ex": 4981.56,
   "netto": [
    1280.0,
    1580.0,
    1840.0
   ],
   "jaren": [
-   "4,5",
-   "3,6",
-   "3,1"
+   "4,3",
+   "3,5",
+   "3,0"
   ],
   "keuze": "marstek",
   "pakket": "Marstek Venus E (5,12 kWh) met micro-omvormers",

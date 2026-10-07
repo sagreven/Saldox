@@ -85,6 +85,14 @@
    "eenheid": "stuk",
    "datum": "2026-10-07",
    "btw_consument": 0.0
+  },
+  {
+   "artikel": "Zaptec Go 2 laadpaal (22 kW, MID-meter)",
+   "prijs_incl_btw": 825.62,
+   "prijs": 682.33,
+   "eenheid": "stuk",
+   "datum": "2026-10-07",
+   "btw_consument": 0.21
   }
  ],
  "eerder_opgegeven": [

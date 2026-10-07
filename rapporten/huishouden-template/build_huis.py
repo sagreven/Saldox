@@ -109,8 +109,10 @@ PAKKETTEN = {
     ),
 }
 
+# opgegeven als bruto prijs incl. btw; de begroting rekent excl. btw
+ZAPTEC = next(t["prijs"] for t in _PRIJSLIJST["losse_prijzen"] if t["artikel"].startswith("Zaptec Go 2"))
 PRIJZEN_LAADPAAL = [
-    ("Zaptec Go 2 laadpaal (22 kW, MID-meter)", 825.62, 0.21, "Opgegeven"),
+    ("Zaptec Go 2 laadpaal (22 kW, MID-meter)", ZAPTEC, 0.21, "Opgegeven"),
     ("Installatie laadpaal incl. groep en bekabeling", 580.00, 0.21, "Stelpost"),
 ]
 BATT_FACTOR = (0.7, 1.0, 1.3)  # spreiding batterijopbrengst: prijsverschillen 2025 (×1) tot 2026 (+33%)
