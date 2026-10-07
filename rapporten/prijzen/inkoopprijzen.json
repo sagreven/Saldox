@@ -116,6 +116,12 @@
    "prijs": 30.0,
    "datum": "2026-10-07",
    "btw_consument": 0.0
+  },
+  {
+   "artikel": "Zonnepaneel 450 Wp (huishouden, Sofar-pakket)",
+   "prijs": 77.0,
+   "datum": "2026-10-07",
+   "btw_consument": 0.0
   }
  ]
 }

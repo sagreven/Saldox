@@ -35,6 +35,7 @@ KLANT = dict(naam="Standaard huishouden", datum="7 oktober 2026", adviseur="Sald
 
 PLATDAK_MONTAGE = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if "plat dak" in t["artikel"])
 TRANSPORT = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Transport"))
+PANEEL_450 = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Zonnepaneel 450 Wp (huishouden"))
 
 # Pakketten: per pakket de posten (post, excl. btw, btw-tarief, status, groep), de
 # modelwaarden (overschrijven AANNAMES in model_huis.py) en de productteksten.
@@ -42,7 +43,7 @@ PAKKETTEN = {
     "sofar": dict(
         model=dict(panelen=10, batt_kwh=10.24, batt_bruikbaar=0.90, batt_kw=5.0, rendement=0.90),
         prijzen=[
-            ("10 zonnepanelen à 450 Wp (10 × €65)", 650.00, 0.00, "Inkoopprijs", "zon"),
+            (f"10 zonnepanelen à 450 Wp (10 × €{f'{PANEEL_450:.2f}'.replace('.', ',').removesuffix(',00')})", round(10 * PANEEL_450, 2), 0.00, "Inkoopprijs", "zon"),
             ("Montage zonnepanelen", 800.00, 0.00, "Stelpost", "zon"),
             ("Dakbevestiging en bekabeling", 450.00, 0.00, "Stelpost", "zon"),
             ("Batterijset Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer", bedrag(1, "MFQ-023-0106934"), 0.21, "Offerte", "batt"),
