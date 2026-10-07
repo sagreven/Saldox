@@ -185,12 +185,12 @@ PHEV = dict(bereik=60, kwh_per_km=0.20, liter_per_km=0.06, benzine=2.00, kw=7.4,
 VARIANTEN = {
     "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar20",
                            chip="Energieplan · huishouden · zon, batterij en laadpaal",
-                           # opgegeven: 5.000 kWh per jaar in totaal, waarvan ca. 1.100 kWh voor de plug-in hybride
-                           model=dict(verbruik_kwh=3900),
+                           # opgegeven: huis 5.000 kWh per jaar, plus ca. 1.100 kWh voor de plug-in hybride
+                           model=dict(verbruik_kwh=5000),
                            auto=dict(AUTO["phev"], kwh=1100, kw=7.4,
                                      bron="ca. 5.500 km per jaar elektrisch à 20 kWh per 100 km"),
-                           meta="huishouden met 5.000 kWh per jaar en een plug-in hybride",
-                           verbruik_bron="opgegeven: 5.000 kWh per jaar in totaal, waarvan ca. 1.100 kWh voor de plug-in hybride; het huis zelf ca. 3.900 kWh"),
+                           meta="huishouden met 5.000 kWh per jaar, plus een plug-in hybride",
+                           verbruik_bron="opgegeven; daarbij komt ca. 1.100 kWh voor de plug-in hybride, samen ca. 6.100 kWh"),
     "zonder-laadpaal": dict(titel="Energieplan huishouden: zon en batterij", laadpaal=False, pakket="sofar",
                             chip="Energieplan · huishouden · zon en batterij"),
     "marstek-8-panelen": dict(titel="Energieplan huishouden: 8 panelen en Marstek", laadpaal=False, pakket="marstek",
