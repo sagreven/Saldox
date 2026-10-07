@@ -195,6 +195,8 @@ def reken(v):
     a = dict(A, ev_kwh=EV_KWH if laadpaal else 0)
     vast = m.besparingen(a, "vast")
     p27 = m.besparingen(dict(a, spot_factor=1.15))
+    sal = m.besparingen(dict(a, saldering=True))
+    sal_vast = m.besparingen(dict(a, saldering=True), "vast")
     extra = {}
     if laadpaal:
         dom = m.simuleer(a, ev_slim=False)
@@ -203,7 +205,7 @@ def reken(v):
     extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
     extra["montage_basis"] = montage[1]
     return dict(EV=EVd, A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
-                sc=sc, n=n, vast=vast, p27=p27, **extra)
+                sc=sc, n=n, vast=vast, p27=p27, sal=sal, sal_vast=sal_vast, **extra)
 
 
 # ───────────────────────────────────────────── tekst
@@ -224,6 +226,17 @@ def markdown_tekst(v, R):
         round(R["vast"]["laden"], -1) + N["ere"] if lp else 0)
     p27_netto = round(R["p27"]["zon"], -1) + round(R["p27"]["batterij"], -1) - RESERVERING + (
         round(R["p27"]["laden"], -1) + N["ere"] if lp else 0)
+
+    def netto_van(r, ere=N["ere"]):
+        return round(r["zon"], -1) + round(r["batterij"], -1) - RESERVERING + (round(r["laden"], -1) + ere if lp else 0)
+    sal, sal_vast = R["sal"], R["sal_vast"]
+    sal_netto, sal_vast_netto = netto_van(sal), netto_van(sal_vast)
+    zonder_netto = netto_van(n)
+    assert zonder_netto == N["netto"], (zonder_netto, N["netto"])
+    verlies_zon = round(sal["zon"], -1) - round(n["zon"], -1)
+    gesaldeerd = min(sal["met_beide"]["export_kwh"], sal["met_beide"]["import_kwh"])
+    batt_rel_met = round(sal["batterij"], -1) / (round(sal["zon"], -1) + round(sal["batterij"], -1))
+    batt_rel_zonder = round(n["batterij"], -1) / (round(n["zon"], -1) + round(n["batterij"], -1))
 
     platdak_bullet = "" if R["montage_basis"] == PLATDAK_MONTAGE else (
         f"- **Optie plat dak:** de montage kost bij een plat dak vast {eur2(PLATDAK_MONTAGE)} (0% btw) in plaats van "
@@ -364,9 +377,33 @@ Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij
 | Netto per jaar (normaal) | {eur(N['netto'])} | {eur(vast_netto)} |
 | Terugverdientijd (normaal) | {N['jaren']} jaar | {jr(R['inv'], vast_netto)} jaar |
 
-- **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent nergens met saldering. Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
+- **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
 - **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. {eur(p27_netto)} per jaar ({jr(R['inv'], p27_netto)} jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
+""")
+
+    # 7b Saldering
+    laad_rij = (f"| Thuis laden en ERE | {eur(round(sal['laden'], -1) + N['ere'])} | {eur(round(n['laden'], -1) + N['ere'])} |\n"
+                if lp else "")
+    laad_bullet = ("- **Thuis laden:** met saldering is zonnestroom die in de auto gaat al de volle kWh-prijs waard; "
+                   "zonder saldering levert laden met eigen zonnestroom juist extra op.\n" if lp else "")
+    t.append(f"""## Met en zonder saldering
+
+Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afneemt; daarna niet meer. Dit plan rekent met de situatie vanaf 2027. Met saldering zou het pakket normaal netto {eur(sal_netto)} per jaar opleveren, zonder {eur(zonder_netto)}.
+
+| Dynamisch contract, normaal scenario | Met saldering (tot 2027) | Zonder saldering (vanaf 2027) |
+| --- | --- | --- |
+| Zon per jaar | {eur(round(sal['zon'], -1))} | {eur(round(n['zon'], -1))} |
+| Batterij per jaar | {eur(round(sal['batterij'], -1))} | {eur(round(n['batterij'], -1))} |
+{laad_rij}| Jaarlijkse kosten | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
+| **Netto per jaar** | **{eur(sal_netto)}** | **{eur(zonder_netto)}** |
+| Terugverdientijd | {jr(R['inv'], sal_netto)} jaar | {jr(R['inv'], zonder_netto)} jaar |
+| Netto per jaar bij een vast contract | {eur(sal_vast_netto)} | {eur(vast_netto)} |
+
+- **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van {eur(A['eb_incl'], 4)} per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. {nl(round(gesaldeerd, -1))} kWh per jaar.
+- **Zonnepanelen leveren minder op:** zonder saldering ca. {eur(verlies_zon)} per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
+- **De batterij wordt belangrijker:** zonder saldering komt {pct(batt_rel_zonder)} van de opbrengst van zon en batterij uit de batterij, met saldering {pct(batt_rel_met)}. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
+{laad_bullet}- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van {jr(R['inv'], zonder_netto)} jaar geldt voor de regels vanaf 2027.
 """)
 
     # 8 Installatie en veiligheid
@@ -445,6 +482,7 @@ HEADLINES = {
     "Zonnestroom zelf gebruiken": "Uw eigen stroom is meer waard dan teruglevering.",
     "Laden met de Zaptec Go 2": "Thuis laden is de grootste winst.",
     "Stroomcontract en prijzen": "Dynamisch laat de batterij verdienen.",
+    "Met en zonder saldering": "Vanaf 2027 telt elke eigen kWh zwaarder.",
     "Installatie en veiligheid": "Eén installatie, klaar voor later.",
     "Planning": "Binnen anderhalve maand werkend.",
     "Aannames en te bevestigen": "Wat we bij u thuis nog bevestigen.",

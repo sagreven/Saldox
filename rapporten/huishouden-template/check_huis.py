@@ -49,6 +49,15 @@ for key, u in uit.items():
         b = int(r[2].rstrip("%")) / 100
         ok(abs(round(eur(r[1]) * (1 + b), 2) - eur(r[3])) < 0.01, f"  btw {r[2]}: {r[0][:45]}")
     ok(abs(inc - u["inv"]) < 0.01, "investering = uitkomsten.json")
+    st = next(t for t in T if t[0][0].startswith("Dynamisch contract"))
+    sn = [r[0].replace("*", "") for r in st]
+    si = sn.index("Netto per jaar")
+    for k in (1, 2):
+        netto = sum(eur(r[k]) for r in st[1:si])
+        jaren = st[si + 1][k].split()[0]
+        ok(netto == eur(st[si][k]) and f"{u['inv'] / netto:.1f}".replace(".", ",") == jaren,
+           f"saldering {st[0][k]}: netto {netto:.0f}, {jaren} jaar")
+    ok(eur(st[si][2]) == u["netto"][1], "  zonder saldering = normaal netto")
     jt = next(t for t in T if t[0][0] == "Per jaar")
     names = [r[0].replace("*", "") for r in jt]
     bi, ni = names.index("Bruto per jaar"), names.index("Netto per jaar")

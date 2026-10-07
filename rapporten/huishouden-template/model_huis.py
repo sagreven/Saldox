@@ -148,6 +148,11 @@ def simuleer(a, pv=True, batterij=True, contract="dynamisch", ev_slim=True, stap
             kosten += net * p_imp[i]; imp += net
         else:
             opbrengst += -net * p_exp[i]; exp_ += -net
+    if a.get("saldering"):
+        # Saldering (tot 1-1-2027): teruggeleverde kWh worden tot het jaarverbruik weggestreept.
+        # Dynamisch: over die kWh komt de energiebelasting terug; vast: de volle kWh-prijs min de vergoeding.
+        gesaldeerd = min(exp_, imp)
+        opbrengst += gesaldeerd * (a["eb_incl"] if dyn else a["vast_incl"] - a["vast_terug"])
     eigen = pv_kwh - min(exp_, pv_kwh)
     return dict(netto=kosten - opbrengst, kosten=kosten, opbrengst=opbrengst, import_kwh=imp,
                 export_kwh=exp_, pv_kwh=pv_kwh, eigen_kwh=eigen,

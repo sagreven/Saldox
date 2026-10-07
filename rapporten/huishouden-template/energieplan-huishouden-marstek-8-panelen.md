@@ -103,9 +103,27 @@ Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij
 | Netto per jaar (normaal) | €480 | €490 |
 | Terugverdientijd (normaal) | 8,3 jaar | 8,2 jaar |
 
-- **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent nergens met saldering. Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
+- **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
 - **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €530 per jaar (7,6 jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
+
+## Met en zonder saldering
+
+Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afneemt; daarna niet meer. Dit plan rekent met de situatie vanaf 2027. Met saldering zou het pakket normaal netto €600 per jaar opleveren, zonder €480.
+
+| Dynamisch contract, normaal scenario | Met saldering (tot 2027) | Zonder saldering (vanaf 2027) |
+| --- | --- | --- |
+| Zon per jaar | €490 | €330 |
+| Batterij per jaar | €150 | €190 |
+| Jaarlijkse kosten | −€40 | −€40 |
+| **Netto per jaar** | **€600** | **€480** |
+| Terugverdientijd | 6,7 jaar | 8,3 jaar |
+| Netto per jaar bij een vast contract | €690 | €490 |
+
+- **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van €0,1108 per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. 1.130 kWh per jaar.
+- **Zonnepanelen leveren minder op:** zonder saldering ca. €160 per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
+- **De batterij wordt belangrijker:** zonder saldering komt 37% van de opbrengst van zon en batterij uit de batterij, met saldering 23%. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
+- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 8,3 jaar geldt voor de regels vanaf 2027.
 
 ## Installatie en veiligheid
 
