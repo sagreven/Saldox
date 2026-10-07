@@ -176,6 +176,12 @@ def batt_meerkost(modules, sets, kits):
     return (modules - 2 * sets) * BTS5K + kits * UITBREIDINGSKIT + (sets - 1) * (bedrag(1, "MFQ-023-0106934") + TWEEDE_SET_EXTRA)
 
 
+# Plug-in hybride met 60 km elektrisch bereik: besparing per jaar t.o.v. alles op benzine
+PHEV_KM = (15000, 20000, 25000)
+PHEV_AANDEEL = (0.2, 0.4, 0.6, 0.8, 1.0)
+PHEV = dict(bereik=60, kwh_per_km=0.20, liter_per_km=0.06, benzine=2.00, kw=7.4, ritdagen=300)
+
+
 VARIANTEN = {
     "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar20",
                            chip="Energieplan · huishouden · zon, batterij en laadpaal"),
@@ -263,6 +269,21 @@ def reken(v):
         h = next(x for x in schaal if x["huidig"])
         assert h["cellen"][0]["netto"] == sc[1]["netto"], (h["cellen"][0]["netto"], sc[1]["netto"])
         extra["schaal"] = schaal
+    if laadpaal:
+        matrix = []
+        for km in PHEV_KM:
+            rij = []
+            for f in PHEV_AANDEEL:
+                e_km = km * f
+                kwh = e_km * PHEV["kwh_per_km"]
+                r = m.besparingen(dict(A, opbrengst_kwh_per_kwp=OPBRENGST[1], ev_kwh=kwh, ev_kw=PHEV["kw"]))
+                benzine = e_km * PHEV["liter_per_km"] * PHEV["benzine"]
+                ere = kwh * ERE[1]
+                rij.append(dict(km=e_km, kwh=kwh, benzine=benzine, thuis=r["ev_thuis_kosten"], ere=ere,
+                                besparing=round(benzine - r["ev_thuis_kosten"] + ere, -1),
+                                haalbaar=e_km <= PHEV["bereik"] * PHEV["ritdagen"]))
+            matrix.append(rij)
+        extra["phev"] = matrix
     montage = next(r for r in regels if r[0].startswith("Montage zonnepanelen"))
     extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
     extra["montage_basis"] = montage[1]
@@ -271,6 +292,31 @@ def reken(v):
 
 
 # ───────────────────────────────────────────── tekst
+def phev_tekst(R):
+    M = R["phev"]
+    kop = " | ".join(f"{pct(f)} elektrisch" for f in PHEV_AANDEEL)
+    rijen = []
+    for km, rij in zip(PHEV_KM, M):
+        cel = " | ".join(eur(c["besparing"]) + ("" if c["haalbaar"] else "*") for c in rij)
+        rijen.append(f"| {nl(km)} km | {cel} |")
+    grens = PHEV["bereik"] * PHEV["ritdagen"]
+    c = M[0][2]  # voorbeeld: 15.000 km, 60% elektrisch
+    per_km = (c["benzine"] - c["thuis"] + c["ere"]) / c["km"]
+    return f"""## Elektrisch rijden met een plug-in hybride
+
+Hoe meer kilometers u elektrisch rijdt, hoe meer u bespaart. Voor een plug-in hybride met {PHEV['bereik']} km elektrisch bereik: de besparing per jaar ten opzichte van dezelfde kilometers op benzine, na de kosten van thuis laden en inclusief de ERE-vergoeding.
+
+| Kilometers per jaar | {kop} |
+| --- | --- | --- | --- | --- | --- |
+""" + "\n".join(rijen) + f"""
+
+- **Per elektrische kilometer** bespaart u ca. {eur(per_km, 2)}: benzine kost ca. {eur(PHEV['liter_per_km'] * PHEV['benzine'], 2)} per km, thuis laden met zon en batterij ca. {eur(c['thuis'] / c['km'], 2)}, en de ERE-vergoeding levert ca. {eur(c['ere'] / c['km'], 2)} op.
+- **Voorbeeld:** bij {nl(PHEV_KM[0])} km per jaar en {pct(PHEV_AANDEEL[2])} elektrisch laadt u ca. {nl(round(c['kwh'], -1))} kWh per jaar thuis en bespaart u {eur(c['besparing'])}.
+- **\\* Alleen met extra laden:** met {PHEV['bereik']} km bereik en één keer per dag thuis laden rijdt u op {PHEV['ritdagen']} ritdagen hooguit ca. {nl(grens)} km per jaar elektrisch. Meer kan alleen als u ook op het werk of onderweg laadt.
+- **Aannames:** {nl(PHEV['kwh_per_km'] * 100)} kWh per 100 km elektrisch (incl. laadverlies), {nl(PHEV['liter_per_km'] * 100)} liter per 100 km op benzine à {eur(PHEV['benzine'], 2)}, laden met {nl(PHEV['kw'], 1)} kW op de goedkoopste uren. De ERE-vergoeding is {eur(ERE[1], 3)} per kWh (normaal).
+"""
+
+
 def schaal_tekst(R, lp):
     schaal = R["schaal"]
     kop = " | ".join(k for k, _, _, _ in VERWARMING)
@@ -468,6 +514,9 @@ Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(
 {EVd['basis_toelichting']}
 """)
 
+    if R.get("phev"):
+        t.append(phev_tekst(R))
+
     # 7 Contract en prijzen
     t.append(f"""## Stroomcontract en prijzen
 
@@ -587,6 +636,7 @@ HEADLINES = {
     "Waarom dit pakket": "Het pakket dat over 15 jaar het meeste oplevert.",
     "Zonnestroom zelf gebruiken": "Uw eigen stroom is meer waard dan teruglevering.",
     "Laden met de Zaptec Go 2": "Thuis laden is de grootste winst.",
+    "Elektrisch rijden met een plug-in hybride": "Elke elektrische kilometer telt.",
     "Stroomcontract en prijzen": "Dynamisch laat de batterij verdienen.",
     "Met en zonder saldering": "Vanaf 2027 telt elke eigen kWh zwaarder.",
     "Installatie en veiligheid": "Eén installatie, klaar voor later.",

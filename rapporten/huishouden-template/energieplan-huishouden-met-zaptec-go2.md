@@ -130,6 +130,21 @@ Thuis slim laden kost ca. €0,17 per kWh, tegen ca. €0,50 bij een publieke la
 - **ERE:** sinds 1 januari 2026 levert elke thuis geladen kWh ERE's op. Voorwaarden: MID-meter in de laadpaal, gekoppeld aan uw aansluiting, en een inboekdienstverlener (één per jaar). Netto ca. €0,07 tot 0,15 per kWh, gemiddeld rond €0,12. De opbrengst kan schommelen.
 - **Gemiddelde prijzen:** publiek laden verschilt sterk per aanbieder en locatie; reken met de tarieven die de bestuurder nu betaalt.
 
+## Elektrisch rijden met een plug-in hybride
+
+Hoe meer kilometers u elektrisch rijdt, hoe meer u bespaart. Voor een plug-in hybride met 60 km elektrisch bereik: de besparing per jaar ten opzichte van dezelfde kilometers op benzine, na de kosten van thuis laden en inclusief de ERE-vergoeding.
+
+| Kilometers per jaar | 20% elektrisch | 40% elektrisch | 60% elektrisch | 80% elektrisch | 100% elektrisch |
+| --- | --- | --- | --- | --- | --- |
+| 15.000 km | €330 | €660 | €990 | €1.320 | €1.640 |
+| 20.000 km | €440 | €880 | €1.320 | €1.750 | €2.180* |
+| 25.000 km | €560 | €1.100 | €1.640 | €2.180* | €2.710* |
+
+- **Per elektrische kilometer** bespaart u ca. €0,11: benzine kost ca. €0,12 per km, thuis laden met zon en batterij ca. €0,03, en de ERE-vergoeding levert ca. €0,02 op.
+- **Voorbeeld:** bij 15.000 km per jaar en 60% elektrisch laadt u ca. 1.800 kWh per jaar thuis en bespaart u €990.
+- **\* Alleen met extra laden:** met 60 km bereik en één keer per dag thuis laden rijdt u op 300 ritdagen hooguit ca. 18.000 km per jaar elektrisch. Meer kan alleen als u ook op het werk of onderweg laadt.
+- **Aannames:** 20 kWh per 100 km elektrisch (incl. laadverlies), 6 liter per 100 km op benzine à €2,00, laden met 7,4 kW op de goedkoopste uren. De ERE-vergoeding is €0,115 per kWh (normaal).
+
 ## Stroomcontract en prijzen
 
 Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €1.835 per jaar (5,2 jaar).
