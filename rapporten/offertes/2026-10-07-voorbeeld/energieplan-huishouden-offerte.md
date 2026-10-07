@@ -6,7 +6,7 @@
 
 Het pakket kost €5.528,24 incl. btw en levert na de jaarlijkse kosten netto €1.280 tot €1.840 per jaar op; normaal is het in ca. 3,5 jaar terugverdiend (3,0 tot 4,3 jaar).
 
-- **Zonnestroom:** 10 panelen van 460 Wp (4,6 kWp), ca. 4.220 kWh per jaar. Zonder batterij gebruikt u 21% zelf, met batterij 35%.
+- **Zonnestroom:** 10 panelen van 460 Wp (4,6 kWp), ca. 4.220 kWh per jaar. Zonder batterij gebruikt u 21% zelf, met batterij 32%.
 - **Thuisbatterij:** Marstek Venus E 3.0 (4,6 kWh bruikbaar, 2,5 kW); de panelen hebben APsystems-micro-omvormers. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij en laadpaal op de uurprijs.
 - **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. €0,17 per kWh tegen ca. €0,60 op benzine, plus ERE-vergoeding.
@@ -100,12 +100,12 @@ Voor dit huishouden levert Marstek Venus E (5,12 kWh) met micro-omvormers over 1
 
 ## Zonnestroom zelf gebruiken
 
-Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 35% van de zonnestroom zelf in plaats van 21%.
+Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 32% van de zonnestroom zelf in plaats van 21%.
 
 | | Zonder batterij | Met batterij |
 | --- | --- | --- |
 | Opwek per jaar | 4.220 kWh | 4.220 kWh |
-| Zelf gebruikt | 21% | 35% |
+| Zelf gebruikt | 21% | 32% |
 | Teruggeleverd | 3.320 kWh | 2.760 kWh |
 | Ingekocht van het net | 1.100 kWh | 760 kWh |
 

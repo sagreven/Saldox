@@ -58,6 +58,15 @@ for key, u in uit.items():
         ok(netto == eur(st[si][k]) and f"{u['inv'] / netto:.1f}".replace(".", ",") == jaren,
            f"saldering {st[0][k]}: netto {netto:.0f}, {jaren} jaar")
     ok(eur(st[si][2]) == u["netto"][1], "  zonder saldering = normaal netto")
+    bt = next((t for t in T if t[0][:2] == ["Batterij", "Pakket incl. btw"]), None)
+    if bt:
+        rij = next(r for r in bt if "dit pakket" in r[0])
+        ok(abs(eur(rij[1]) - u["inv"]) < 0.01 and eur(rij[2].split("·")[0]) == u["netto"][1],
+           f"batterijgrootte: {rij[0]} = investering en normaal netto")
+        for r in bt[1:]:
+            for c in r[2:]:
+                bedrag_, jaar = c.split("·")
+                ok(f"{eur(r[1]) / eur(bedrag_):.1f}".replace(".", ",") == jaar.split()[0], f"  {r[0]}: {c}")
     jt = next(t for t in T if t[0][0] == "Per jaar")
     names = [r[0].replace("*", "") for r in jt]
     bi, ni = names.index("Bruto per jaar"), names.index("Netto per jaar")

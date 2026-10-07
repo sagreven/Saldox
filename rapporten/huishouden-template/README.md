@@ -35,6 +35,6 @@ argumenten.
 4. Klantnaam en datum: `KLANT` in `build_huis.py`.
 
 ```sh
-pip install markdown        # eenmalig; Playwright/Chromium voor de PDF
+pip install markdown numpy  # eenmalig; Playwright/Chromium voor de PDF
 python3 build_huis.py && python3 check_huis.py
 ```

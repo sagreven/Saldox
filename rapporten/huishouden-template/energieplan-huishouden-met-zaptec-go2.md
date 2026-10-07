@@ -6,7 +6,7 @@
 
 Het pakket kost €9.514,11 incl. btw en levert na de jaarlijkse kosten netto €1.705 tot €2.445 per jaar op; normaal is het in ca. 4,6 jaar terugverdiend (3,9 tot 5,6 jaar).
 
-- **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 28%.
+- **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 37%.
 - **Thuisbatterij:** Sofar BTS 20 kWh (4× BTS 5K, 18,4 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij en laadpaal op de uurprijs.
 - **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. €0,17 per kWh tegen ca. €0,50 publiek, plus ERE-vergoeding.
@@ -81,14 +81,32 @@ Het pakket van €9.514,11 is normaal in ca. 4,6 jaar terugverdiend; pessimistis
 - **De batterij** verdient minder dan de panelen: 20 kWh is ruim voor een verbruik van 2.500 kWh; de twee extra modules leveren vooral extra op bij het laden van de auto. Hij verdient sneller bij een groter verbruik (warmtepomp) en bij grotere prijsverschillen. De reservering voor de omvormer staat bij de batterij.
 - **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is dan publiek laden. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. €60 per jaar, plus de ERE-vergoeding.
 
+## Batterijgrootte en verwarming
+
+Een grotere batterij spaart meer, maar elke extra kWh levert minder op dan de vorige. Met een warmtepomp verbruikt u meer stroom, vooral in de winter; dan verdient een grotere batterij meer. Per batterijgrootte: de netto besparing van het hele pakket per jaar (normaal scenario) en de terugverdientijd.
+
+| Batterij | Pakket incl. btw | Gewoon gas | Minimaal op gas | Van het gas af |
+| --- | --- | --- | --- | --- |
+| 10 kWh | €8.062,11 | €1.905 · 4,2 jaar | €1.955 · 4,1 jaar | €2.025 · 4,0 jaar |
+| **20 kWh (dit pakket)** | €9.514,11 | €2.055 · 4,6 jaar | €2.095 · 4,5 jaar | €2.205 · 4,3 jaar |
+| 30 kWh | €11.329,11 | €2.105 · 5,4 jaar | €2.155 · 5,3 jaar | €2.265 · 5,0 jaar |
+| 40 kWh | €15.369,30 | €2.090 · 7,4 jaar | €2.160 · 7,1 jaar | €2.270 · 6,8 jaar |
+| 50 kWh | €17.547,30 | €2.130 · 8,2 jaar | €2.200 · 8,0 jaar | €2.320 · 7,6 jaar |
+
+- **Advies:** in alle drie de situaties is 10 kWh het snelst terugverdiend. 50 kWh spaart het meest, maar €225 tot €295 per jaar meer dan 10 kWh weegt niet op tegen €9.485,19 extra investering.
+- **Warmtepomp:** bij dit pakket levert de batterij met gewoon gas €410 per jaar op, en zonder gas €550. De warmtepomp zelf zit niet in de investering, en de besparing op gas telt hier niet mee.
+- **Verwarming, aannames:** gewoon gas: cv-ketel; minimaal op gas: hybride warmtepomp, ca. 1.500 kWh per jaar; van het gas af: volledige warmtepomp met tapwater, ca. 3.500 kWh per jaar. Het warmtepompverbruik volgt de buitentemperatuur per uur (KNMI Eindhoven 2025).
+- **Techniek:** 10 kWh is 2 BTS 5K-modules (laden tot 5 kW), 20 kWh 4, 30 kWh 6 (tot 10 kW). Tot 30 kWh volstaat één Sofar ESI 10K (maximaal 6 modules; vanaf 5 modules een tweede toren met uitbreidingskit, stelpost €300,00). Voor 40 en 50 kWh (8 en 10 modules) is een tweede omvormerset nodig; samen laden en ontladen ze met ca. 17 kW, de grens van een 3x25 A-aansluiting.
+- **Prijzen:** extra modules à €600,00 excl. btw; een tweede set kost €2.889,00 plus €750,00 installatie en groep (stelpost), en €75 per jaar extra reservering voor de omvormer.
+
 ## Zonnestroom zelf gebruiken
 
-Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 28% van de zonnestroom zelf in plaats van 26%.
+Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 37% van de zonnestroom zelf in plaats van 26%.
 
 | | Zonder batterij | Met batterij |
 | --- | --- | --- |
 | Opwek per jaar | 4.130 kWh | 4.130 kWh |
-| Zelf gebruikt | 26% | 28% |
+| Zelf gebruikt | 26% | 37% |
 | Teruggeleverd | 3.050 kWh | 2.990 kWh |
 | Ingekocht van het net | 1.430 kWh | 1.740 kWh |
 

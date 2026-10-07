@@ -14,6 +14,8 @@ import math
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import numpy as np
+
 HERE = Path(__file__).parent
 TZ = ZoneInfo("Europe/Amsterdam")
 BTW = 1.21
@@ -34,6 +36,8 @@ AANNAMES = dict(
     spot_factor=1.0,            # 1,15 = groothandelsprijs 2027 volgens de termijnmarkt
     publiek_laden=0.50,         # gemiddelde prijs publiek laden incl. btw per kWh
     ere_netto=(0.10, 0.13),     # ERE-uitbetaling per geladen kWh (netto, na commissie)
+    wp_kwh=0,                   # stroom voor een warmtepomp per jaar (0 = cv-ketel op gas)
+    wp_tapwater=0.0,            # aandeel tapwater in wp_kwh (alleen bij volledig elektrisch)
 )
 
 
@@ -45,6 +49,7 @@ def laad_data():
 UUR, SPOT, ZON = laad_data()
 TIJD = [dt.datetime.fromtimestamp(t, TZ) for t in UUR]
 ZON_SOM = sum(ZON)
+TEMP = json.loads((HERE / "data/eindhoven_2025_temp.json").read_text())["temp_c"]
 
 
 def huisprofiel():
@@ -93,57 +98,79 @@ def ev_profiel(kwh_jaar, kw, slim):
     return load
 
 
+def warmtepomp_profiel(kwh_jaar, tapwater=0.0):
+    """Stroomverbruik van een warmtepomp per uur. Ruimteverwarming volgt de graaduren
+    (stookgrens 15,5 °C, KNMI Eindhoven 2025) met een lagere COP bij vorst; tapwater
+    (aandeel `tapwater`) wordt elke dag 's ochtends en 's avonds verwarmd."""
+    if not kwh_jaar:
+        return [0.0] * len(UUR)
+    ruimte = [max(0.0, 15.5 - t) * (1 + 0.04 * max(0.0, 7 - t)) for t in TEMP]
+    tap = [1.0 if TIJD[i].hour in (6, 7, 19, 20) else 0.0 for i in range(len(UUR))]
+    sr, st = sum(ruimte), sum(tap)
+    return [kwh_jaar * ((1 - tapwater) * ruimte[i] / sr + tapwater * tap[i] / st) for i in range(len(UUR))]
+
+
 def simuleer(a, pv=True, batterij=True, contract="dynamisch", ev_slim=True, stap=0.5):
     """Jaarkosten (incl. btw) en energiestromen. De batterij wordt per uur optimaal
     ingezet met dynamisch programmeren over de laadtoestand: zo stuurt een EMS op
     day-ahead prijzen (die een dag vooruit bekend zijn)."""
+    n = len(SPOT)
     kwp = a["panelen"] * a["wp"] / 1000
     pv_kwh = kwp * a["opbrengst_kwh_per_kwp"] if pv else 0
     ev = ev_profiel(a["ev_kwh"], a["ev_kw"], ev_slim)
-    netto_vraag = [a["verbruik_kwh"] * f + ev[i] - pv_kwh * ZON[i] / ZON_SOM for i, f in enumerate(PROFIEL)]
+    wp = warmtepomp_profiel(a.get("wp_kwh", 0), a.get("wp_tapwater", 0.0))
+    last = [a["verbruik_kwh"] * f + ev[i] + wp[i] for i, f in enumerate(PROFIEL)]
+    zon = [pv_kwh * ZON[i] / ZON_SOM for i in range(n)]
+    netto_vraag = [last[i] - zon[i] for i in range(n)]
     dyn = contract == "dynamisch"
     if dyn:
         f = a.get("spot_factor", 1.0)
         p_imp = [(sp * f + a["opslag_excl"]) * BTW + a["eb_incl"] for sp in SPOT]
         p_exp = [max(sp * f - a["terug_fee"], 0) * (BTW if a["terug_btw"] else 1) for sp in SPOT]
     else:
-        p_imp = [a["vast_incl"]] * len(SPOT)
-        p_exp = [a["vast_terug"]] * len(SPOT)
+        p_imp = [a["vast_incl"]] * n
+        p_exp = [a["vast_terug"]] * n
 
-    def kost(i, net):
-        return net * p_imp[i] if net > 0 else net * p_exp[i]
-
-    n = len(SPOT)
     cap = a["batt_kwh"] * a["batt_bruikbaar"] if batterij else 0
     if cap:
         eta = math.sqrt(a["rendement"])
         S = int(cap / stap)
         dmax = int(a["batt_kw"] / stap)
-        V = [0.0] * (S + 1)
-        keuze = []
+        D = np.arange(-dmax, dmax + 1)                 # stappen omlaag/omhoog, oplopend
+        dk = D * stap
+        flow = np.where(dk > 0, dk / eta, dk * eta)    # wisselstroom van/naar het huis
+        rij = np.arange(S + 1)
+        s2 = rij[:, None] + D[None, :]
+        buiten = (s2 < 0) | (s2 > S)
+        s2 = np.clip(s2, 0, S)
+        V = np.zeros(S + 1)
+        keuze = np.empty((n, S + 1), dtype=np.int32)
         for i in range(n - 1, -1, -1):
-            Vn, kz = [0.0] * (S + 1), [0] * (S + 1)
-            for s_ in range(S + 1):
-                best, bk = None, s_
-                for s2 in range(max(0, s_ - dmax), min(S, s_ + dmax) + 1):
-                    d = (s2 - s_) * stap
-                    flow = d / eta if d > 0 else d * eta
-                    c = kost(i, netto_vraag[i] + flow) + V[s2]
-                    if best is None or c < best:
-                        best, bk = c, s2
-                Vn[s_], kz[s_] = best, bk
-            V = Vn
-            keuze.append(kz)
-        keuze.reverse()
+            net = netto_vraag[i] + flow
+            c = np.where(net > 0, net * p_imp[i], net * p_exp[i])
+            tot = c[None, :] + V[s2]
+            tot[buiten] = np.inf
+            k = tot.argmin(axis=1)                     # bij gelijke kosten: laagste laadtoestand
+            keuze[i] = s2[rij, k]
+            V = tot[rij, k]
     s_ = 0
     kosten = opbrengst = imp = exp_ = 0.0
+    direct = via_batt = pv_in_batt = 0.0
     for i in range(n):
         net = netto_vraag[i]
+        d_ = min(last[i], zon[i])
+        direct += d_
         if cap:
-            s2 = keuze[i][s_]
-            d = (s2 - s_) * stap
+            s2_ = int(keuze[i][s_])
+            d = (s2_ - s_) * stap
+            if d > 0:                                  # laden: eerst met zonne-overschot
+                pv_in_batt += min(d / eta, zon[i] - d_) * eta
+            elif d < 0:                                # ontladen: eerst naar het huis
+                aandeel_pv = pv_in_batt / (s_ * stap)
+                via_batt += min(-d * eta, last[i] - d_) * aandeel_pv
+                pv_in_batt -= -d * aandeel_pv
             net += d / eta if d > 0 else d * eta
-            s_ = s2
+            s_ = s2_
         if net > 0:
             kosten += net * p_imp[i]; imp += net
         else:
@@ -153,7 +180,9 @@ def simuleer(a, pv=True, batterij=True, contract="dynamisch", ev_slim=True, stap
         # Dynamisch: over die kWh komt de energiebelasting terug; vast: de volle kWh-prijs min de vergoeding.
         gesaldeerd = min(exp_, imp)
         opbrengst += gesaldeerd * (a["eb_incl"] if dyn else a["vast_incl"] - a["vast_terug"])
-    eigen = pv_kwh - min(exp_, pv_kwh)
+    # Eigen gebruik: zonnestroom die direct of via de batterij in huis (of de auto) wordt gebruikt.
+    # Stroom die de batterij op dure uren aan het net levert, telt niet als eigen gebruik.
+    eigen = direct + via_batt
     return dict(netto=kosten - opbrengst, kosten=kosten, opbrengst=opbrengst, import_kwh=imp,
                 export_kwh=exp_, pv_kwh=pv_kwh, eigen_kwh=eigen,
                 zelfverbruik=(eigen / pv_kwh if pv_kwh else 0))

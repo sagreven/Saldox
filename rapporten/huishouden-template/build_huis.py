@@ -42,6 +42,7 @@ PANEEL_450 = next(t["prijs"] for t in _PRIJSLIJST["losse_prijzen"] if t["artikel
 PAKKETTEN = {
     "sofar": dict(
         model=dict(panelen=10, batt_kwh=10.24, batt_bruikbaar=0.90, batt_kw=5.0, rendement=0.90),
+        modules=2,  # BTS 5K-modules; bepaalt de tabel "Batterijgrootte en verwarming"
         prijzen=[
             (f"10 zonnepanelen à 450 Wp (10 × €{f'{PANEEL_450:.2f}'.replace('.', ',').removesuffix(',00')})", round(10 * PANEEL_450, 2), 0.00, "Inkoopprijs", "zon"),
             ("Montage zonnepanelen", 800.00, 0.00, "Stelpost", "zon"),
@@ -141,6 +142,7 @@ _s = PAKKETTEN["sofar"]
 PAKKETTEN["sofar20"] = dict(
     _s,
     model=dict(_s["model"], batt_kwh=20.48, batt_kw=10.0),
+    modules=4,
     prijzen=_s["prijzen"][:4] + [
         (f"2 extra batterijmodules Sofar BTS 5K (2 × €{BTS5K:.0f}), samen 20,48 kWh", round(2 * BTS5K, 2), 0.21, "Inkoopprijs", "batt"),
     ] + _s["prijzen"][4:],
@@ -154,6 +156,25 @@ PAKKETTEN["sofar20"] = dict(
     batt_aanname="Batterij {bruikbaar} kWh bruikbaar, 10 kW, rendement 90% heen en terug",
     batt_oordeel="20 kWh is ruim voor een verbruik van {verbruik} kWh; de twee extra modules leveren vooral extra op bij het laden van de auto",
 )
+
+# Batterijgrootte: een Sofar ESI 10K kan 1 tot 6 BTS 5K-modules aan (max. 4 per toren; 5 of 6 met een
+# uitbreidingskit). Laadstroom max. 25 A: 2 modules ca. 5 kW, vanaf 4 modules het maximum van 10 kW.
+# 40 en 50 kWh: een tweede ESI-set; samen begrensd op ca. 17 kW door een 3x25 A-aansluiting.
+BATT_GROOTTES = [  # (label, modules, ESI-sets, uitbreidingskits, kW)
+    ("10 kWh", 2, 1, 0, 5.0), ("20 kWh", 4, 1, 0, 10.0), ("30 kWh", 6, 1, 1, 10.0),
+    ("40 kWh", 8, 2, 0, 17.0), ("50 kWh", 10, 2, 2, 17.0)]
+UITBREIDINGSKIT = 300.00          # stelpost: tweede toren (BDU-sokkel en kabels)
+TWEEDE_SET_EXTRA = 450.00 + 300.00  # stelposten: installatie en groep voor de tweede omvormer
+VERWARMING = [  # (kolom, toelichting, warmtepomp kWh per jaar, aandeel tapwater)
+    ("Gewoon gas", "cv-ketel", 0, 0.0),
+    ("Minimaal op gas", "hybride warmtepomp, ca. 1.500 kWh per jaar", 1500, 0.0),
+    ("Van het gas af", "volledige warmtepomp met tapwater, ca. 3.500 kWh per jaar", 3500, 0.25)]
+
+
+def batt_meerkost(modules, sets, kits):
+    """Meerkosten excl. btw ten opzichte van één Sofar-set met 2 modules."""
+    return (modules - 2 * sets) * BTS5K + kits * UITBREIDINGSKIT + (sets - 1) * (bedrag(1, "MFQ-023-0106934") + TWEEDE_SET_EXTRA)
+
 
 VARIANTEN = {
     "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar20",
@@ -224,6 +245,24 @@ def reken(v):
     if laadpaal:
         dom = m.simuleer(a, ev_slim=False)
         extra["ev_prijs_dom"] = (dom["netto"] - n["met_beide"]["netto"]) / EV_KWH
+    if P.get("modules"):
+        huidig = next(g for g in BATT_GROOTTES if g[1] == P["modules"])
+        inv_set = inv - batt_meerkost(*huidig[1:4]) * 1.21
+        schaal = []
+        for g in BATT_GROOTTES:
+            inv_g = round(inv_set + batt_meerkost(*g[1:4]) * 1.21, 2)
+            cellen = []
+            for _, _, wp_kwh, tap in VERWARMING:
+                r = m.besparingen(dict(A, opbrengst_kwh_per_kwp=OPBRENGST[1], ev_kwh=EV_KWH if laadpaal else 0,
+                                       publiek_laden=PUBLIEK[1], batt_kwh=g[1] * 5.12, batt_kw=g[4],
+                                       wp_kwh=wp_kwh, wp_tapwater=tap))
+                netto = round(r["zon"], -1) + round(r["batterij"], -1) - P["jaarkosten"][1] * g[2] + (
+                    round(r["laden"], -1) + round(EV_KWH * ERE[1], -1) if laadpaal else 0)
+                cellen.append(dict(netto=netto, jaren=jr(inv_g, netto), batt=round(r["batterij"], -1)))
+            schaal.append(dict(label=g[0], modules=g[1], sets=g[2], kw=g[4], inv=inv_g, cellen=cellen, huidig=g is huidig))
+        h = next(x for x in schaal if x["huidig"])
+        assert h["cellen"][0]["netto"] == sc[1]["netto"], (h["cellen"][0]["netto"], sc[1]["netto"])
+        extra["schaal"] = schaal
     montage = next(r for r in regels if r[0].startswith("Montage zonnepanelen"))
     extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
     extra["montage_basis"] = montage[1]
@@ -232,6 +271,47 @@ def reken(v):
 
 
 # ───────────────────────────────────────────── tekst
+def schaal_tekst(R, lp):
+    schaal = R["schaal"]
+    kop = " | ".join(k for k, _, _, _ in VERWARMING)
+    rijen = []
+    for x in schaal:
+        naam = f"**{x['label']} (dit pakket)**" if x["huidig"] else x["label"]
+        cel = " | ".join(f"{eur(c['netto'])} · {c['jaren']} jaar" for c in x["cellen"])
+        rijen.append(f"| {naam} | {eur2(x['inv'])} | {cel} |")
+    def jaren(c):
+        return float(c["jaren"].replace(",", "."))
+    snel = {min(schaal, key=lambda x: jaren(x["cellen"][k]))["label"] for k in range(len(VERWARMING))}
+    meest = {max(schaal, key=lambda x: x["cellen"][k]["netto"])["label"] for k in range(len(VERWARMING))}
+    klein, groot = schaal[0], schaal[-1]
+    winst = [groot["cellen"][k]["netto"] - klein["cellen"][k]["netto"] for k in range(len(VERWARMING))]
+    if len(snel) == 1 and len(meest) == 1:
+        advies = (f"in alle drie de situaties is {snel.pop()} het snelst terugverdiend. {meest.pop()} spaart het meest, "
+                  f"maar {eur(min(winst))} tot {eur(max(winst))} per jaar meer dan {klein['label']} weegt niet op tegen "
+                  f"{eur2(groot['inv'] - klein['inv'])} extra investering")
+    else:
+        advies = "; ".join(
+            f"{kol.lower()}: {min(schaal, key=lambda x: jaren(x['cellen'][k]))['label']} het snelst terugverdiend"
+            for k, (kol, _, _, _) in enumerate(VERWARMING))
+    h = next(x for x in schaal if x["huidig"])
+    van = h["cellen"][0]["batt"]
+    tot = h["cellen"][2]["batt"]
+    return f"""## Batterijgrootte en verwarming
+
+Een grotere batterij spaart meer, maar elke extra kWh levert minder op dan de vorige. Met een warmtepomp verbruikt u meer stroom, vooral in de winter; dan verdient een grotere batterij meer. Per batterijgrootte: de netto besparing van het hele pakket per jaar (normaal scenario) en de terugverdientijd.
+
+| Batterij | Pakket incl. btw | {kop} |
+| --- | --- | --- | --- | --- |
+""" + "\n".join(rijen) + f"""
+
+- **Advies:** {advies}.
+- **Warmtepomp:** bij dit pakket levert de batterij met gewoon gas {eur(van)} per jaar op, en zonder gas {eur(tot)}. De warmtepomp zelf zit niet in de investering, en de besparing op gas telt hier niet mee.
+- **Verwarming, aannames:** {'; '.join(f'{k.lower()}: {t}' for k, t, _, _ in VERWARMING)}. Het warmtepompverbruik volgt de buitentemperatuur per uur (KNMI Eindhoven 2025).
+- **Techniek:** 10 kWh is 2 BTS 5K-modules (laden tot 5 kW), 20 kWh 4, 30 kWh 6 (tot 10 kW). Tot 30 kWh volstaat één Sofar ESI 10K (maximaal 6 modules; vanaf 5 modules een tweede toren met uitbreidingskit, stelpost {eur2(UITBREIDINGSKIT)}). Voor 40 en 50 kWh (8 en 10 modules) is een tweede omvormerset nodig; samen laden en ontladen ze met ca. 17 kW, de grens van een 3x25 A-aansluiting.
+- **Prijzen:** extra modules à {eur2(BTS5K)} excl. btw; een tweede set kost {eur2(bedrag(1, 'MFQ-023-0106934'))} plus {eur2(TWEEDE_SET_EXTRA)} installatie en groep (stelpost), en {eur(R['P']['jaarkosten'][1])} per jaar extra reservering voor de omvormer.
+"""
+
+
 def markdown_tekst(v, R):
     lp = v["laadpaal"]
     A, P, EVd = R["A"], R["P"], R["EV"]
@@ -347,6 +427,8 @@ Het pakket van {eur2(R['inv'])} is normaal in ca. {N['jaren']} jaar terugverdien
 """ + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is {EVd['basis_lang']}. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
 """ if lp else ""))
 
+    if R.get("schaal"):
+        t.append(schaal_tekst(R, lp))
     if v.get("waarom"):
         t.append(v["waarom"])
 
@@ -501,6 +583,7 @@ HEADLINES = {
     "Begroting": "Elke post op een rij.",
     "Wat het per jaar oplevert": "Uur voor uur doorgerekend.",
     "Terugverdientijd": "Zonnepanelen eerst, de batterij doet het rustiger aan.",
+    "Batterijgrootte en verwarming": "Groter is niet altijd beter.",
     "Waarom dit pakket": "Het pakket dat over 15 jaar het meeste oplevert.",
     "Zonnestroom zelf gebruiken": "Uw eigen stroom is meer waard dan teruglevering.",
     "Laden met de Zaptec Go 2": "Thuis laden is de grootste winst.",
