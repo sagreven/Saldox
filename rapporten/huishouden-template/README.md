@@ -10,6 +10,17 @@ Universeel energieadvies voor een standaard huishouden in Saldox-huisstijl:
 
 Alle varianten: EMS van Saldox, dynamisch contract. Inkoopprijzen komen uit `../prijzen/inkoopprijzen.json`.
 
+## Offerte voor een klant
+
+```sh
+python3 offerte.py --klant "Fam. Jansen" --huishouden klein --auto phev --dak plat --panelen 10
+```
+
+Rekent alle passende pakketten door (Marstek Venus E 1× of 2×, Sofar 10 kWh; Zaptec Go 2 bij een auto) en kiest het
+pakket met de hoogste opbrengst na 15 jaar. Uitvoer in `../offertes/<datum>-<klant>/`. In Claude Code kan het ook in
+gewone taal: de skill `saldox-offerte` zet "PHEV dagelijks nodig, klein huishouden, plat dak, 10 panelen" om naar deze
+argumenten.
+
 ## Hoe het werkt
 
 - `model_huis.py`: simulatie per uur over een heel jaar met echte uurprijzen (EPEX day-ahead NL 2025) en het Nederlandse zonneprofiel (`data/nl_2025_uur.json`, Energy-Charts). De batterij wordt per uur optimaal ingezet (dynamisch programmeren), zoals een EMS op day-ahead prijzen doet.

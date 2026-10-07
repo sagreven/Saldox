@@ -118,6 +118,20 @@ PUBLIEK = (0.45, 0.50, 0.55)   # prijs publiek laden incl. btw
 ERE = (0.10, 0.115, 0.13)      # ERE netto per geladen kWh
 EV_KWH = 3000                  # thuis geladen per jaar (18.131 km × 20,4 kWh/100 km × 81% thuis)
 
+# Autoprofielen: hoeveel er thuis geladen wordt en waarmee thuisladen wordt vergeleken.
+AUTO = {
+    "ev": dict(naam="elektrische auto", kwh=EV_KWH, kw=11.0, basis=PUBLIEK, ere=ERE,
+               bron="CBS: 18.131 km per jaar, TNO: 20,4 kWh per 100 km, 81% thuis",
+               basis_kort="publiek", basis_reeks="publiek laden", basis_label="Publiek laden (gemiddeld)", basis_zin="bij een publieke laadpaal",
+               basis_lang="dan publiek laden",
+               basis_toelichting="- **Gemiddelde prijzen:** publiek laden verschilt sterk per aanbieder en locatie; reken met de tarieven die de bestuurder nu betaalt."),
+    "phev": dict(naam="plug-in hybride", kwh=2000, kw=3.7, basis=(0.50, 0.60, 0.66), ere=ERE,
+                 bron="dagelijks geladen: ca. 40 km per werkdag elektrisch, 20 kWh per 100 km",
+                 basis_kort="op benzine", basis_reeks="benzine omgerekend", basis_label="Dezelfde kilometers op benzine", basis_zin="als u dezelfde kilometers op benzine rijdt",
+                 basis_lang="dan dezelfde kilometers op benzine rijden",
+                 basis_toelichting="- **Vergelijking met benzine:** 6 liter per 100 km à €2,00 tegenover 20 kWh per 100 km elektrisch; dat is ca. €0,60 per kWh. Laadt u nu al thuis aan het stopcontact, dan is de winst kleiner."),
+}
+
 VARIANTEN = {
     "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar",
                            chip="Energieplan · huishouden · zon, batterij en laadpaal"),
@@ -152,8 +166,11 @@ def pct(v):
 # ───────────────────────────────────────────── rekenen
 def reken(v):
     laadpaal = v["laadpaal"]
-    P = PAKKETTEN[v["pakket"]]
-    A = dict(m.AANNAMES, **P["model"])
+    P = v.get("P") or PAKKETTEN[v["pakket"]]
+    A = dict(m.AANNAMES, **P["model"], **v.get("model", {}))
+    EVd = v.get("auto") or AUTO["ev"]
+    EV_KWH, PUBLIEK, ERE = EVd["kwh"], EVd["basis"], EVd["ere"]
+    A["ev_kw"] = EVd["kw"]
     posten = P["prijzen"] + ([p + ("laad",) for p in PRIJZEN_LAADPAAL] if laadpaal else [])
     regels = [(p, ex, b, st, round(ex * (1 + b), 2), g) for p, ex, b, st, g in posten]
     inv_ex = round(sum(r[1] for r in regels), 2)
@@ -185,14 +202,15 @@ def reken(v):
     montage = next(r for r in regels if r[0].startswith("Montage zonnepanelen"))
     extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
     extra["montage_basis"] = montage[1]
-    return dict(A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
+    return dict(EV=EVd, A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
                 sc=sc, n=n, vast=vast, p27=p27, **extra)
 
 
 # ───────────────────────────────────────────── tekst
 def markdown_tekst(v, R):
     lp = v["laadpaal"]
-    A, P = R["A"], R["P"]
+    A, P, EVd = R["A"], R["P"], R["EV"]
+    EV_KWH, PUBLIEK, ERE = EVd["kwh"], EVd["basis"], EVd["ere"]
     RESERVERING = P["jaarkosten"][1]
     sc, n = R["sc"], R["n"]
     N = sc[1]
@@ -207,8 +225,12 @@ def markdown_tekst(v, R):
     p27_netto = round(R["p27"]["zon"], -1) + round(R["p27"]["batterij"], -1) - RESERVERING + (
         round(R["p27"]["laden"], -1) + N["ere"] if lp else 0)
 
+    platdak_bullet = "" if R["montage_basis"] == PLATDAK_MONTAGE else (
+        f"- **Optie plat dak:** de montage kost bij een plat dak vast {eur2(PLATDAK_MONTAGE)} (0% btw) in plaats van "
+        f"{eur2(R['montage_basis'])}. Het pakket kost dan {eur2(R['inv_plat'])} incl. btw en is normaal in ca. "
+        f"{jr(R['inv_plat'], N['netto'])} jaar terugverdiend.")
     t = []
-    t.append(f"# {v['titel']}\n\n{KLANT['datum']} · {KLANT['adviseur']} · template voor een {KLANT['naam'].lower()}\n")
+    t.append(f"# {v['titel']}\n\n{KLANT['datum']} · {KLANT['adviseur']} · " + (v.get("meta") or f"template voor een {KLANT['naam'].lower()}") + "\n")
 
     # 1 Samenvatting
     t.append(f"""## Samenvatting
@@ -218,7 +240,7 @@ Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten net
 - **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. Zonder batterij gebruikt u {pct(zv_pv)} zelf, met batterij {pct(zv_b)}.
 - **Thuisbatterij:** {P['batterij_kort'].format(bruikbaar=nl(batt_bruikbaar, 1))}. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij{' en laadpaal' if lp else ''} op de uurprijs.
-""" + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} publiek, plus ERE-vergoeding.
+""" + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} {EVd['basis_kort']}, plus ERE-vergoeding.
 """ if lp else "") + f"""- **Zonnepanelen** verdienen zich het snelst terug (ca. {j_zon} jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij{' en de laadpaal' if lp else ''}.
 """)
@@ -238,7 +260,7 @@ Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op 
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 {P['btw_bullet']}
-- **Optie plat dak:** de montage kost bij een plat dak vast {eur2(PLATDAK_MONTAGE)} (0% btw) in plaats van {eur2(R['montage_basis'])}. Het pakket kost dan {eur2(R['inv_plat'])} incl. btw en is normaal in ca. {jr(R['inv_plat'], N['netto'])} jaar terugverdiend.
+{platdak_bullet}
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 {P['aansluiting']}
 """)
@@ -253,7 +275,7 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 | --- | --- | --- | --- |
 | Zon (minder stroom inkopen, teruglevering) | {eur(sc[0]['zon'])} | {eur(sc[1]['zon'])} | {eur(sc[2]['zon'])} |
 | Batterij (slim laden en ontladen) | {eur(sc[0]['batt'])} | {eur(sc[1]['batt'])} | {eur(sc[2]['batt'])} |
-""" + (f"""| Thuis laden in plaats van publiek | {eur(sc[0]['laden'])} | {eur(sc[1]['laden'])} | {eur(sc[2]['laden'])} |
+""" + (f"""| Thuis laden in plaats van {EVd['basis_kort']} | {eur(sc[0]['laden'])} | {eur(sc[1]['laden'])} | {eur(sc[2]['laden'])} |
 | ERE-vergoeding laadpaal | {eur(sc[0]['ere'])} | {eur(sc[1]['ere'])} | {eur(sc[2]['ere'])} |
 """ if lp else "") + f"""| **Bruto per jaar** | **{eur(sc[0]['bruto'])}** | **{eur(sc[1]['bruto'])}** | **{eur(sc[2]['bruto'])}** |
 | {P['jaarkosten'][0]} | −{eur(RESERVERING)} | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
@@ -263,10 +285,10 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 
 **Hoe dit is berekend.** Saldox simuleert elk uur van een jaar met de echte uurprijzen van 2025 (EPEX day-ahead Nederland) en het echte zonneprofiel van Nederland. Het EMS zet de batterij in zoals in de praktijk: met de day-ahead prijzen, die een dag vooruit bekend zijn.
 
-- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid); batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""" + (f"""; publiek laden {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
+- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid); batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""" + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
 - **Stroomprijs:** uurprijs plus opslag van de leverancier (ca. €0,02 per kWh incl. btw), plus btw en energiebelasting ({eur(A['eb_incl'], 4)} per kWh incl. btw in 2026). Teruglevering tegen de uurprijs, zonder terugleverkosten; bij een negatieve prijs zet het EMS de teruglevering stop.
 - **Verbruik:** {nl(A['verbruik_kwh'])} kWh per jaar (Milieu Centraal: gemiddeld 2.430 kWh, 2 personen ca. 2.550 kWh) met een standaard dagprofiel: ochtend- en avondpiek, in de winter hoger.""" + (f"""
-- **Elektrische auto:** {nl(EV_KWH)} kWh per jaar thuis geladen (CBS: 18.131 km per jaar, TNO: 20,4 kWh per 100 km, 81% thuis).""" if lp else "") + "\n")
+- **{EVd['naam'][0].upper() + EVd['naam'][1:]}:** {nl(EV_KWH)} kWh per jaar thuis geladen ({EVd['bron']}).""" if lp else "") + "\n")
 
     # 4 Terugverdientijd
     t.append(f"""## Terugverdientijd
@@ -286,8 +308,11 @@ Het pakket van {eur2(R['inv'])} is normaal in ca. {N['jaren']} jaar terugverdien
 
 - **Zonnepanelen** verdienen zich snel terug, ook zonder saldering: het grootste deel van de waarde zit in de stroom die u zelf gebruikt.
 - **De batterij** verdient minder dan de panelen: {P['batt_oordeel'].format(verbruik=nl(A['verbruik_kwh']))}. Hij verdient sneller bij een groter verbruik (warmtepomp{', elektrische auto' if not lp else ''}) en bij grotere prijsverschillen.{P['batt_kosten_zin']}
-""" + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is dan publiek laden. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
+""" + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is {EVd['basis_lang']}. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
 """ if lp else ""))
+
+    if v.get("waarom"):
+        t.append(v["waarom"])
 
     # 5 Zelfverbruik
     t.append(f"""## Zonnestroom zelf gebruiken
@@ -310,11 +335,11 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
     if lp:
         t.append(f"""## Laden met de Zaptec Go 2
 
-Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(PUBLIEK[1], 2)} bij een publieke laadpaal. Bij {nl(EV_KWH)} kWh per jaar scheelt dat ca. {eur(N['laden'])}, plus ca. {eur(N['ere'])} ERE-vergoeding.
+Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(PUBLIEK[1], 2)} {EVd['basis_zin']}. Bij {nl(EV_KWH)} kWh per jaar scheelt dat ca. {eur(N['laden'])}, plus ca. {eur(N['ere'])} ERE-vergoeding.
 
 | | Per kWh | Per jaar ({nl(EV_KWH)} kWh) |
 | --- | --- | --- |
-| Publiek laden (gemiddeld) | {eur(PUBLIEK[1], 2)} | {eur(PUBLIEK[1] * EV_KWH)} |
+| {EVd['basis_label']} | {eur(PUBLIEK[1], 2)} | {eur(PUBLIEK[1] * EV_KWH)} |
 | Thuis laden, direct vanaf 18:00 | {eur(R['ev_prijs_dom'], 2)} | {eur(R['ev_prijs_dom'] * EV_KWH)} |
 | Thuis laden, slim op goedkope uren | {eur(n['ev_prijs_thuis'], 2)} | {eur(n['ev_prijs_thuis'] * EV_KWH)} |
 | ERE-vergoeding (netto) | −{eur(ERE[1], 3)} | −{eur(N['ere'])} |
@@ -322,7 +347,7 @@ Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(
 - **Zaptec Go 2:** tot 22 kW (3-fase, 32 A) of 7,4 kW (1-fase), met ingebouwde MID-gecertificeerde meter, 4G, OCPP en dynamische load balancing via de P1-meter. Bidirectioneel voorbereid (V2G).
 - **Slim laden:** het EMS van Saldox laadt de auto op de goedkoopste uren dat hij thuis is, en in het weekend zoveel mogelijk met zonnestroom.
 - **ERE:** sinds 1 januari 2026 levert elke thuis geladen kWh ERE's op. Voorwaarden: MID-meter in de laadpaal, gekoppeld aan uw aansluiting, en een inboekdienstverlener (één per jaar). Netto ca. €0,07 tot 0,15 per kWh, gemiddeld rond €0,12. De opbrengst kan schommelen.
-- **Gemiddelde prijzen:** publiek laden verschilt sterk per aanbieder en locatie; reken met de tarieven die de bestuurder nu betaalt.
+{EVd['basis_toelichting']}
 """)
 
     # 7 Contract en prijzen
@@ -387,7 +412,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 - Uurprijzen en zonneprofiel van 2025; opslag dynamisch contract ca. €0,02 per kWh incl. btw; energiebelasting 2026
 - {P['batt_aanname'].format(bruikbaar=nl(batt_bruikbaar, 1))}
 - {P['jaarkosten'][0]} €{RESERVERING} per jaar""" + (f"""
-- Elektrische auto {nl(EV_KWH)} kWh per jaar thuis; publiek laden {eur(PUBLIEK[1], 2)} per kWh; ERE {eur(ERE[1], 3)} per kWh netto""" if lp else "") + "\n")
+- {EVd['naam'][0].upper() + EVd['naam'][1:]} {nl(EV_KWH)} kWh per jaar thuis; {EVd['basis_reeks']} {eur(PUBLIEK[1], 2)} per kWh; ERE {eur(ERE[1], 3)} per kWh netto""" if lp else "") + "\n")
 
     # 11 Begrippen
     t.append("""## Begrippen
@@ -416,6 +441,7 @@ HEADLINES = {
     "Begroting": "Elke post op een rij.",
     "Wat het per jaar oplevert": "Uur voor uur doorgerekend.",
     "Terugverdientijd": "Zonnepanelen eerst, de batterij doet het rustiger aan.",
+    "Waarom dit pakket": "Het pakket dat over 15 jaar het meeste oplevert.",
     "Zonnestroom zelf gebruiken": "Uw eigen stroom is meer waard dan teruglevering.",
     "Laden met de Zaptec Go 2": "Thuis laden is de grootste winst.",
     "Stroomcontract en prijzen": "Dynamisch laat de batterij verdienen.",
