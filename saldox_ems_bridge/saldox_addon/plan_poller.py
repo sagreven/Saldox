@@ -29,6 +29,27 @@ from .ha_api import HomeAssistantClient
 _LOG = logging.getLogger(__name__)
 
 
+def derive_grid_power_w(
+    load_w: float | None, pv_w: float | None, battery_w: float | None
+) -> float | None:
+    """Leid het net-vermogen (PCC) af uit de energiebalans i.p.v. register 0x0488.
+
+    De Sofar HYD PCC-register over-leest tijdens Passive-mode geforceerd laden met ~het
+    laadvermogen (firmware-quirk). De drie componenten balanceren wél consistent:
+
+        grid = load − pv − battery_power
+
+    met de add-on-tekenconventie ``battery_power`` − = laden, + = ontladen. Resultaat is
+    positief = import, negatief = export (zoals de Saldox-server verwacht).
+
+    Geeft ``None`` als één van de drie ontbreekt, zodat de aanroeper kan terugvallen op de
+    ruwe register-waarde. Puur/stateless zodat 'm direct te unit-testen is.
+    """
+    if load_w is None or pv_w is None or battery_w is None:
+        return None
+    return load_w - pv_w - battery_w
+
+
 class PlanPoller:
     """Pollt de Saldox EMS plan API en pusht samenvatting naar HA."""
 
@@ -184,20 +205,45 @@ class PlanPoller:
             return
 
         payload: dict[str, float] = {}
-        # Map Modbus register names to telemetry fields.
+        # Map Modbus register names to telemetry fields. LET OP: gridPowerW staat hier
+        # bewust NIET bij — dat leiden we hieronder af uit de energiebalans (zie onder).
         mapping = {
             "battery_soc_percent": "batterySoCPercent",
             "battery_power_w": "batteryPowerW",
             "ev_soc_percent": "evSoCPercent",
             "ev_power_w": "evPowerW",
             "pv_total_power_w": "pvPowerW",
-            "ac_active_power_w": "gridPowerW",
             "load_power_w": "loadPowerW",
         }
         for modbus_key, api_key in mapping.items():
             entry = readings.get(modbus_key)
             if entry and entry.get("value") is not None:
                 payload[api_key] = float(entry["value"])
+
+        # Grid (PCC) power: AFGELEID uit de energiebalans i.p.v. register 0x0488.
+        #
+        # De Sofar HYD PCC-register (ac_active_power_w, 0x0488) blaast tijdens Passive-mode
+        # geforceerd laden op met ~het laadvermogen — een firmware-quirk, bevestigd op
+        # 2026-10-06: het register las ~13,3 kW terwijl load/pv/battery sloten op een echte
+        # netimport van ~5 kW (de accu nam 7,5 kW; fysiek onmogelijk om 13 kW te importeren).
+        # Het register is per officiële Sofar-map wél het juiste PCC-register met de juiste
+        # schaal, dus een scale-fix zou de (correcte) idle/ontlaad-metingen juist breken.
+        # De drie componenten balanceren consistent, dus leiden we grid daaruit af:
+        #   grid = load − pv − battery_power   (battery_power: − = laden, + = ontladen)
+        #   resultaat: + = import, − = export (zoals de server verwacht).
+        def _val(key: str) -> float | None:
+            e = readings.get(key)
+            return float(e["value"]) if e and e.get("value") is not None else None
+
+        grid = derive_grid_power_w(
+            _val("load_power_w"), _val("pv_total_power_w"), _val("battery_power_w"))
+        if grid is not None:
+            payload["gridPowerW"] = grid
+        else:
+            # Fallback: ruwe PCC-register als een van de drie componenten ontbreekt.
+            raw = _val("ac_active_power_w")
+            if raw is not None:
+                payload["gridPowerW"] = raw
 
         if not payload:
             return
