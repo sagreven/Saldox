@@ -4,34 +4,34 @@
 
 ## Samenvatting
 
-Het pakket kost €6.604,69 incl. btw en levert na de jaarlijkse kosten netto €495 tot €745 per jaar op; normaal is het in ca. 10,9 jaar terugverdiend (8,9 tot 13,3 jaar).
+Het pakket kost €6.534,69 incl. btw en levert na de jaarlijkse kosten netto €495 tot €745 per jaar op; normaal is het in ca. 10,8 jaar terugverdiend (8,8 tot 13,2 jaar).
 
 - **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 38%.
 - **Thuisbatterij:** Sofar BTS 10 kWh (9,2 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij op de uurprijs.
-- **Zonnepanelen** verdienen zich het snelst terug (ca. 5,3 jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
+- **Zonnepanelen** verdienen zich het snelst terug (ca. 5,1 jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij.
 
 ## Begroting
 
-Het pakket kost €5.809,00 excl. btw en €6.604,69 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
+Het pakket kost €5.739,00 excl. btw en €6.534,69 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
-| 10 zonnepanelen à 450 Wp (10 × €77) | €770,00 | 0% | €770,00 | Inkoopprijs |
+| 10 zonnepanelen à 450 Wp (10 × €70) | €700,00 | 0% | €700,00 | Inkoopprijs |
 | Montage zonnepanelen | €800,00 | 0% | €800,00 | Stelpost |
 | Dakbevestiging en bekabeling | €450,00 | 0% | €450,00 | Stelpost |
 | Batterijset Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer | €2.889,00 | 21% | €3.495,69 | Offerte |
 | Installatie batterij en omvormer | €450,00 | 21% | €544,50 | Stelpost |
 | Groepenkast: groepen voor zonnepanelen en batterij, aardlek | €300,00 | 21% | €363,00 | Stelpost |
 | EMS-koppeling Saldox (P1-meter en gateway) | €150,00 | 21% | €181,50 | Stelpost |
-| **Totaal** | **€5.809,00** | | **€6.604,69** | |
+| **Totaal** | **€5.739,00** | | **€6.534,69** | |
 
 <!-- FIG:begroting -->
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 - **Batterij 21%:** levering en installatie van een thuisbatterij vallen expliciet onder 21%. De batterijset wordt als één prijs geleverd en staat daarom volledig op 21%. Vraag de leverancier het omvormerdeel apart te factureren: dat deel kan onder het nultarief vallen.
-- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €800,00. Het pakket kost dan €6.054,69 incl. btw en is normaal in ca. 10,0 jaar terugverdiend.
+- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €800,00. Het pakket kost dan €5.984,69 incl. btw en is normaal in ca. 9,9 jaar terugverdiend.
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 - **Aanname:** de woning heeft een 3-fase aansluiting (3x25 A). Is die 1-fase, dan is een verzwaring nodig of een 1-fase omvormer.
 
@@ -57,15 +57,15 @@ Normaal levert het pakket €680 per jaar op; na de reservering voor vervanging 
 
 ## Terugverdientijd
 
-Het pakket van €6.604,69 is normaal in ca. 10,9 jaar terugverdiend; pessimistisch in 13,3 jaar en optimistisch in 8,9 jaar.
+Het pakket van €6.534,69 is normaal in ca. 10,8 jaar terugverdiend; pessimistisch in 13,2 jaar en optimistisch in 8,8 jaar.
 
 <!-- FIG:kasstroom -->
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
-| Zonnepanelen (panelen, montage, bevestiging) | €2.020,00 | €380 | 5,3 jaar |
+| Zonnepanelen (panelen, montage, bevestiging) | €1.950,00 | €380 | 5,1 jaar |
 | Batterij (set met omvormer, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
-| **Totaal** | **€6.604,69** | **€605** | **10,9 jaar** |
+| **Totaal** | **€6.534,69** | **€605** | **10,8 jaar** |
 
 <!-- FIG:payback -->
 
@@ -89,7 +89,7 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 ## Stroomcontract en prijzen
 
-Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €535 per jaar (12,3 jaar).
+Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €535 per jaar (12,2 jaar).
 
 | | Dynamisch (advies) | Vast |
 | --- | --- | --- |
@@ -98,10 +98,10 @@ Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij
 | Zon per jaar | €380 | €450 |
 | Batterij per jaar | €300 | €160 |
 | Netto per jaar (normaal) | €605 | €535 |
-| Terugverdientijd (normaal) | 10,9 jaar | 12,3 jaar |
+| Terugverdientijd (normaal) | 10,8 jaar | 12,2 jaar |
 
 - **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
-- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €685 per jaar (9,6 jaar).
+- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €685 per jaar (9,5 jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
 
 ## Met en zonder saldering
@@ -114,13 +114,13 @@ Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afn
 | Batterij per jaar | €270 | €300 |
 | Jaarlijkse kosten | −€75 | −€75 |
 | **Netto per jaar** | **€735** | **€605** |
-| Terugverdientijd | 9,0 jaar | 10,9 jaar |
+| Terugverdientijd | 8,9 jaar | 10,8 jaar |
 | Netto per jaar bij een vast contract | €695 | €535 |
 
 - **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van €0,1108 per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. 1.180 kWh per jaar.
 - **Zonnepanelen leveren minder op:** zonder saldering ca. €160 per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
 - **De batterij wordt belangrijker:** zonder saldering komt 44% van de opbrengst van zon en batterij uit de batterij, met saldering 33%. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
-- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 10,9 jaar geldt voor de regels vanaf 2027.
+- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 10,8 jaar geldt voor de regels vanaf 2027.
 
 ## Installatie en veiligheid
 
