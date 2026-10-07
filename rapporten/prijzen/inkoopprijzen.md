@@ -34,6 +34,13 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | Montage 40 panelen (Run 4258) | €1.500,00 |
 | Toshiba airco-set RAV-HM401MUTP-E + RAV-GM402ATP-E, apparatuur per set (offerte Run 4258) | €2.569,60 |
 
+## Tarieven Saldox
+
+| Artikel | Prijs excl. btw |
+| --- | --- |
+| Montage zonnepanelen op plat dak (vast bedrag, optie) | €250,00 |
+| Transport naar de klant (vast bedrag) | €30,00 |
+
 ## Afgeleid per eenheid
 
 - Zonnepaneel A Solar 460 Wp: €69,46 per stuk (ca. €151 per kWp).

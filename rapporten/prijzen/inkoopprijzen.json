@@ -103,5 +103,19 @@
    "artikel": "Toshiba airco-set RAV-HM401MUTP-E + RAV-GM402ATP-E, apparatuur per set (offerte Run 4258)",
    "prijs": 2569.6
   }
+ ],
+ "tarieven": [
+  {
+   "artikel": "Montage zonnepanelen op plat dak (vast bedrag, optie)",
+   "prijs": 250.0,
+   "datum": "2026-10-07",
+   "btw_consument": 0.0
+  },
+  {
+   "artikel": "Transport naar de klant (vast bedrag)",
+   "prijs": 30.0,
+   "datum": "2026-10-07",
+   "btw_consument": 0.0
+  }
  ]
 }

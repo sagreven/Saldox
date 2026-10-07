@@ -33,6 +33,9 @@ def bedrag(aantal, zoek):
 
 KLANT = dict(naam="Standaard huishouden", datum="7 oktober 2026", adviseur="Saldox")
 
+PLATDAK_MONTAGE = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if "plat dak" in t["artikel"])
+TRANSPORT = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Transport"))
+
 # Pakketten: per pakket de posten (post, excl. btw, btw-tarief, status, groep), de
 # modelwaarden (overschrijven AANNAMES in model_huis.py) en de productteksten.
 PAKKETTEN = {
@@ -74,7 +77,7 @@ PAKKETTEN = {
             ("4 micro-omvormers APsystems DS3, 880 VA (4 × €110,74)", bedrag(4, "MFQ-023-0106911"), 0.00, "Inkoopprijs", "zon"),
             ("8 Y3 AC-buskabels en 8 eindkappen (APsystems)", round(bedrag(8, "MFQ-023-0106912") + bedrag(8, "MFQ-023-0106913"), 2), 0.00, "Inkoopprijs", "zon"),
             ("Monitoring APsystems ECU-B", 67.00, 0.00, "Stelpost", "zon"),
-            ("Transport", bedrag(1, "Transportkosten"), 0.00, "Inkoopprijs", "zon"),
+            ("Transport", TRANSPORT, 0.00, "Tarief", "zon"),
             ("Montage zonnepanelen en micro-omvormers", 700.00, 0.00, "Stelpost", "zon"),
             ("Dakbevestiging en bekabeling", 400.00, 0.00, "Stelpost", "zon"),
             ("Thuisbatterij Marstek Venus E 3.0, 5,12 kWh, incl. P1-meter", 990.91, 0.21, "Marktprijs", "batt"),
@@ -179,6 +182,9 @@ def reken(v):
     if laadpaal:
         dom = m.simuleer(a, ev_slim=False)
         extra["ev_prijs_dom"] = (dom["netto"] - n["met_beide"]["netto"]) / EV_KWH
+    montage = next(r for r in regels if r[0].startswith("Montage zonnepanelen"))
+    extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
+    extra["montage_basis"] = montage[1]
     return dict(A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
                 sc=sc, n=n, vast=vast, p27=p27, **extra)
 
@@ -232,6 +238,7 @@ Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op 
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 {P['btw_bullet']}
+- **Optie plat dak:** de montage kost bij een plat dak vast {eur2(PLATDAK_MONTAGE)} (0% btw) in plaats van {eur2(R['montage_basis'])}. Het pakket kost dan {eur2(R['inv_plat'])} incl. btw en is normaal in ca. {jr(R['inv_plat'], N['netto'])} jaar terugverdiend.
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 {P['aansluiting']}
 """)
@@ -368,7 +375,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 **Te bevestigen bij de klant**
 
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter){'; aantal kilometers en huidige laadkosten van de auto' if lp else ''}
-- [ ] Dak: oriëntatie, hellingshoek, schaduw en ruimte voor {A['panelen']} panelen (ca. {A['panelen'] * 2} m²)
+- [ ] Dak: plat of schuin (plat dak: montage vast {eur(PLATDAK_MONTAGE)}), oriëntatie, hellingshoek, schaduw en ruimte voor {A['panelen']} panelen (ca. {A['panelen'] * 2} m²)
 {P['checklist_aansluiting']}
 - [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
 - [ ] Stroomcontract: dynamisch voor afname en teruglevering

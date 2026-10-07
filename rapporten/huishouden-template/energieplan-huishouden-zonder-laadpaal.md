@@ -31,6 +31,7 @@ Het pakket kost €5.689,00 excl. btw en €6.484,69 incl. btw. Op zonnepanelen 
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 - **Batterij 21%:** levering en installatie van een thuisbatterij vallen expliciet onder 21%. De batterijset wordt als één prijs geleverd en staat daarom volledig op 21%. Vraag de leverancier het omvormerdeel apart te factureren: dat deel kan onder het nultarief vallen.
+- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €800,00. Het pakket kost dan €5.934,69 incl. btw en is normaal in ca. 9,8 jaar terugverdiend.
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 - **Aanname:** de woning heeft een 3-fase aansluiting (3x25 A). Is die 1-fase, dan is een verzwaring nodig of een 1-fase omvormer.
 
@@ -131,7 +132,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 **Te bevestigen bij de klant**
 
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter)
-- [ ] Dak: oriëntatie, hellingshoek, schaduw en ruimte voor 10 panelen (ca. 20 m²)
+- [ ] Dak: plat of schuin (plat dak: montage vast €250), oriëntatie, hellingshoek, schaduw en ruimte voor 10 panelen (ca. 20 m²)
 - [ ] 3-fase aansluiting (3x25 A) en ruimte in de meterkast
 - [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
 - [ ] Stroomcontract: dynamisch voor afname en teruglevering

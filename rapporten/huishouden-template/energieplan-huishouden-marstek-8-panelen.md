@@ -4,17 +4,17 @@
 
 ## Samenvatting
 
-Het pakket kost €4.058,55 incl. btw en levert na de jaarlijkse kosten netto €410 tot €570 per jaar op; normaal is het in ca. 8,5 jaar terugverdiend (7,1 tot 9,9 jaar).
+Het pakket kost €4.004,55 incl. btw en levert na de jaarlijkse kosten netto €410 tot €570 per jaar op; normaal is het in ca. 8,3 jaar terugverdiend (7,0 tot 9,8 jaar).
 
 - **Zonnestroom:** 8 panelen van 460 Wp (3,7 kWp), ca. 3.370 kWh per jaar. Zonder batterij gebruikt u 31% zelf, met batterij 47%.
 - **Thuisbatterij:** Marstek Venus E 3.0 (4,6 kWh bruikbaar, 2,5 kW); de panelen hebben APsystems-micro-omvormers. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij op de uurprijs.
-- **Zonnepanelen** verdienen zich het snelst terug (ca. 7,4 jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
+- **Zonnepanelen** verdienen zich het snelst terug (ca. 7,2 jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij.
 
 ## Begroting
 
-Het pakket kost €3.776,96 excl. btw en €4.058,55 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
+Het pakket kost €3.722,96 excl. btw en €4.004,55 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
@@ -22,18 +22,19 @@ Het pakket kost €3.776,96 excl. btw en €4.058,55 incl. btw. Op zonnepanelen 
 | 4 micro-omvormers APsystems DS3, 880 VA (4 × €110,74) | €442,96 | 0% | €442,96 | Inkoopprijs |
 | 8 Y3 AC-buskabels en 8 eindkappen (APsystems) | €186,41 | 0% | €186,41 | Inkoopprijs |
 | Monitoring APsystems ECU-B | €67,00 | 0% | €67,00 | Stelpost |
-| Transport | €84,00 | 0% | €84,00 | Inkoopprijs |
+| Transport | €30,00 | 0% | €30,00 | Tarief |
 | Montage zonnepanelen en micro-omvormers | €700,00 | 0% | €700,00 | Stelpost |
 | Dakbevestiging en bekabeling | €400,00 | 0% | €400,00 | Stelpost |
 | Thuisbatterij Marstek Venus E 3.0, 5,12 kWh, incl. P1-meter | €990,91 | 21% | €1.199,00 | Marktprijs |
 | Eigen groep voor de batterij (2.500 W) en aansluiten | €250,00 | 21% | €302,50 | Stelpost |
 | EMS-koppeling Saldox (Modbus TCP) | €100,00 | 21% | €121,00 | Stelpost |
-| **Totaal** | **€3.776,96** | | **€4.058,55** | |
+| **Totaal** | **€3.722,96** | | **€4.004,55** | |
 
 <!-- FIG:begroting -->
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 - **Batterij 21%:** levering en installatie van een thuisbatterij vallen onder 21%. Panelen, micro-omvormers, bekabeling en montage vallen onder het nultarief.
+- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €700,00. Het pakket kost dan €3.554,55 incl. btw en is normaal in ca. 7,4 jaar terugverdiend.
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 - **Aansluiting:** de micro-omvormers en de Venus E zijn 1-fase; een gewone aansluiting volstaat. De Venus E krijgt een eigen groep, zodat hij met 2.500 W kan laden en ontladen. Op een gewoon stopcontact is het maximaal 800 W.
 
@@ -59,15 +60,15 @@ Normaal levert het pakket €520 per jaar op; na het stand-byverbruik van de bat
 
 ## Terugverdientijd
 
-Het pakket van €4.058,55 is normaal in ca. 8,5 jaar terugverdiend; pessimistisch in 9,9 jaar en optimistisch in 7,1 jaar.
+Het pakket van €4.004,55 is normaal in ca. 8,3 jaar terugverdiend; pessimistisch in 9,8 jaar en optimistisch in 7,0 jaar.
 
 <!-- FIG:kasstroom -->
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
-| Zonnepanelen (panelen, micro-omvormers, montage) | €2.436,05 | €330 | 7,4 jaar |
+| Zonnepanelen (panelen, micro-omvormers, montage) | €2.382,05 | €330 | 7,2 jaar |
 | Batterij (Venus E, eigen groep, EMS) | €1.622,50 | €150 | 10,8 jaar |
-| **Totaal** | **€4.058,55** | **€480** | **8,5 jaar** |
+| **Totaal** | **€4.004,55** | **€480** | **8,3 jaar** |
 
 <!-- FIG:payback -->
 
@@ -91,7 +92,7 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 ## Stroomcontract en prijzen
 
-Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €490 per jaar (8,3 jaar).
+Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €490 per jaar (8,2 jaar).
 
 | | Dynamisch (advies) | Vast |
 | --- | --- | --- |
@@ -100,10 +101,10 @@ Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij
 | Zon per jaar | €330 | €410 |
 | Batterij per jaar | €190 | €120 |
 | Netto per jaar (normaal) | €480 | €490 |
-| Terugverdientijd (normaal) | 8,5 jaar | 8,3 jaar |
+| Terugverdientijd (normaal) | 8,3 jaar | 8,2 jaar |
 
 - **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent nergens met saldering. Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
-- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €530 per jaar (7,7 jaar).
+- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €530 per jaar (7,6 jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
 
 ## Installatie en veiligheid
@@ -136,7 +137,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 **Te bevestigen bij de klant**
 
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter)
-- [ ] Dak: oriëntatie, hellingshoek, schaduw en ruimte voor 8 panelen (ca. 16 m²)
+- [ ] Dak: plat of schuin (plat dak: montage vast €250), oriëntatie, hellingshoek, schaduw en ruimte voor 8 panelen (ca. 16 m²)
 - [ ] Ruimte in de groepenkast voor een eigen groep voor de batterij
 - [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
 - [ ] Stroomcontract: dynamisch voor afname en teruglevering
