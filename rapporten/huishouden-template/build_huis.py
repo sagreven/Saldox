@@ -15,23 +15,100 @@ from opmaak import bouw
 
 HERE = Path(__file__).parent
 
+# Inkoopprijzen uit de centrale prijslijst (rapporten/prijzen/inkoopprijzen.json)
+_PRIJSLIJST = json.loads((HERE.parent / "prijzen/inkoopprijzen.json").read_text(encoding="utf-8"))
+
+
+def inkoop(zoek):
+    """Netto prijs per stuk (excl. btw) van het artikel waarvan ref of omschrijving `zoek` bevat."""
+    hits = [r for o in _PRIJSLIJST["offertes"] for r in o["regels"] if zoek in r["ref"] or zoek in r["artikel"]]
+    assert len(hits) == 1, f"prijslijst: {len(hits)} treffers voor {zoek!r}"
+    return hits[0]["netto_per_stuk"]
+
+
+def bedrag(aantal, zoek):
+    from decimal import Decimal, ROUND_HALF_UP
+    return float((Decimal(str(inkoop(zoek))) * aantal).quantize(Decimal("0.01"), ROUND_HALF_UP))
+
+
 KLANT = dict(naam="Standaard huishouden", datum="7 oktober 2026", adviseur="Saldox")
 
-# (post, bedrag excl. btw, btw-tarief, status)
-PRIJZEN_BASIS = [
-    ("10 zonnepanelen à 450 Wp (10 × €65)", 650.00, 0.00, "Inkoopprijs"),
-    ("Montage zonnepanelen", 800.00, 0.00, "Stelpost"),
-    ("Dakbevestiging en bekabeling", 450.00, 0.00, "Stelpost"),
-    ("Batterijset Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer", 2889.00, 0.21, "Offerte"),
-    ("Installatie batterij en omvormer", 450.00, 0.21, "Stelpost"),
-    ("Groepenkast: groepen voor zonnepanelen en batterij, aardlek", 300.00, 0.21, "Stelpost"),
-    ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost"),
-]
+# Pakketten: per pakket de posten (post, excl. btw, btw-tarief, status, groep), de
+# modelwaarden (overschrijven AANNAMES in model_huis.py) en de productteksten.
+PAKKETTEN = {
+    "sofar": dict(
+        model=dict(panelen=10, batt_kwh=10.24, batt_bruikbaar=0.90, batt_kw=5.0, rendement=0.90),
+        prijzen=[
+            ("10 zonnepanelen à 450 Wp (10 × €65)", 650.00, 0.00, "Inkoopprijs", "zon"),
+            ("Montage zonnepanelen", 800.00, 0.00, "Stelpost", "zon"),
+            ("Dakbevestiging en bekabeling", 450.00, 0.00, "Stelpost", "zon"),
+            ("Batterijset Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer", bedrag(1, "MFQ-023-0106934"), 0.21, "Offerte", "batt"),
+            ("Installatie batterij en omvormer", 450.00, 0.21, "Stelpost", "batt"),
+            ("Groepenkast: groepen voor zonnepanelen en batterij, aardlek", 300.00, 0.21, "Stelpost", "batt"),
+            ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost", "batt"),
+        ],
+        batterij_kort="Sofar BTS 10 kWh ({bruikbaar} kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer",
+        btw_bullet="- **Batterij 21%:** levering en installatie van een thuisbatterij vallen expliciet onder 21%. De batterijset wordt als één prijs geleverd en staat daarom volledig op 21%. Vraag de leverancier het omvormerdeel apart te factureren: dat deel kan onder het nultarief vallen.",
+        aansluiting="- **Aanname:** de woning heeft een 3-fase aansluiting (3x25 A). Is die 1-fase, dan is een verzwaring nodig of een 1-fase omvormer.",
+        uitbreiding="- **Een tweede batterijmodule** levert bij dit verbruik weinig extra op. Een warmtepomp{ev} verandert dat.",
+        installatie=[
+            "- **Sofar ESI 10K-T1:** 3-fase hybride omvormer, 10 kW, tot 20 kWp zonnepanelen op 3 MPPT's, noodstroom (EPS) op alle drie de fasen, rendement tot 98,2%. Communicatie via RS485, CAN en wifi; het EMS van Saldox leest en stuurt hem uit.",
+            "- **Sofar BTS 5K (2×):** LFP-batterij, 5,12 kWh per module, samen 10,24 kWh, bruikbaar ca. 9,2 kWh (90%). Laden en ontladen tot 5 kW. Garantie 10 jaar: 70% capaciteit na 10 jaar of 11,3 MWh doorvoer per module.",
+            "- **Uitbreidbaar:** de omvormer kan tot 20 kWp panelen aan; er kunnen later panelen{laad} bij.",
+        ],
+        schouw_extra=", 3-fase aansluiting",
+        checklist_aansluiting="- [ ] 3-fase aansluiting (3x25 A) en ruimte in de meterkast",
+        begrip_omvormer="| Hybride omvormer | Omvormer die zonnepanelen én batterij aansluit en bij stroomuitval noodstroom kan leveren. |",
+        installatie_omvormer="omvormer en batterij",
+        batt_aanname="Batterij {bruikbaar} kWh bruikbaar, 5 kW, rendement 90% heen en terug",
+        jaarkosten=("Reservering vervanging omvormer", 75, "na de reservering voor vervanging van de omvormer"),
+        batt_oordeel="bij een verbruik van {verbruik} kWh is 10 kWh ruim bemeten",
+        label_zon="Zonnepanelen (panelen, montage, bevestiging)",
+        label_batt="Batterij (set met omvormer, installatie, groepenkast, EMS)",
+        batt_kosten_zin=" De reservering voor de omvormer staat bij de batterij.",
+    ),
+    "marstek": dict(
+        model=dict(panelen=8, wp=460, batt_kwh=5.12, batt_bruikbaar=0.90, batt_kw=2.5, rendement=0.85),
+        prijzen=[
+            ("8 zonnepanelen A Solar 460 Wp, glas-glas (8 × €69,46)", bedrag(8, "A Solar zonnepaneel 460 Wp"), 0.00, "Inkoopprijs", "zon"),
+            ("4 micro-omvormers APsystems DS3, 880 VA (4 × €110,74)", bedrag(4, "MFQ-023-0106911"), 0.00, "Inkoopprijs", "zon"),
+            ("8 Y3 AC-buskabels en 8 eindkappen (APsystems)", round(bedrag(8, "MFQ-023-0106912") + bedrag(8, "MFQ-023-0106913"), 2), 0.00, "Inkoopprijs", "zon"),
+            ("Monitoring APsystems ECU-B", 67.00, 0.00, "Stelpost", "zon"),
+            ("Transport", bedrag(1, "Transportkosten"), 0.00, "Inkoopprijs", "zon"),
+            ("Montage zonnepanelen en micro-omvormers", 700.00, 0.00, "Stelpost", "zon"),
+            ("Dakbevestiging en bekabeling", 400.00, 0.00, "Stelpost", "zon"),
+            ("Thuisbatterij Marstek Venus E 3.0, 5,12 kWh, incl. P1-meter", 990.91, 0.21, "Marktprijs", "batt"),
+            ("Eigen groep voor de batterij (2.500 W) en aansluiten", 250.00, 0.21, "Stelpost", "batt"),
+            ("EMS-koppeling Saldox (Modbus TCP)", 100.00, 0.21, "Stelpost", "batt"),
+        ],
+        batterij_kort="Marstek Venus E 3.0 ({bruikbaar} kWh bruikbaar, 2,5 kW); de panelen hebben APsystems-micro-omvormers",
+        btw_bullet="- **Batterij 21%:** levering en installatie van een thuisbatterij vallen onder 21%. Panelen, micro-omvormers, bekabeling en montage vallen onder het nultarief.",
+        aansluiting="- **Aansluiting:** de micro-omvormers en de Venus E zijn 1-fase; een gewone aansluiting volstaat. De Venus E krijgt een eigen groep, zodat hij met 2.500 W kan laden en ontladen. Op een gewoon stopcontact is het maximaal 800 W.",
+        uitbreiding="- **Een tweede Venus E** (tot 3 op één fase) levert bij dit verbruik weinig extra op. Een warmtepomp{ev} verandert dat.",
+        installatie=[
+            "- **A Solar 460 Wp (8×):** N-type, glas-glas, zwart; 1.762 × 1.134 mm per paneel, samen ca. 16 m² dak.",
+            "- **APsystems DS3 (4×):** micro-omvormer voor twee panelen, 880 VA, 2 MPPT's, rendement ca. 97%. Elk paneelpaar werkt apart, dus schaduw op één paneel kost weinig. Monitoring via de APsystems ECU-B.",
+            "- **Marstek Venus E 3.0:** LFP-batterij, 5,12 kWh, bruikbaar ca. 4,6 kWh, 2.500 W laden en ontladen op een eigen groep, rendement ca. 85% heen en terug, stand-by ca. 5 W. Meer dan 6.000 cycli, garantie 10 jaar. Het EMS van Saldox stuurt hem via Modbus TCP op de uurprijs.",
+            "- **Plaatsing:** op een eigen groep, nooit via een verlengsnoer of stekkerdoos; op een droge, geventileerde plek buiten de vluchtroute. De batterij schakelt zichzelf uit bij stroomuitval van het net.",
+            "- **Uitbreidbaar:** later kunnen er panelen met extra micro-omvormers{laad} bij, en tot 3 Venus E's op één fase.",
+        ],
+        schouw_extra=", ruimte in de groepenkast",
+        checklist_aansluiting="- [ ] Ruimte in de groepenkast voor een eigen groep voor de batterij",
+        begrip_omvormer="| Micro-omvormer | Kleine omvormer onder de panelen; de APsystems DS3 bedient twee panelen. |\n| AC-gekoppelde batterij | Batterij met een eigen omvormer die op het huisnet wordt aangesloten, los van de zonnepanelen. |",
+        installatie_omvormer="micro-omvormers en batterij",
+        batt_aanname="Batterij {bruikbaar} kWh bruikbaar, 2,5 kW, rendement 85% heen en terug, stand-by ca. 50 kWh per jaar",
+        jaarkosten=("Stand-by batterij en reservering", 40, "na het stand-byverbruik van de batterij en een kleine reservering"),
+        batt_oordeel="een batterij van 5 kWh past bij een verbruik van {verbruik} kWh, maar het rendement van 85% en het stand-byverbruik drukken de winst",
+        label_zon="Zonnepanelen (panelen, micro-omvormers, montage)",
+        label_batt="Batterij (Venus E, eigen groep, EMS)",
+        batt_kosten_zin=" Het stand-byverbruik en de reservering staan bij de batterij.",
+    ),
+}
+
 PRIJZEN_LAADPAAL = [
     ("Zaptec Go 2 laadpaal (22 kW, MID-meter)", 825.62, 0.21, "Opgegeven"),
     ("Installatie laadpaal incl. groep en bekabeling", 580.00, 0.21, "Stelpost"),
 ]
-RESERVERING = 75  # per jaar: vervanging omvormer na ca. 12 tot 15 jaar
 BATT_FACTOR = (0.7, 1.0, 1.3)  # spreiding batterijopbrengst: prijsverschillen 2025 (×1) tot 2026 (+33%)
 OPBRENGST = (861, 917, 1032)   # kWh/kWp: PVGIS oost-west, gemiddeld, zuid
 PUBLIEK = (0.45, 0.50, 0.55)   # prijs publiek laden incl. btw
@@ -39,10 +116,12 @@ ERE = (0.10, 0.115, 0.13)      # ERE netto per geladen kWh
 EV_KWH = 3000                  # thuis geladen per jaar (18.131 km × 20,4 kWh/100 km × 81% thuis)
 
 VARIANTEN = {
-    "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True,
+    "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar",
                            chip="Energieplan · huishouden · zon, batterij en laadpaal"),
-    "zonder-laadpaal": dict(titel="Energieplan huishouden: zon en batterij", laadpaal=False,
+    "zonder-laadpaal": dict(titel="Energieplan huishouden: zon en batterij", laadpaal=False, pakket="sofar",
                             chip="Energieplan · huishouden · zon en batterij"),
+    "marstek-8-panelen": dict(titel="Energieplan huishouden: 8 panelen en Marstek", laadpaal=False, pakket="marstek",
+                              chip="Energieplan · huishouden · 8 panelen en stekkerbatterij"),
 }
 
 
@@ -68,18 +147,21 @@ def pct(v):
 
 
 # ───────────────────────────────────────────── rekenen
-def reken(laadpaal):
-    posten = PRIJZEN_BASIS + (PRIJZEN_LAADPAAL if laadpaal else [])
-    regels = [(p, ex, b, st, round(ex * (1 + b), 2)) for p, ex, b, st in posten]
+def reken(v):
+    laadpaal = v["laadpaal"]
+    P = PAKKETTEN[v["pakket"]]
+    A = dict(m.AANNAMES, **P["model"])
+    posten = P["prijzen"] + ([p + ("laad",) for p in PRIJZEN_LAADPAAL] if laadpaal else [])
+    regels = [(p, ex, b, st, round(ex * (1 + b), 2), g) for p, ex, b, st, g in posten]
     inv_ex = round(sum(r[1] for r in regels), 2)
     inv = round(sum(r[4] for r in regels), 2)
-    inv_zon = round(sum(r[4] for r in regels[:3]), 2)
-    inv_batt = round(sum(r[4] for r in regels[3:7]), 2)
-    inv_laad = round(sum(r[4] for r in regels[7:]), 2)
+    inv_zon = round(sum(r[4] for r in regels if r[5] == "zon"), 2)
+    inv_batt = round(sum(r[4] for r in regels if r[5] == "batt"), 2)
+    inv_laad = round(sum(r[4] for r in regels if r[5] == "laad"), 2)
 
     sc = []
     for k in range(3):
-        a = dict(m.AANNAMES, opbrengst_kwh_per_kwp=OPBRENGST[k], ev_kwh=EV_KWH if laadpaal else 0,
+        a = dict(A, opbrengst_kwh_per_kwp=OPBRENGST[k], ev_kwh=EV_KWH if laadpaal else 0,
                  publiek_laden=PUBLIEK[k])
         r = m.besparingen(a)
         zon = round(r["zon"], -1)
@@ -88,23 +170,24 @@ def reken(laadpaal):
         ere = round(EV_KWH * ERE[k], -1) if laadpaal else 0
         bruto = zon + batt + laden + ere
         sc.append(dict(r=r, zon=zon, batt=batt, laden=laden, ere=ere, bruto=bruto,
-                       netto=bruto - RESERVERING, jaren=jr(inv, bruto - RESERVERING)))
+                       netto=bruto - P["jaarkosten"][1], jaren=jr(inv, bruto - P["jaarkosten"][1])))
     n = sc[1]["r"]
-    a = dict(m.AANNAMES, ev_kwh=EV_KWH if laadpaal else 0)
+    a = dict(A, ev_kwh=EV_KWH if laadpaal else 0)
     vast = m.besparingen(a, "vast")
     p27 = m.besparingen(dict(a, spot_factor=1.15))
     extra = {}
     if laadpaal:
         dom = m.simuleer(a, ev_slim=False)
         extra["ev_prijs_dom"] = (dom["netto"] - n["met_beide"]["netto"]) / EV_KWH
-    return dict(regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
+    return dict(A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
                 sc=sc, n=n, vast=vast, p27=p27, **extra)
 
 
 # ───────────────────────────────────────────── tekst
 def markdown_tekst(v, R):
     lp = v["laadpaal"]
-    A = m.AANNAMES
+    A, P = R["A"], R["P"]
+    RESERVERING = P["jaarkosten"][1]
     sc, n = R["sc"], R["n"]
     N = sc[1]
     kwp = A["panelen"] * A["wp"] / 1000
@@ -124,10 +207,10 @@ def markdown_tekst(v, R):
     # 1 Samenvatting
     t.append(f"""## Samenvatting
 
-Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse reservering netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
+Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
 
 - **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. Zonder batterij gebruikt u {pct(zv_pv)} zelf, met batterij {pct(zv_b)}.
-- **Thuisbatterij:** Sofar BTS 10 kWh ({nl(batt_bruikbaar, 1)} kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
+- **Thuisbatterij:** {P['batterij_kort'].format(bruikbaar=nl(batt_bruikbaar, 1))}. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij{' en laadpaal' if lp else ''} op de uurprijs.
 """ + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} publiek, plus ERE-vergoeding.
 """ if lp else "") + f"""- **Zonnepanelen** verdienen zich het snelst terug (ca. {j_zon} jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
@@ -135,7 +218,7 @@ Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse reserverin
 """)
 
     # 2 Begroting
-    rows = "\n".join(f"| {p} | {eur2(ex)} | {int(b * 100)}% | {eur2(inc)} | {st} |" for p, ex, b, st, inc in R["regels"])
+    rows = "\n".join(f"| {p} | {eur2(ex)} | {int(b * 100)}% | {eur2(inc)} | {st} |" for p, ex, b, st, inc, _ in R["regels"])
     t.append(f"""## Begroting
 
 Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
@@ -148,16 +231,16 @@ Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op 
 <!-- FIG:begroting -->
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
-- **Batterij 21%:** levering en installatie van een thuisbatterij vallen expliciet onder 21%. De batterijset wordt als één prijs geleverd en staat daarom volledig op 21%. Vraag de leverancier het omvormerdeel apart te factureren: dat deel kan onder het nultarief vallen.
+{P['btw_bullet']}
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
-- **Aanname:** de woning heeft een 3-fase aansluiting (3x25 A). Is die 1-fase, dan is een verzwaring nodig of een 1-fase omvormer.
+{P['aansluiting']}
 """)
 
     # 3 Opbrengst per jaar
     wv = [("Zon", N["zon"]), ("Batterij", N["batt"])] + ([("Thuis laden", N["laden"]), ("ERE", N["ere"])] if lp else [])
     t.append(f"""## Wat het per jaar oplevert
 
-Normaal levert het pakket {eur(N['bruto'])} per jaar op; na de reservering voor vervanging van de omvormer blijft {eur(N['netto'])} over.
+Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} blijft {eur(N['netto'])} over.
 
 | Per jaar | Pessimistisch | Normaal | Optimistisch |
 | --- | --- | --- | --- |
@@ -166,7 +249,7 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; na de reservering voor 
 """ + (f"""| Thuis laden in plaats van publiek | {eur(sc[0]['laden'])} | {eur(sc[1]['laden'])} | {eur(sc[2]['laden'])} |
 | ERE-vergoeding laadpaal | {eur(sc[0]['ere'])} | {eur(sc[1]['ere'])} | {eur(sc[2]['ere'])} |
 """ if lp else "") + f"""| **Bruto per jaar** | **{eur(sc[0]['bruto'])}** | **{eur(sc[1]['bruto'])}** | **{eur(sc[2]['bruto'])}** |
-| Reservering vervanging omvormer | −{eur(RESERVERING)} | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
+| {P['jaarkosten'][0]} | −{eur(RESERVERING)} | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
 | **Netto per jaar** | **{eur(sc[0]['netto'])}** | **{eur(sc[1]['netto'])}** | **{eur(sc[2]['netto'])}** |
 
 <!-- FIG:waterval -->
@@ -187,15 +270,15 @@ Het pakket van {eur2(R['inv'])} is normaal in ca. {N['jaren']} jaar terugverdien
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
-| Zonnepanelen (panelen, montage, bevestiging) | {eur2(R['inv_zon'])} | {eur(zon_n)} | {j_zon} jaar |
-| Batterij (set, installatie, groepenkast, EMS) | {eur2(R['inv_batt'])} | {eur(batt_n - RESERVERING)} | {j_batt} jaar |
+| {P['label_zon']} | {eur2(R['inv_zon'])} | {eur(zon_n)} | {j_zon} jaar |
+| {P['label_batt']} | {eur2(R['inv_batt'])} | {eur(batt_n - RESERVERING)} | {j_batt} jaar |
 """ + (f"""| Laadpaal (Zaptec Go 2 en installatie) | {eur2(R['inv_laad'])} | {eur(N['laden'] + N['ere'])} | {jr(R['inv_laad'], N['laden'] + N['ere'])} jaar |
 """ if lp else "") + f"""| **Totaal** | **{eur2(R['inv'])}** | **{eur(N['netto'])}** | **{N['jaren']} jaar** |
 
 <!-- FIG:payback -->
 
 - **Zonnepanelen** verdienen zich snel terug, ook zonder saldering: het grootste deel van de waarde zit in de stroom die u zelf gebruikt.
-- **De batterij** verdient minder dan de panelen: bij een verbruik van {nl(A['verbruik_kwh'])} kWh is 10 kWh ruim bemeten. Hij verdient sneller bij een groter verbruik (warmtepomp{', elektrische auto' if not lp else ''}) en bij grotere prijsverschillen. De reservering voor de omvormer staat bij de batterij.
+- **De batterij** verdient minder dan de panelen: {P['batt_oordeel'].format(verbruik=nl(A['verbruik_kwh']))}. Hij verdient sneller bij een groter verbruik (warmtepomp{', elektrische auto' if not lp else ''}) en bij grotere prijsverschillen.{P['batt_kosten_zin']}
 """ + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is dan publiek laden. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
 """ if lp else ""))
 
@@ -213,7 +296,7 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 - **Teruglevering is weinig waard:** zonder saldering krijgt u bij een dynamisch contract de uurprijs, en die is laag als de zon schijnt (in 2025 gemiddeld ca. €0,05 per kWh tijdens zonne-uren).
 - **De batterij laadt ook van het net:** op goedkope uren 's nachts of midden op de dag, en levert op dure uren in de ochtend en avond. Daardoor stijgt de inkoop van het net soms, terwijl de kosten dalen.
-- **Een tweede batterijmodule** levert bij dit verbruik weinig extra op. Een warmtepomp{' of elektrische auto' if not lp else ''} verandert dat.
+{P['uitbreiding'].format(ev=' of elektrische auto' if not lp else '')}
 """)
 
     # 6 Laadpaal (alleen variant A)
@@ -259,9 +342,7 @@ Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij
 
 De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie.
 
-- **Sofar ESI 10K-T1:** 3-fase hybride omvormer, 10 kW, tot 20 kWp zonnepanelen op 3 MPPT's, noodstroom (EPS) op alle drie de fasen, rendement tot 98,2%. Communicatie via RS485, CAN en wifi; het EMS van Saldox leest en stuurt hem uit.
-- **Sofar BTS 5K (2×):** LFP-batterij, 5,12 kWh per module, samen 10,24 kWh, bruikbaar ca. 9,2 kWh (90%). Laden en ontladen tot 5 kW. Garantie 10 jaar: 70% capaciteit na 10 jaar of 11,3 MWh doorvoer per module.
-- **Uitbreidbaar:** de omvormer kan tot 20 kWp panelen aan; er kunnen later panelen{' of een laadpaal' if not lp else ''} bij.
+{chr(10).join(P['installatie']).format(laad=' of een laadpaal' if not lp else '')}
 - **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.
 - **Aanmelden:** meld de zonnepanelen en de batterij bij de netbeheerder via energieleveren.nl.
 """)
@@ -273,9 +354,9 @@ Van akkoord tot werkend systeem duurt het ca. 4 tot 6 weken.
 
 | Week | Wat |
 | --- | --- |
-| 1 | Schouw: dak, meterkast, plek batterij{' en laadpaal' if lp else ''}, 3-fase aansluiting |
+| 1 | Schouw: dak, meterkast, plek batterij{' en laadpaal' if lp else ''}{P['schouw_extra']} |
 | 2 tot 3 | Bestellen en leveren; dynamisch contract regelen |
-| 4 | Installatie panelen, omvormer en batterij{', laadpaal' if lp else ''} (1 tot 2 dagen) |
+| 4 | Installatie panelen, {P['installatie_omvormer']}{', laadpaal' if lp else ''} (1 tot 2 dagen) |
 | 4 tot 5 | Aanmelden energieleveren.nl, EMS koppelen{', ERE-inboekdienst kiezen' if lp else ''}, oplevering en uitleg |
 """)
 
@@ -287,8 +368,8 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 **Te bevestigen bij de klant**
 
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter){'; aantal kilometers en huidige laadkosten van de auto' if lp else ''}
-- [ ] Dak: oriëntatie, hellingshoek, schaduw en ruimte voor 10 panelen (ca. 20 m²)
-- [ ] 3-fase aansluiting (3x25 A) en ruimte in de meterkast
+- [ ] Dak: oriëntatie, hellingshoek, schaduw en ruimte voor {A['panelen']} panelen (ca. {A['panelen'] * 2} m²)
+{P['checklist_aansluiting']}
 - [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
 - [ ] Stroomcontract: dynamisch voor afname en teruglevering
 - [ ] Offerte installateur voor de stelposten
@@ -297,8 +378,8 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 
 - Verbruik {nl(A['verbruik_kwh'])} kWh per jaar; opbrengst {OPBRENGST[1]} kWh per kWp
 - Uurprijzen en zonneprofiel van 2025; opslag dynamisch contract ca. €0,02 per kWh incl. btw; energiebelasting 2026
-- Batterij {nl(batt_bruikbaar, 1)} kWh bruikbaar, 5 kW, rendement 90% heen en terug
-- Reservering vervanging omvormer €{RESERVERING} per jaar""" + (f"""
+- {P['batt_aanname'].format(bruikbaar=nl(batt_bruikbaar, 1))}
+- {P['jaarkosten'][0]} €{RESERVERING} per jaar""" + (f"""
 - Elektrische auto {nl(EV_KWH)} kWh per jaar thuis; publiek laden {eur(PUBLIEK[1], 2)} per kWh; ERE {eur(ERE[1], 3)} per kWh netto""" if lp else "") + "\n")
 
     # 11 Begrippen
@@ -311,7 +392,7 @@ De technische termen in dit advies, in gewone taal.
 | Dynamisch contract | Stroomcontract met een prijs die elk uur verandert, voor afname en teruglevering. |
 | EMS | Energiemanagementsysteem: de software van Saldox die batterij""" + (", laadpaal" if lp else "") + """ en omvormer op de uurprijs stuurt. |
 | ERE | Emissiereductie-eenheid: vergoeding voor stroom die in een elektrische auto wordt geladen, via een inboekdienstverlener. |
-| Hybride omvormer | Omvormer die zonnepanelen én batterij aansluit en bij stroomuitval noodstroom kan leveren. |
+""" + P["begrip_omvormer"] + """
 | kWh en kWp | kWh is een hoeveelheid energie; kWp is het piekvermogen van zonnepanelen. |
 | LFP | Lithium-ijzerfosfaat: veilige, lang meegaande batterijchemie. |
 | MID-meter | Geijkte kWh-meter; nodig voor de ERE-vergoeding. |
@@ -341,6 +422,7 @@ HEADLINES = {
 def figuren(v, R):
     sc, N = R["sc"], R["sc"][1]
     lp = v["laadpaal"]
+    RESERVERING = R["P"]["jaarkosten"][1]
     scen = [("Pessimistisch", sc[0]["netto"], sc[0]["jaren"], False), ("Normaal", N["netto"], N["jaren"], True),
             ("Optimistisch", sc[2]["netto"], sc[2]["jaren"], False)]
     f = {}
@@ -352,7 +434,7 @@ def figuren(v, R):
     wf = [("Zon", N["zon"], "plus"), ("Batterij", N["batt"], "plus")]
     if lp:
         wf += [("Thuis laden", N["laden"], "plus"), ("ERE", N["ere"], "plus")]
-    wf += [("Bruto", N["bruto"], "totaal"), ("Reservering omvormer", -RESERVERING, "min"), ("Netto per jaar", N["netto"], "totaal")]
+    wf += [("Bruto", N["bruto"], "totaal"), (R["P"]["jaarkosten"][0], -RESERVERING, "min"), ("Netto per jaar", N["netto"], "totaal")]
     f["waterval"] = charts.waterval(wf, sub="Normaal scenario, uit de tabel hierboven")
     pb = []
     zon = [s["zon"] for s in sc]
@@ -366,14 +448,14 @@ def figuren(v, R):
     f["payback"] = charts.payback(pb, R["inv"] / N["netto"], refs=[(R["inv"] / N["netto"], f"totaal pakket {N['jaren']} jaar", "ref-sun", 20)],
                                   lw=160, cap=25, fid="payback-chart", eyebrow="Terugverdientijd per onderdeel",
                                   title="Per onderdeel: optimistisch tot pessimistisch",
-                                  sub="Netto, na reservering · incl. btw")
+                                  sub="Netto, na jaarlijkse kosten · incl. btw")
     return f
 
 
 def main():
     uit = {}
     for key, v in VARIANTEN.items():
-        R = reken(v["laadpaal"])
+        R = reken(v)
         src = markdown_tekst(v, R)
         (HERE / f"energieplan-huishouden-{key}.md").write_text(src, encoding="utf-8")
         N = R["sc"][1]

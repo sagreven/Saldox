@@ -4,7 +4,7 @@
 
 ## Samenvatting
 
-Het pakket kost €6.484,69 incl. btw en levert na de jaarlijkse reservering netto €495 tot €745 per jaar op; normaal is het in ca. 10,7 jaar terugverdiend (8,7 tot 13,1 jaar).
+Het pakket kost €6.484,69 incl. btw en levert na de jaarlijkse kosten netto €495 tot €745 per jaar op; normaal is het in ca. 10,7 jaar terugverdiend (8,7 tot 13,1 jaar).
 
 - **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 38%.
 - **Thuisbatterij:** Sofar BTS 10 kWh (9,2 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
@@ -63,7 +63,7 @@ Het pakket van €6.484,69 is normaal in ca. 10,7 jaar terugverdiend; pessimisti
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
 | Zonnepanelen (panelen, montage, bevestiging) | €1.900,00 | €380 | 5,0 jaar |
-| Batterij (set, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
+| Batterij (set met omvormer, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
 | **Totaal** | **€6.484,69** | **€605** | **10,7 jaar** |
 
 <!-- FIG:payback -->

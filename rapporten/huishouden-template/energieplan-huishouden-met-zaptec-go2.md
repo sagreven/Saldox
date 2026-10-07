@@ -4,7 +4,7 @@
 
 ## Samenvatting
 
-Het pakket kost €8.185,49 incl. btw en levert na de jaarlijkse reservering netto €1.605 tot €2.255 per jaar op; normaal is het in ca. 4,3 jaar terugverdiend (3,6 tot 5,1 jaar).
+Het pakket kost €8.185,49 incl. btw en levert na de jaarlijkse kosten netto €1.605 tot €2.255 per jaar op; normaal is het in ca. 4,3 jaar terugverdiend (3,6 tot 5,1 jaar).
 
 - **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 38%.
 - **Thuisbatterij:** Sofar BTS 10 kWh (9,2 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
@@ -69,7 +69,7 @@ Het pakket van €8.185,49 is normaal in ca. 4,3 jaar terugverdiend; pessimistis
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
 | Zonnepanelen (panelen, montage, bevestiging) | €1.900,00 | €380 | 5,0 jaar |
-| Batterij (set, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
+| Batterij (set met omvormer, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
 | Laadpaal (Zaptec Go 2 en installatie) | €1.700,80 | €1.300 | 1,3 jaar |
 | **Totaal** | **€8.185,49** | **€1.905** | **4,3 jaar** |
 

@@ -1,13 +1,14 @@
 # Energieplan huishouden: template
 
-Universeel energieadvies voor een standaard huishouden in Saldox-huisstijl, in twee varianten:
+Universeel energieadvies voor een standaard huishouden in Saldox-huisstijl:
 
-| Variant | Bestand |
-|---|---|
-| Zon, batterij en Zaptec Go 2 (eigen gebruik) | `rapport-huishouden-met-zaptec-go2.pdf` / `.html` |
-| Zon en batterij, zonder laadpaal | `rapport-huishouden-zonder-laadpaal.pdf` / `.html` |
+| Variant | Pakket | Bestand |
+|---|---|---|
+| Met Zaptec Go 2 (eigen gebruik) | 10 panelen 450 Wp + Sofar BTS 10 kWh met ESI 10 kW hybride omvormer | `rapport-huishouden-met-zaptec-go2.pdf` |
+| Zonder laadpaal | idem | `rapport-huishouden-zonder-laadpaal.pdf` |
+| 8 panelen en Marstek | 8 panelen A Solar 460 Wp + 4 APsystems DS3 + Marstek Venus E 3.0 (5,12 kWh) | `rapport-huishouden-marstek-8-panelen.pdf` |
 
-Pakket: 10 zonnepanelen à 450 Wp, Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer, EMS van Saldox, dynamisch contract.
+Alle varianten: EMS van Saldox, dynamisch contract. Inkoopprijzen komen uit `../prijzen/inkoopprijzen.json`.
 
 ## Hoe het werkt
 
@@ -17,7 +18,7 @@ Pakket: 10 zonnepanelen à 450 Wp, Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 
 
 ## Aanpassen voor een klant
 
-1. Prijzen en posten: `PRIJZEN_BASIS` en `PRIJZEN_LAADPAAL` in `build_huis.py`.
+1. Prijzen: nieuwe inkoopprijzen in `../prijzen/inkoopprijzen.json` (en `.md`); posten per pakket in `PAKKETTEN`, laadpaal in `PRIJZEN_LAADPAAL` (`build_huis.py`). Een nieuw pakket of nieuwe variant: voeg een item toe aan `PAKKETTEN` en `VARIANTEN`.
 2. Verbruik, opbrengst, batterij, tarieven: `AANNAMES` in `model_huis.py`.
 3. EV-gebruik en scenario's: `EV_KWH`, `PUBLIEK`, `ERE`, `OPBRENGST`, `BATT_FACTOR` in `build_huis.py`.
 4. Klantnaam en datum: `KLANT` in `build_huis.py`.

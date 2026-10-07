@@ -1,0 +1,107 @@
+{
+ "toelichting": "Inkoopprijzen van Saldox, zoals opgegeven. Prijzen excl. btw; korting in %. Naar de consument: 0% btw op zonnepanelen, omvormers en montage (nultarief bij woningen), 21% op batterijen en laadpalen.",
+ "offertes": [
+  {
+   "datum": "2026-10-07",
+   "omschrijving": "Zonnepanelen en micro-omvormers",
+   "regels": [
+    {
+     "ref": "",
+     "artikel": "A Solar zonnepaneel 460 Wp, N-type, 108 HC, zwart-zwart, glas-glas, 1,2 m, MC4-EVO2, 1762×1134×30 mm",
+     "aantal": 20,
+     "eenheid": "stuk",
+     "prijs": 69.46,
+     "korting": 0.0,
+     "netto_per_stuk": 69.46,
+     "totaal_excl_btw": 1389.2
+    },
+    {
+     "ref": "MFQ-023-0106911",
+     "artikel": "APsystems micro-omvormer DS3, dual, 880 VA, 1-fase, 3,8 A, 2 MPPT, 2 in, MC4",
+     "aantal": 5,
+     "eenheid": "stuk",
+     "prijs": 125.84,
+     "korting": 12.0,
+     "netto_per_stuk": 110.7392,
+     "totaal_excl_btw": 553.7
+    },
+    {
+     "ref": "MFQ-023-0106912",
+     "artikel": "APsystems Y3 AC-buskabel, 1-fase, 2,5 mm², 4 m, 1 Y-connector voor QS2/DS3",
+     "aantal": 10,
+     "eenheid": "stuk",
+     "prijs": 18.55,
+     "korting": 15.0,
+     "netto_per_stuk": 15.7675,
+     "totaal_excl_btw": 157.68
+    },
+    {
+     "ref": "MFQ-023-0106913",
+     "artikel": "APsystems Y3 AC-buskabel, 1-fase, eind-afsluitkap",
+     "aantal": 10,
+     "eenheid": "stuk",
+     "prijs": 8.61,
+     "korting": 12.5,
+     "netto_per_stuk": 7.5338,
+     "totaal_excl_btw": 75.34
+    },
+    {
+     "ref": "",
+     "artikel": "Transportkosten",
+     "aantal": 1,
+     "eenheid": "uur",
+     "prijs": 84.0,
+     "korting": 0.0,
+     "netto_per_stuk": 84.0,
+     "totaal_excl_btw": 84.0
+    }
+   ],
+   "totaal_excl_btw": 2259.92,
+   "btw": 474.58,
+   "totaal_incl_btw": 2734.5
+  },
+  {
+   "datum": "2026-10-07",
+   "omschrijving": "Batterijset Sofar",
+   "regels": [
+    {
+     "ref": "MFQ-023-0106934",
+     "artikel": "Sofar BTS 10 kWh (2× BTS 5K) batterijset met 3-fase ESI 10 kW hybride omvormer",
+     "aantal": 1,
+     "eenheid": "stuk",
+     "prijs": 3210.0,
+     "korting": 10.0,
+     "netto_per_stuk": 2889.0,
+     "totaal_excl_btw": 2889.0
+    }
+   ],
+   "totaal_excl_btw": 2889.0
+  }
+ ],
+ "eerder_opgegeven": [
+  {
+   "artikel": "Zonnepaneel 450 Wp (relatieprijs, Run 4258)",
+   "prijs": 65.0
+  },
+  {
+   "artikel": "Omvormer Sofar 15 kW (Run 4258)",
+   "prijs": 3700.0
+  },
+  {
+   "artikel": "Batterij 50 kWh (relatieprijs, Run 4258)",
+   "prijs": 2500.0
+  },
+  {
+   "artikel": "Zaptec Pro laadpaal (Run 4258)",
+   "prijs": 1000.0
+  },
+  {
+   "artikel": "Montage 40 panelen (Run 4258)",
+   "prijs": 1500.0
+  },
+  {
+   "artikel": "Toshiba airco-set RAV-HM401MUTP-E + RAV-GM402ATP-E, apparatuur per set (offerte Run 4258)",
+   "prijs": 2569.6
+  }
+ ]
+}
