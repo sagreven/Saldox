@@ -35,7 +35,7 @@ KLANT = dict(naam="Standaard huishouden", datum="7 oktober 2026", adviseur="Sald
 
 PLATDAK_MONTAGE = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if "plat dak" in t["artikel"])
 TRANSPORT = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Transport"))
-PANEEL_450 = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Zonnepaneel 450 Wp (huishouden"))
+PANEEL_450 = next(t["prijs"] for t in _PRIJSLIJST["losse_prijzen"] if t["artikel"].startswith("Zonnepaneel 450 Wp (huishouden"))
 
 # Pakketten: per pakket de posten (post, excl. btw, btw-tarief, status, groep), de
 # modelwaarden (overschrijven AANNAMES in model_huis.py) en de productteksten.

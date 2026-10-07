@@ -23,6 +23,12 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | --- | --- | --- | --- | --- | --- |
 | MFQ-023-0106934 | Sofar BTS 10 kWh (2× BTS 5K) batterijset met 3-fase ESI 10 kW hybride omvormer | 1 stuk | €3.210,00 | 10% | €2.889,00 |
 
+## Losse prijzen
+
+| Datum | Artikel | Prijs excl. btw | Btw consument |
+| --- | --- | --- | --- |
+| 7 oktober 2026 | Zonnepaneel 450 Wp (huishouden-templates, Sofar-pakket), per stuk | €70,00 | 0% |
+
 ## Eerder opgegeven (energieplan Run 4258)
 
 | Artikel | Prijs excl. btw |
@@ -40,7 +46,6 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | --- | --- |
 | Montage zonnepanelen op plat dak (vast bedrag, optie) | €250,00 |
 | Transport naar de klant (vast bedrag) | €30,00 |
-| Zonnepaneel 450 Wp (huishouden, Sofar-pakket) | €70,00 |
 
 ## Afgeleid per eenheid
 

@@ -78,6 +78,15 @@
    "totaal_excl_btw": 2889.0
   }
  ],
+ "losse_prijzen": [
+  {
+   "artikel": "Zonnepaneel 450 Wp (huishouden-templates, Sofar-pakket)",
+   "prijs": 70.0,
+   "eenheid": "stuk",
+   "datum": "2026-10-07",
+   "btw_consument": 0.0
+  }
+ ],
  "eerder_opgegeven": [
   {
    "artikel": "Zonnepaneel 450 Wp (relatieprijs, Run 4258)",
@@ -114,12 +123,6 @@
   {
    "artikel": "Transport naar de klant (vast bedrag)",
    "prijs": 30.0,
-   "datum": "2026-10-07",
-   "btw_consument": 0.0
-  },
-  {
-   "artikel": "Zonnepaneel 450 Wp (huishouden, Sofar-pakket)",
-   "prijs": 70.0,
    "datum": "2026-10-07",
    "btw_consument": 0.0
   }
