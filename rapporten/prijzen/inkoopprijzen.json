@@ -93,6 +93,13 @@
    "eenheid": "stuk",
    "datum": "2026-10-07",
    "btw_consument": 0.21
+  },
+  {
+   "artikel": "Sofar BTS 5K batterijmodule 5,12 kWh (uitbreiding)",
+   "prijs": 600.0,
+   "eenheid": "stuk",
+   "datum": "2026-10-07",
+   "btw_consument": 0.21
   }
  ],
  "eerder_opgegeven": [

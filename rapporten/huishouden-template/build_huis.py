@@ -135,8 +135,28 @@ AUTO = {
                  basis_toelichting="- **Vergelijking met benzine:** 6 liter per 100 km à €2,00 tegenover 20 kWh per 100 km elektrisch; dat is ca. €0,60 per kWh. Laadt u nu al thuis aan het stopcontact, dan is de winst kleiner."),
 }
 
+# Sofar met 4× BTS 5K (20,48 kWh): de set plus 2 extra modules op dezelfde BDU (max. 4 per BDU)
+BTS5K = next(t["prijs"] for t in _PRIJSLIJST["losse_prijzen"] if t["artikel"].startswith("Sofar BTS 5K"))
+_s = PAKKETTEN["sofar"]
+PAKKETTEN["sofar20"] = dict(
+    _s,
+    model=dict(_s["model"], batt_kwh=20.48, batt_kw=10.0),
+    prijzen=_s["prijzen"][:4] + [
+        (f"2 extra batterijmodules Sofar BTS 5K (2 × €{BTS5K:.0f}), samen 20,48 kWh", round(2 * BTS5K, 2), 0.21, "Inkoopprijs", "batt"),
+    ] + _s["prijzen"][4:],
+    batterij_kort="Sofar BTS 20 kWh (4× BTS 5K, {bruikbaar} kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer",
+    uitbreiding="- **Batterij op maximum:** met 4 modules is één BDU vol. Meer opslag vraagt een tweede batterijtoren.",
+    installatie=[
+        _s["installatie"][0],
+        "- **Sofar BTS 5K (4×):** LFP-batterij, 5,12 kWh per module, samen 20,48 kWh, bruikbaar ca. 18,4 kWh (90%). Laden en ontladen tot 10 kW, het maximum van de omvormer. Garantie 10 jaar: 70% capaciteit na 10 jaar of 11,3 MWh doorvoer per module.",
+        _s["installatie"][2],
+    ],
+    batt_aanname="Batterij {bruikbaar} kWh bruikbaar, 10 kW, rendement 90% heen en terug",
+    batt_oordeel="20 kWh is ruim voor een verbruik van {verbruik} kWh; de twee extra modules leveren vooral extra op bij het laden van de auto",
+)
+
 VARIANTEN = {
-    "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar",
+    "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar20",
                            chip="Energieplan · huishouden · zon, batterij en laadpaal"),
     "zonder-laadpaal": dict(titel="Energieplan huishouden: zon en batterij", laadpaal=False, pakket="sofar",
                             chip="Energieplan · huishouden · zon en batterij"),

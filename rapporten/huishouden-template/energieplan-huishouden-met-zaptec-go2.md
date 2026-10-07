@@ -4,18 +4,18 @@
 
 ## Samenvatting
 
-Het pakket kost €8.062,11 incl. btw en levert na de jaarlijkse kosten netto €1.605 tot €2.255 per jaar op; normaal is het in ca. 4,2 jaar terugverdiend (3,6 tot 5,0 jaar).
+Het pakket kost €9.514,11 incl. btw en levert na de jaarlijkse kosten netto €1.705 tot €2.445 per jaar op; normaal is het in ca. 4,6 jaar terugverdiend (3,9 tot 5,6 jaar).
 
-- **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 38%.
-- **Thuisbatterij:** Sofar BTS 10 kWh (9,2 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
+- **Zonnestroom:** 10 panelen van 450 Wp (4,5 kWp), ca. 4.130 kWh per jaar. Zonder batterij gebruikt u 26% zelf, met batterij 28%.
+- **Thuisbatterij:** Sofar BTS 20 kWh (4× BTS 5K, 18,4 kWh bruikbaar) met een 3-fase ESI 10 kW hybride omvormer. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij en laadpaal op de uurprijs.
-- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. €0,18 per kWh tegen ca. €0,50 publiek, plus ERE-vergoeding.
+- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. €0,17 per kWh tegen ca. €0,50 publiek, plus ERE-vergoeding.
 - **Zonnepanelen** verdienen zich het snelst terug (ca. 5,1 jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij en de laadpaal.
 
 ## Begroting
 
-Het pakket kost €7.001,33 excl. btw en €8.062,11 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
+Het pakket kost €8.201,33 excl. btw en €9.514,11 incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
@@ -23,34 +23,35 @@ Het pakket kost €7.001,33 excl. btw en €8.062,11 incl. btw. Op zonnepanelen 
 | Montage zonnepanelen | €800,00 | 0% | €800,00 | Stelpost |
 | Dakbevestiging en bekabeling | €450,00 | 0% | €450,00 | Stelpost |
 | Batterijset Sofar BTS 10 kWh (2× BTS 5K) met 3-fase ESI 10 kW hybride omvormer | €2.889,00 | 21% | €3.495,69 | Offerte |
+| 2 extra batterijmodules Sofar BTS 5K (2 × €600), samen 20,48 kWh | €1.200,00 | 21% | €1.452,00 | Inkoopprijs |
 | Installatie batterij en omvormer | €450,00 | 21% | €544,50 | Stelpost |
 | Groepenkast: groepen voor zonnepanelen en batterij, aardlek | €300,00 | 21% | €363,00 | Stelpost |
 | EMS-koppeling Saldox (P1-meter en gateway) | €150,00 | 21% | €181,50 | Stelpost |
 | Zaptec Go 2 laadpaal (22 kW, MID-meter) | €682,33 | 21% | €825,62 | Opgegeven |
 | Installatie laadpaal incl. groep en bekabeling | €580,00 | 21% | €701,80 | Stelpost |
-| **Totaal** | **€7.001,33** | | **€8.062,11** | |
+| **Totaal** | **€8.201,33** | | **€9.514,11** | |
 
 <!-- FIG:begroting -->
 
 - **Nultarief:** de Belastingdienst rekent 0% btw op levering en installatie van zonnepanelen op of bij een woning, inclusief omvormer, bekabeling, montagemateriaal en aanpassingen in de meterkast voor de panelen.
 - **Batterij 21%:** levering en installatie van een thuisbatterij vallen expliciet onder 21%. De batterijset wordt als één prijs geleverd en staat daarom volledig op 21%. Vraag de leverancier het omvormerdeel apart te factureren: dat deel kan onder het nultarief vallen.
-- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €800,00. Het pakket kost dan €7.512,11 incl. btw en is normaal in ca. 3,9 jaar terugverdiend.
+- **Optie plat dak:** de montage kost bij een plat dak vast €250,00 (0% btw) in plaats van €800,00. Het pakket kost dan €8.964,11 incl. btw en is normaal in ca. 4,4 jaar terugverdiend.
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 - **Aanname:** de woning heeft een 3-fase aansluiting (3x25 A). Is die 1-fase, dan is een verzwaring nodig of een 1-fase omvormer.
 
 ## Wat het per jaar oplevert
 
-Normaal levert het pakket €1.980 per jaar op; na de reservering voor vervanging van de omvormer blijft €1.905 over.
+Normaal levert het pakket €2.130 per jaar op; na de reservering voor vervanging van de omvormer blijft €2.055 over.
 
 | Per jaar | Pessimistisch | Normaal | Optimistisch |
 | --- | --- | --- | --- |
 | Zon (minder stroom inkopen, teruglevering) | €360 | €380 | €410 |
-| Batterij (slim laden en ontladen) | €210 | €300 | €410 |
-| Thuis laden in plaats van publiek | €810 | €960 | €1.120 |
+| Batterij (slim laden en ontladen) | €280 | €410 | €570 |
+| Thuis laden in plaats van publiek | €840 | €1.000 | €1.150 |
 | ERE-vergoeding laadpaal | €300 | €340 | €390 |
-| **Bruto per jaar** | **€1.680** | **€1.980** | **€2.330** |
+| **Bruto per jaar** | **€1.780** | **€2.130** | **€2.520** |
 | Reservering vervanging omvormer | −€75 | −€75 | −€75 |
-| **Netto per jaar** | **€1.605** | **€1.905** | **€2.255** |
+| **Netto per jaar** | **€1.705** | **€2.055** | **€2.445** |
 
 <!-- FIG:waterval -->
 
@@ -63,47 +64,47 @@ Normaal levert het pakket €1.980 per jaar op; na de reservering voor vervangin
 
 ## Terugverdientijd
 
-Het pakket van €8.062,11 is normaal in ca. 4,2 jaar terugverdiend; pessimistisch in 5,0 jaar en optimistisch in 3,6 jaar.
+Het pakket van €9.514,11 is normaal in ca. 4,6 jaar terugverdiend; pessimistisch in 5,6 jaar en optimistisch in 3,9 jaar.
 
 <!-- FIG:kasstroom -->
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
 | Zonnepanelen (panelen, montage, bevestiging) | €1.950,00 | €380 | 5,1 jaar |
-| Batterij (set met omvormer, installatie, groepenkast, EMS) | €4.584,69 | €225 | 20,4 jaar |
-| Laadpaal (Zaptec Go 2 en installatie) | €1.527,42 | €1.300 | 1,2 jaar |
-| **Totaal** | **€8.062,11** | **€1.905** | **4,2 jaar** |
+| Batterij (set met omvormer, installatie, groepenkast, EMS) | €6.036,69 | €335 | 18,0 jaar |
+| Laadpaal (Zaptec Go 2 en installatie) | €1.527,42 | €1.340 | 1,1 jaar |
+| **Totaal** | **€9.514,11** | **€2.055** | **4,6 jaar** |
 
 <!-- FIG:payback -->
 
 - **Zonnepanelen** verdienen zich snel terug, ook zonder saldering: het grootste deel van de waarde zit in de stroom die u zelf gebruikt.
-- **De batterij** verdient minder dan de panelen: bij een verbruik van 2.500 kWh is 10 kWh ruim bemeten. Hij verdient sneller bij een groter verbruik (warmtepomp) en bij grotere prijsverschillen. De reservering voor de omvormer staat bij de batterij.
-- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is dan publiek laden. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. €136 per jaar, plus de ERE-vergoeding.
+- **De batterij** verdient minder dan de panelen: 20 kWh is ruim voor een verbruik van 2.500 kWh; de twee extra modules leveren vooral extra op bij het laden van de auto. Hij verdient sneller bij een groter verbruik (warmtepomp) en bij grotere prijsverschillen. De reservering voor de omvormer staat bij de batterij.
+- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is dan publiek laden. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. €60 per jaar, plus de ERE-vergoeding.
 
 ## Zonnestroom zelf gebruiken
 
-Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 38% van de zonnestroom zelf in plaats van 26%.
+Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u 28% van de zonnestroom zelf in plaats van 26%.
 
 | | Zonder batterij | Met batterij |
 | --- | --- | --- |
 | Opwek per jaar | 4.130 kWh | 4.130 kWh |
-| Zelf gebruikt | 26% | 38% |
-| Teruggeleverd | 3.050 kWh | 2.550 kWh |
-| Ingekocht van het net | 1.430 kWh | 1.180 kWh |
+| Zelf gebruikt | 26% | 28% |
+| Teruggeleverd | 3.050 kWh | 2.990 kWh |
+| Ingekocht van het net | 1.430 kWh | 1.740 kWh |
 
 - **Teruglevering is weinig waard:** zonder saldering krijgt u bij een dynamisch contract de uurprijs, en die is laag als de zon schijnt (in 2025 gemiddeld ca. €0,05 per kWh tijdens zonne-uren).
 - **De batterij laadt ook van het net:** op goedkope uren 's nachts of midden op de dag, en levert op dure uren in de ochtend en avond. Daardoor stijgt de inkoop van het net soms, terwijl de kosten dalen.
-- **Een tweede batterijmodule** levert bij dit verbruik weinig extra op. Een warmtepomp verandert dat.
+- **Batterij op maximum:** met 4 modules is één BDU vol. Meer opslag vraagt een tweede batterijtoren.
 
 ## Laden met de Zaptec Go 2
 
-Thuis slim laden kost ca. €0,18 per kWh, tegen ca. €0,50 bij een publieke laadpaal. Bij 3.000 kWh per jaar scheelt dat ca. €960, plus ca. €340 ERE-vergoeding.
+Thuis slim laden kost ca. €0,17 per kWh, tegen ca. €0,50 bij een publieke laadpaal. Bij 3.000 kWh per jaar scheelt dat ca. €1.000, plus ca. €340 ERE-vergoeding.
 
 | | Per kWh | Per jaar (3.000 kWh) |
 | --- | --- | --- |
 | Publiek laden (gemiddeld) | €0,50 | €1.500 |
-| Thuis laden, direct vanaf 18:00 | €0,22 | €671 |
-| Thuis laden, slim op goedkope uren | €0,18 | €536 |
+| Thuis laden, direct vanaf 18:00 | €0,19 | €562 |
+| Thuis laden, slim op goedkope uren | €0,17 | €502 |
 | ERE-vergoeding (netto) | −€0,115 | −€340 |
 
 - **Zaptec Go 2:** tot 22 kW (3-fase, 32 A) of 7,4 kW (1-fase), met ingebouwde MID-gecertificeerde meter, 4G, OCPP en dynamische load balancing via de P1-meter. Bidirectioneel voorbereid (V2G).
@@ -113,47 +114,47 @@ Thuis slim laden kost ca. €0,18 per kWh, tegen ca. €0,50 bij een publieke la
 
 ## Stroomcontract en prijzen
 
-Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €1.725 per jaar (4,7 jaar).
+Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €1.835 per jaar (5,2 jaar).
 
 | | Dynamisch (advies) | Vast |
 | --- | --- | --- |
 | Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
 | Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
 | Zon per jaar | €380 | €450 |
-| Batterij per jaar | €300 | €160 |
-| Netto per jaar (normaal) | €1.905 | €1.725 |
-| Terugverdientijd (normaal) | 4,2 jaar | 4,7 jaar |
+| Batterij per jaar | €410 | €160 |
+| Netto per jaar (normaal) | €2.055 | €1.835 |
+| Terugverdientijd (normaal) | 4,6 jaar | 5,2 jaar |
 
 - **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
-- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €1.955 per jaar (4,1 jaar).
+- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €2.125 per jaar (4,5 jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
 
 ## Met en zonder saldering
 
-Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afneemt; daarna niet meer. Dit plan rekent met de situatie vanaf 2027. Met saldering zou het pakket normaal netto €2.105 per jaar opleveren, zonder €1.905.
+Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afneemt; daarna niet meer. Dit plan rekent met de situatie vanaf 2027. Met saldering zou het pakket normaal netto €2.255 per jaar opleveren, zonder €2.055.
 
 | Dynamisch contract, normaal scenario | Met saldering (tot 2027) | Zonder saldering (vanaf 2027) |
 | --- | --- | --- |
 | Zon per jaar | €540 | €380 |
-| Batterij per jaar | €270 | €300 |
-| Thuis laden en ERE | €1.370 | €1.300 |
+| Batterij per jaar | €440 | €410 |
+| Thuis laden en ERE | €1.350 | €1.340 |
 | Jaarlijkse kosten | −€75 | −€75 |
-| **Netto per jaar** | **€2.105** | **€1.905** |
-| Terugverdientijd | 3,8 jaar | 4,2 jaar |
-| Netto per jaar bij een vast contract | €2.015 | €1.725 |
+| **Netto per jaar** | **€2.255** | **€2.055** |
+| Terugverdientijd | 4,2 jaar | 4,6 jaar |
+| Netto per jaar bij een vast contract | €2.005 | €1.835 |
 
-- **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van €0,1108 per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. 1.180 kWh per jaar.
+- **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van €0,1108 per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. 1.740 kWh per jaar.
 - **Zonnepanelen leveren minder op:** zonder saldering ca. €160 per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
-- **De batterij wordt belangrijker:** zonder saldering komt 44% van de opbrengst van zon en batterij uit de batterij, met saldering 33%. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
+- **De batterij wordt belangrijker:** zonder saldering komt 52% van de opbrengst van zon en batterij uit de batterij, met saldering 45%. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
 - **Thuis laden:** met saldering is zonnestroom die in de auto gaat al de volle kWh-prijs waard; zonder saldering levert laden met eigen zonnestroom juist extra op.
-- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 4,2 jaar geldt voor de regels vanaf 2027.
+- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 4,6 jaar geldt voor de regels vanaf 2027.
 
 ## Installatie en veiligheid
 
 De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie.
 
 - **Sofar ESI 10K-T1:** 3-fase hybride omvormer, 10 kW, tot 20 kWp zonnepanelen op 3 MPPT's, noodstroom (EPS) op alle drie de fasen, rendement tot 98,2%. Communicatie via RS485, CAN en wifi; het EMS van Saldox leest en stuurt hem uit.
-- **Sofar BTS 5K (2×):** LFP-batterij, 5,12 kWh per module, samen 10,24 kWh, bruikbaar ca. 9,2 kWh (90%). Laden en ontladen tot 5 kW. Garantie 10 jaar: 70% capaciteit na 10 jaar of 11,3 MWh doorvoer per module.
+- **Sofar BTS 5K (4×):** LFP-batterij, 5,12 kWh per module, samen 20,48 kWh, bruikbaar ca. 18,4 kWh (90%). Laden en ontladen tot 10 kW, het maximum van de omvormer. Garantie 10 jaar: 70% capaciteit na 10 jaar of 11,3 MWh doorvoer per module.
 - **Uitbreidbaar:** de omvormer kan tot 20 kWp panelen aan; er kunnen later panelen bij.
 - **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.
 - **Aanmelden:** meld de zonnepanelen en de batterij bij de netbeheerder via energieleveren.nl.
@@ -186,7 +187,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 
 - Verbruik 2.500 kWh per jaar; opbrengst 917 kWh per kWp
 - Uurprijzen en zonneprofiel van 2025; opslag dynamisch contract ca. €0,02 per kWh incl. btw; energiebelasting 2026
-- Batterij 9,2 kWh bruikbaar, 5 kW, rendement 90% heen en terug
+- Batterij 18,4 kWh bruikbaar, 10 kW, rendement 90% heen en terug
 - Reservering vervanging omvormer €75 per jaar
 - Elektrische auto 3.000 kWh per jaar thuis; publiek laden €0,50 per kWh; ERE €0,115 per kWh netto
 
