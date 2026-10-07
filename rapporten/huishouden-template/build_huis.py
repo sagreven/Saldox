@@ -184,7 +184,13 @@ PHEV = dict(bereik=60, kwh_per_km=0.20, liter_per_km=0.06, benzine=2.00, kw=7.4,
 
 VARIANTEN = {
     "met-zaptec-go2": dict(titel="Energieplan huishouden: met laadpaal", laadpaal=True, pakket="sofar20",
-                           chip="Energieplan · huishouden · zon, batterij en laadpaal"),
+                           chip="Energieplan · huishouden · zon, batterij en laadpaal",
+                           # opgegeven: 5.000 kWh per jaar in totaal, waarvan ca. 1.100 kWh voor de plug-in hybride
+                           model=dict(verbruik_kwh=3900),
+                           auto=dict(AUTO["phev"], kwh=1100, kw=7.4,
+                                     bron="ca. 5.500 km per jaar elektrisch à 20 kWh per 100 km"),
+                           meta="huishouden met 5.000 kWh per jaar en een plug-in hybride",
+                           verbruik_bron="opgegeven: 5.000 kWh per jaar in totaal, waarvan ca. 1.100 kWh voor de plug-in hybride; het huis zelf ca. 3.900 kWh"),
     "zonder-laadpaal": dict(titel="Energieplan huishouden: zon en batterij", laadpaal=False, pakket="sofar",
                             chip="Energieplan · huishouden · zon en batterij"),
     "marstek-8-panelen": dict(titel="Energieplan huishouden: 8 panelen en Marstek", laadpaal=False, pakket="marstek",
@@ -449,7 +455,7 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 
 - **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid); batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""" + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
 - **Stroomprijs:** uurprijs plus opslag van de leverancier (ca. €0,02 per kWh incl. btw), plus btw en energiebelasting ({eur(A['eb_incl'], 4)} per kWh incl. btw in 2026). Teruglevering tegen de uurprijs, zonder terugleverkosten; bij een negatieve prijs zet het EMS de teruglevering stop.
-- **Verbruik:** {nl(A['verbruik_kwh'])} kWh per jaar (Milieu Centraal: gemiddeld 2.430 kWh, 2 personen ca. 2.550 kWh) met een standaard dagprofiel: ochtend- en avondpiek, in de winter hoger.""" + (f"""
+- **Verbruik:** {nl(A['verbruik_kwh'])} kWh per jaar ({v.get('verbruik_bron') or 'Milieu Centraal: gemiddeld 2.430 kWh, 2 personen ca. 2.550 kWh'}) met een standaard dagprofiel: ochtend- en avondpiek, in de winter hoger.""" + (f"""
 - **{EVd['naam'][0].upper() + EVd['naam'][1:]}:** {nl(EV_KWH)} kWh per jaar thuis geladen ({EVd['bron']}).""" if lp else "") + "\n")
 
     # 4 Terugverdientijd
