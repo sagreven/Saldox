@@ -1,36 +1,52 @@
-# Verstelbaar scharnier voor de opdekdeuren van het tuinhuisje
+# Verstelbare scharnieren voor de dubbele opdekdeuren van het tuinhuis
 
-3D-printbaar scharnier dat de oude inboor-paumelles vervangt. Het gebruikt het
-bestaande paumelle-gat in de deurkant en is met schroeven in hoogte te stellen.
+3D-printbaar scharnier dat de oude paumelles vervangt. Het gebruikt de
+bestaande paumelle-gaten in de deurkant (zelfde diameter, diepte en
+hart-op-hart afstand als de kant van de paumelle die normaal in de muur gaat)
+en is met schroeven in hoogte te stellen. De deur is uit te tillen.
 
+![overzicht](render/overzicht_deuren.png)
 ![gemonteerd](render/scharnier_gemonteerd.png)
 ![exploded](render/scharnier_exploded.png)
+![deurkant](render/scharnier_achterkant.png)
 
 ## Opbouw
 
 | Onderdeel | Functie |
 |---|---|
-| **Deurdeel** (oranje, `stl/deurdeel_*.stl`) | Flens op de deurkant. Een pen Ø9,6 mm valt in het bestaande paumelle-gat (Ø10). Vast met 2 verzonken houtschroeven 4×40. Bovenste knokkel met blinde boring: de deur **hangt op de punt van de bout**. |
-| **Kozijndeel** (blauw, `stl/kozijndeel_*.stl`) | Flens op de zijkant van het kozijn met 5 **sleufgaten** (±4,6 mm grove hoogte-instelling, schroeven 4×40 met platte kop/ring). Onderste knokkel met ingesloten M8-moer. |
-| M8×80 inbusbout (DIN 912) + 2× M8-moer | Scharnieras. Draai de bout van onderen met een inbussleutel (6 mm) in/uit: de deur gaat omhoog/omlaag (**fijninstelling ±4 mm**). Borgen met de contramoer onder de knokkel. |
+| **Deurdeel** (oranje) | Flens op de deurkant met **twee pennen** die in de paumelle-gaten vallen, plus 2 verzonken houtschroeven 4×40. Bovenste knokkel met blinde boring: de deur **hangt op de punt van de bout**. |
+| **Kozijndeel** (blauw) | Plaat op de **voorkant** van kozijn/gevel naast de deur, met 5 **sleufgaten** (±4,6 mm grof in hoogte; schroeven 4×40 met platte kop of ring). Onderste knokkel met ingesloten M8-moer. |
+| M8×80 inbusbout (DIN 912) + 2× M8-moer | Scharnieras. Draai de bout van onderen in of uit met een 6 mm inbussleutel, dan gaat de deur omhoog of omlaag (**fijn ±4 mm**). Zet hem vast met de contramoer. |
 
-De deur is net als bij een paumelle **uit te tillen**.
+De deur draait vrij van 0 tot 180° (gecontroleerd op botsingen).
 
-## Instellen
-1. Moer van boven in de zeskant van het kozijndeel drukken, bout van onderen erdoor (contramoer eerst op de bout).
-2. Kozijndeel met schroeven in de sleufgaten op het kozijn — nog niet vastdraaien.
-3. Deurdeel met de pen in het paumelle-gat steken, vastschroeven, deur op de bouten hangen.
-4. Grof op hoogte zetten met de sleufgaten, schroeven vast.
-5. Fijn: bout in/uit draaien tot de deur goed sluit, contramoer vastzetten. Een druppel vet in de boring helpt.
+## Stuklijst voor 2 deuren × 2 scharnieren
+
+| Wat | Aantal |
+|---|---|
+| `stl/deurdeel_linkerdeur.stl` + `stl/kozijndeel_linkerdeur.stl` | 2 + 2 |
+| `stl/deurdeel_rechterdeur.stl` + `stl/kozijndeel_rechterdeur.stl` | 2 + 2 |
+| Inbusbout M8×80 DIN 912 | 4 |
+| Moer M8 | 8 |
+| Verzonken houtschroef 4×40 (deurdeel) | 8 |
+| Houtschroef 4×40 met platte kop of ring (kozijndeel) | 20 |
+
+Links en rechts zijn **van buiten gezien met de deuren dicht**: de linkerdeur scharniert aan de linkerkant.
+
+## Monteren en instellen
+1. Druk de M8-moer van boven in de zeskant van het kozijndeel. Draai de contramoer op de bout en steek de bout van onderen erdoor.
+2. Schroef de deurdelen op de deur (pennen in de paumelle-gaten) **vóór** je de deur ophangt. Als de deur hangt, zit de onderste schroef achter de knokkel.
+3. Zet de kozijndelen met schroeven in de sleufgaten op de gevel en hang de deur erop. Grof op hoogte zetten en de schroeven vastdraaien.
+4. Fijn: draai de bouten in of uit tot de deuren goed in het midden sluiten en zet de contramoeren vast. Een beetje vet in de boring helpt.
 
 ## Printen
-- STL's staan al in printstand (geen support nodig): deurdeel op de bovenkant, kozijndeel op de onderkant.
-- PETG of ASA (buiten!), 4 perimeters, 40 % infill.
-- Per deur: 2× deurdeel + 2× kozijndeel van dezelfde hand. `_rechts` = scharnieren aan de rechterkant (van buiten gezien met de deur dicht),
-  `_links` = gespiegeld. Controleer even met de render welke je nodig hebt.
+- De STL's liggen al in printstand, zonder support.
+- PETG of ASA (UV-bestendig, het hangt buiten), 4–5 perimeters, 40 % infill.
 
-## Aanpassen
-Alle maten staan bovenaan `scharnier.py` (deurdikte `DOOR_T`, gatdiameter `HOLE_D`, gatdiepte, pen-hoogte, …).
+## Maten aanpassen
+**Meet de paumelle-gaten na en vul ze bovenin `scharnier.py` in:** `HOLE_D` (diameter),
+`HOLE_DEPTH` (diepte), `HOLE_PITCH` (hart-op-hart afstand), `HOLE_Y` (hart gat tot
+achterkant deur) en `DOOR_T` (deurdikte). Nu staan daar aannames: Ø10, 25 diep, 50 hart-op-hart, midden van een deur van 20 mm.
 ```
 pip install manifold3d trimesh pillow numpy
 python3 scharnier.py   # STL's -> stl/
