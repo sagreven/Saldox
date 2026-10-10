@@ -116,10 +116,7 @@ STEEL = (160, 165, 172)
 
 
 def door_board(w=180, h=300):
-    door = S.box(-w, 0, 0, S.DOOR_T, -h / 2, h / 2)
-    for z in (S.PEG_TOP_Z, S.PEG_TOP_Z - S.HOLE_PITCH):
-        door = door - S.xcyl(S.HOLE_D / 2, -S.HOLE_DEPTH, 0.1, S.HOLE_Y, z)
-    return door
+    return S.box(-w, 0, 0, S.DOOR_T, -h / 2, h / 2)
 
 
 def swing(m, deg):
@@ -127,30 +124,35 @@ def swing(m, deg):
 
 
 def hinge(open_deg):
-    tip_z = S.GAP / 2 + S.BORE_DEPTH
     return [
         (swing(S.door_part(), open_deg), PLA2),
+        (swing(S.door_screws(), open_deg), STEEL),
         (S.frame_part(), PLA),
-        (S.bolt(tip_z), STEEL),
-        (S.nut(-S.GAP / 2 - S.NUT_H), STEEL),          # ingesloten moer
-        (S.nut(-S.FLANGE_H / 2 - 6.5), STEEL),          # contramoer
+        (S.bolt_assembly(), STEEL),
     ]
 
 
 def scene_assembled(open_deg=35.0):
-    wall = S.box(-60, 140, -40, 0, -150, 150)
-    return [(wall, WOOD2), (swing(door_board(), open_deg), WOOD)] + hinge(open_deg)
+    wall = S.box(-60, 160, -40, 0, -170, 170)
+    return [(wall, WOOD2), (swing(door_board(340, 340), open_deg), WOOD)] + hinge(open_deg)
 
 
 def scene_exploded():
-    tip_z = S.GAP / 2 + S.BORE_DEPTH
+    bolt, nuts = S.bolt_assembly(split=True)
     return [
-        (S.door_part().translate([0, 0, 45]), PLA2),
+        (S.door_part().translate([0, 0, 40]), PLA2),
+        (S.door_screws().translate([-45, 0, 40]), STEEL),
         (S.frame_part(), PLA),
-        (S.bolt(tip_z).translate([0, 0, -45]), STEEL),
-        (S.nut(-S.GAP / 2 - S.NUT_H + 30), STEEL),
-        (S.nut(-S.FLANGE_H / 2 - 6.5 - 30), STEEL),
+        (bolt.translate([0, 0, 95]), STEEL),
+        (nuts.translate([0, 0, -25]), STEEL),
     ]
+
+
+def scene_print():
+    bed = S.box(-120, 120, -90, 90, -3, 0)
+    d = S.print_orient(S.door_part(), "deur").rotate([0, 0, 90]).translate([-45, 0, 0])
+    f = S.print_orient(S.frame_part(), "kozi").translate([45, 0, 0])
+    return [(bed, (90, 90, 95)), (d, PLA2), (f, PLA)]
 
 
 def scene_overview(w=800, h=1900, gap=4, open_left=0, open_right=40, hinge_z=650):
@@ -185,24 +187,27 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     out = os.path.join(here, "render")
     os.makedirs(out, exist_ok=True)
-    legend = [("deurdeel (2 pennen in paumelle-gaten)", PLA2),
+    legend = [("deurdeel (schroeven in paumelle-gaten)", PLA2),
               ("kozijndeel (sleufgaten)", PLA),
-              ("M8x80 inbusbout + moeren", STEEL)]
+              ("M8x130 bout, ring, moer + contramoer", STEEL)]
 
     img = render(scene_overview(), eye=(700, 3600, 700), target=(-800, 0, 0), fov=36)
     label(img, legend + [("deuren / gevel", WOOD)],
           "Tuinhuis – twee opdekdeuren, 2 scharnieren per deur").save(os.path.join(out, "overzicht_deuren.png"))
 
-    img = render(scene_assembled(35), eye=(330, 420, 150), target=(10, 5, -5), fov=30)
+    img = render(scene_assembled(35), eye=(420, 520, 200), target=(15, 10, -5), fov=30)
     label(img, legend + [("deur / gevel", WOOD)], "Scharnier linkerdeur – gemonteerd (35° open)").save(
         os.path.join(out, "scharnier_gemonteerd.png"))
 
-    img = render(scene_exploded(), eye=(300, 300, 110), target=(15, 5, 0), fov=27)
+    img = render(scene_exploded(), eye=(420, 400, 160), target=(15, 5, 15), fov=36)
     label(img, legend, "Scharnier – exploded").save(os.path.join(out, "scharnier_exploded.png"))
 
-    img = render(scene_exploded(), eye=(-330, 380, 110), target=(10, 5, 12), fov=32)
-    label(img, legend, "Deurkant – twee pennen voor de paumelle-gaten").save(
+    img = render(scene_exploded(), eye=(-420, 420, 150), target=(10, 5, 10), fov=36)
+    label(img, legend, "Deurkant – verzonken schroeven in de paumelle-gaten").save(
         os.path.join(out, "scharnier_achterkant.png"))
+    img = render(scene_print(), eye=(160, -260, 230), target=(0, 0, 10), fov=34)
+    label(img, [("deurdeel – plat op de deurkant-flens", PLA2), ("kozijndeel – plat op de gevelplaat", PLA)],
+          "Printstand – lagen liggen in de belastingsrichting").save(os.path.join(out, "printstand.png"))
     print("klaar")
 
 

@@ -1,21 +1,28 @@
 """Verstelbaar opdekdeur-scharnier voor de dubbele deuren van het tuinhuis
-(3D-print).
+(3D-print), versie 2: staal draagt, plastic klemt.
 
-Het scharnier vervangt de paumelles: het deurdeel heeft twee pennen die in de
-bestaande paumelle-gaten in de deurkant vallen (zelfde diameter, diepte en
-hart-op-hart afstand als de paumelle-pennen) en wordt daarnaast met schroeven
-vastgezet. Het kozijndeel wordt met schroeven door sleufgaten op de VOORKANT
-van het kozijn/de gevel naast de deur gezet (grof in hoogte verstelbaar). De
-scharnieras is een M8 inbusbout die van onderen in een ingesloten moer draait;
-de deur hangt op de punt van die bout, dus door de bout te draaien stel je de
-deur fijn in hoogte af (borgen met een contramoer). De deur is uit te tillen.
+Waarom v1 brak: de onderdelen werden rechtop geprint, waardoor de lagen
+dwars op de buigspanning in de flenzen lagen (scheuren langs een laag in de
+scherpe hoek waar de knokkel ophoudt), de wanden waren dun (5 mm) en de deur
+hing op een half ingestoken bout in een blind gat.
+
+v2:
+- Beide delen worden PLAT geprint (op de flens), zodat de lagen in het vlak
+  van de buigspanning liggen.
+- Flenzen 8 mm, knokkels Ø28 mm, knokkelbrug over de volle breedte.
+- Eén doorgaande M8 bout door beide knokkels: de bout neemt alle dwarskrachten,
+  het plastic krijgt alleen stuik (druk) op de boring.
+- De deur hangt aan de boutkop (met sluitring); de bout draait onder in een
+  ingesloten moer: kop draaien = deur omhoog/omlaag, contramoer eronder borgt.
+- In de bestaande paumelle-gaten komen stalen verzonken (constructie)schroeven
+  in plaats van geprinte pennen.
 
 Assenstelsel (mm), van buiten gezien: z omhoog, y naar buiten. De deur zit op
 x < 0, y = 0..DOOR_T (opdek: de achterkant ligt in het gevelvlak y = 0), de
 deurkant met de paumelle-gaten in het vlak x = 0. Scharnieras op (AX, AY),
 voor het gevelvlak.
 
-Gebruik:  python3 scharnier.py    -> schrijft STL's naar ./stl
+Gebruik:  python3 scharnier.py    -> schrijft STL's (printstand) naar ./stl
 """
 
 import math
@@ -28,31 +35,26 @@ from manifold3d import Manifold
 # ---------------------------------------------------------------- parameters
 # >>> meet deze aan je deur / de oude paumelle (kant die in de muur gaat) <<<
 DOOR_T = 20.0        # dikte van de deur (breedte van de deurkant)
-HOLE_D = 10.0        # diameter van de paumelle-gaten in de deurkant
-HOLE_DEPTH = 25.0    # diepte van die gaten
-HOLE_PITCH = 50.0    # hart-op-hart afstand tussen de twee gaten
+HOLE_PITCH = 50.0    # hart-op-hart afstand tussen de twee paumelle-gaten
 HOLE_Y = DOOR_T / 2  # afstand hart gat tot achterkant deur
-PEG_CLEAR = 0.4      # speling pen in gat
-PEG_TOP_Z = 25.0     # hoogte bovenste pen t.o.v. midden scharnier
+HOLE_TOP_Z = -14.0   # hoogte bovenste gat t.o.v. midden scharnier
+HOLE_SCREW_D = 8.0   # verzonken schroef in de paumelle-gaten (moet in het gat bijten)
 
-PLATE_T = 5.0        # dikte van de flenzen
-KNUCKLE_R = 11.0     # straal van de scharnierknokkels (diameter 22)
-AX = PLATE_T + KNUCKLE_R + 1.0   # as 1 mm naast de deurflens
-AY = PLATE_T + KNUCKLE_R + 1.0   # as 1 mm voor de kozijnplaat
+PLATE_T = 8.0        # dikte van de flenzen
+KNUCKLE_R = 14.0     # straal van de knokkels (Ø28)
+AX = PLATE_T + 1.0 + KNUCKLE_R   # as 1 mm naast de deurflens
+AY = PLATE_T + 1.0 + KNUCKLE_R   # as 1 mm voor de kozijnplaat
+HALF_H = 55.0        # knokkels lopen van +-GAP/2 tot +-HALF_H
 GAP = 6.0            # nominale spleet tussen de knokkels (instelbereik +-4 mm)
-FLANGE_H = 90.0      # hoogte van de knokkelzone
-KNUCKLE_H = FLANGE_H / 2 - GAP / 2   # knokkel loopt door tot de flensrand
-DOOR_FLANGE_LO = -55.0   # deurflens loopt verder omlaag voor de schroeven
-FRAME_W = 50.0       # breedte kozijnplaat naast de knokkel
+FRAME_W = 70.0       # breedte kozijnplaat
 
-BOLT_CLEAR = 8.6     # boring voor M8
-BORE_DEPTH = 26.0    # blinde boring in deurknokkel (bout draagt de deur)
+BOLT_CLEAR = 8.5     # boring voor M8
 NUT_AF = 13.3        # M8 moer sleutelwijdte + speling
 NUT_H = 7.0
 
-SCREW_D = 4.5        # houtschroef 4-4,5 mm
-SCREW_HEAD_D = 9.0
-SLOT_LEN = 14.0      # sleuflengte (hart-hart 9,2 mm -> +-4,6 mm)
+SCREW_D = 5.0        # extra houtschroeven 5 mm
+SLOT_W = 5.4
+SLOT_LEN = 14.0      # sleuflengte (+-4,3 mm grof verstellen)
 SEG = 72
 
 
@@ -80,44 +82,44 @@ def ycyl(r, y0, y1, x, z, r_end=None, seg=SEG):
     return c.rotate([-90, 0, 0]).translate([x, y0, z])    # z -> +y
 
 
-def screw_hole_x(y, z):
-    """Verzonken schroefgat door de deurflens (kop aan de buitenkant)."""
-    rs, rh = SCREW_D / 2, SCREW_HEAD_D / 2 + 0.25
-    return (xcyl(rs, -50, PLATE_T, y, z)
-            + xcyl(rs, PLATE_T - (rh - rs), PLATE_T + 0.01, y, z, r_end=rh)
-            + xcyl(rh, PLATE_T, PLATE_T + 20, y, z))
+def csk_hole_x(d, y, z):
+    """Verzonken gat (90°) door de deurflens, kop vlak met de buitenkant."""
+    rs, rh = d / 2 + 0.25, d + 0.3
+    return xcyl(rs, -60, PLATE_T + 1, y, z) + \
+        xcyl(rs, PLATE_T - (rh - rs), PLATE_T + 0.01, y, z, r_end=rh) + \
+        xcyl(rh, PLATE_T, PLATE_T + 1, y, z)
 
 
-def slot_y(x, z, w=4.8, length=SLOT_LEN):
+def slot_y(x, z):
     """Verticaal sleufgat door de kozijnplaat."""
-    r = w / 2
-    a = ycyl(r, -1, PLATE_T + 1, x, z - (length / 2 - r))
-    b = ycyl(r, -1, PLATE_T + 1, x, z + (length / 2 - r))
+    r = SLOT_W / 2
+    a = ycyl(r, -1, PLATE_T + 1, x, z - (SLOT_LEN / 2 - r))
+    b = ycyl(r, -1, PLATE_T + 1, x, z + (SLOT_LEN / 2 - r))
     return Manifold.batch_hull([a, b])
+
+
+def hole_z():
+    return [HOLE_TOP_Z, HOLE_TOP_Z - HOLE_PITCH]
+
+
+def door_screw_spots():
+    """(diameter, z) van de verzonken schroeven in de deurflens."""
+    zs = hole_z()
+    return [(HOLE_SCREW_D, z) for z in zs] + [(SCREW_D, sum(zs) / 2), (SCREW_D, min(zs) - 16)]
 
 
 # ---------------------------------------------------------------- parts
 def door_part():
-    """Deurdeel: flens op de deurkant met twee pennen + bovenste knokkel."""
-    k0, k1 = GAP / 2, FLANGE_H / 2
-    flange = box(0, PLATE_T, 0, DOOR_T, DOOR_FLANGE_LO, k1)
-    bridge = box(0, AX, PLATE_T + 1, AY, k0, k1)
-    knuckle = zcyl(KNUCKLE_R, k0, k1, AX, AY)
+    """Deurdeel: flens op de deurkant + bovenste knokkel."""
+    z_lo = min(hole_z()) - 23
+    flange = box(0, PLATE_T, 0, DOOR_T, z_lo, HALF_H)
+    # brug onder de hele knokkel: stijf, en plat printbaar zonder support
+    bridge = box(0, AX, PLATE_T + 1, AY + KNUCKLE_R, GAP / 2, HALF_H)
+    knuckle = zcyl(KNUCKLE_R, GAP / 2, HALF_H, AX, AY)
     body = flange + bridge + knuckle
 
-    # twee pennen in de bestaande paumelle-gaten
-    pr = (HOLE_D - PEG_CLEAR) / 2
-    for z in (PEG_TOP_Z, PEG_TOP_Z - HOLE_PITCH):
-        body = body + xcyl(pr, -(HOLE_DEPTH - 3), 0.01, HOLE_Y, z) \
-            + xcyl(pr - 1.0, -(HOLE_DEPTH - 2), -(HOLE_DEPTH - 3) + 0.01, HOLE_Y, z, r_end=pr)
-
-    # schroeven buiten de knokkelzone en tussen/naast de pennen
-    z_lo = PEG_TOP_Z - HOLE_PITCH
-    screw_z = [min(-5.0, (PEG_TOP_Z + z_lo) / 2), DOOR_FLANGE_LO + 8]
-    holes = [screw_hole_x(DOOR_T / 2, z) for z in screw_z]
-    # blinde boring voor de M8 bout (bovenkant dicht: deur hangt op de boutpunt)
-    holes.append(zcyl(BOLT_CLEAR / 2, k0 - 1, k0 + BORE_DEPTH, AX, AY))
-    holes.append(zcyl(BOLT_CLEAR / 2 + 1.2, k0 - 0.01, k0 + 1.2, AX, AY, r_top=BOLT_CLEAR / 2))
+    holes = [csk_hole_x(d, HOLE_Y, z) for d, z in door_screw_spots()]
+    holes.append(zcyl(BOLT_CLEAR / 2, 0, HALF_H + 1, AX, AY))
     for h in holes:
         body = body - h
     return body
@@ -125,39 +127,54 @@ def door_part():
 
 def frame_part():
     """Kozijndeel: plaat met sleufgaten op de voorkant van kozijn/gevel naast
-    de deur + onderste knokkel met ingesloten M8 moer."""
-    k0, k1 = -FLANGE_H / 2, -GAP / 2
+    de deur + onderste knokkel met ingesloten M8 moer aan de onderkant."""
     x0 = PLATE_T + 1
-    plate = box(x0, AX + KNUCKLE_R + FRAME_W - 22, 0, PLATE_T, -FLANGE_H / 2, FLANGE_H / 2)
-    bridge = box(AX - KNUCKLE_R, AX + KNUCKLE_R, 0, AY, k0, k1)
-    knuckle = zcyl(KNUCKLE_R, k0, k1, AX, AY)
+    plate = box(x0, x0 + FRAME_W, 0, PLATE_T, -HALF_H, HALF_H)
+    bridge = box(AX - KNUCKLE_R, AX + KNUCKLE_R, 0, AY, -HALF_H, -GAP / 2)
+    knuckle = zcyl(KNUCKLE_R, -HALF_H, -GAP / 2, AX, AY)
     body = plate + bridge + knuckle
 
-    holes = [zcyl(BOLT_CLEAR / 2, k0 - 1, k1 + 1, AX, AY)]
+    holes = [zcyl(BOLT_CLEAR / 2, -HALF_H - 1, 1, AX, AY)]
     nut_r = NUT_AF / math.sqrt(3)  # omgeschreven straal van de zeskant
     holes.append(Manifold.cylinder(NUT_H + 1, nut_r, nut_r, 6).rotate([0, 0, 30])
-                 .translate([AX, AY, k1 - NUT_H]))
-    xa, xb = AX + KNUCKLE_R + 8, AX + KNUCKLE_R + 22
-    holes += [slot_y(xa, 30), slot_y(xa, -30), slot_y(xb, 0), slot_y(xb, 30), slot_y(xb, -30)]
+                 .translate([AX, AY, -HALF_H - 1]))
+    xa = AX + KNUCKLE_R + 9
+    xb = x0 + FRAME_W - 9
+    holes += [slot_y(xa, 38), slot_y(xa, 0), slot_y(xa, -38),
+              slot_y(xb, 38), slot_y(xb, 0), slot_y(xb, -38)]
     for h in holes:
         body = body - h
     return body
 
 
 # ---------------------------------------------------------------- hardware (alleen voor de render)
-def bolt(tip_z):
-    """M8 inbusbout DIN 912 M8x80, punt op tip_z."""
-    L = 80.0
-    shank = zcyl(4.0, tip_z - L, tip_z, AX, AY, seg=32)
-    head = zcyl(6.5, tip_z - L - 8, tip_z - L, AX, AY, seg=40) - \
-        Manifold.cylinder(5, 3.5, 3.5, 6).translate([AX, AY, tip_z - L - 8.01])
-    return shank + head
+BOLT_L = 130.0       # DIN 931 M8x130 (deels draad, 28 mm draad)
 
 
-def nut(z0):
-    r = 13.0 / math.sqrt(3)
-    return Manifold.cylinder(6.5, r, r, 6).rotate([0, 0, 30]).translate([AX, AY, z0]) - \
-        zcyl(4.0, z0 - 1, z0 + 8, AX, AY, seg=32)
+def hexprism(af, z0, h, x=AX, y=AY):
+    r = af / math.sqrt(3)
+    return Manifold.cylinder(h, r, r, 6).rotate([0, 0, 30]).translate([x, y, z0])
+
+
+def bolt_assembly(split=False):
+    top = HALF_H + 1.6
+    washer = zcyl(12.0, HALF_H, top, AX, AY, seg=48) - zcyl(4.2, HALF_H - 1, top + 1, AX, AY, seg=32)
+    head = hexprism(13, top, 5.3)
+    shank = zcyl(4.0, top - BOLT_L, top, AX, AY, seg=32)
+    nut1 = hexprism(13, -HALF_H, 6.5) - zcyl(4.0, -HALF_H - 1, -HALF_H + 8, AX, AY, seg=32)
+    nut2 = hexprism(13, -HALF_H - 6.6, 6.5) - zcyl(4.0, -HALF_H - 8, -HALF_H + 1, AX, AY, seg=32)
+    if split:
+        return washer + head + shank, nut1 + nut2
+    return washer + head + shank + nut1 + nut2
+
+
+def door_screws():
+    out = Manifold()
+    for d, z in door_screw_spots():
+        rs, rh = d / 2, d
+        out = out + xcyl(rs, -60, PLATE_T - (rh - rs), HOLE_Y, z, seg=32) + \
+            xcyl(rs, PLATE_T - (rh - rs), PLATE_T - 0.2, HOLE_Y, z, r_end=rh, seg=32)
+    return out
 
 
 # ---------------------------------------------------------------- export
@@ -172,13 +189,15 @@ def mirrored(m):
     return m.mirror([1, 0, 0])
 
 
-def print_orient(m, upside_down):
-    """Printstand: knokkel en flens hebben een gezamenlijk eindvlak op het
-    bed, zodat er geen support nodig is."""
-    if upside_down:
-        m = m.rotate([180, 0, 0])
-    lo = m.bounding_box()[2]
-    return m.translate([0, 0, -lo])
+def print_orient(m, kind):
+    """Printstand: plat op de flens die tegen het hout komt, zodat de lagen in
+    het vlak van de buigspanning liggen."""
+    if kind == "deur":
+        m = m.rotate([0, -90, 0])      # deurkant-vlak naar beneden
+    else:
+        m = m.rotate([90, 0, 0])       # gevelvlak naar beneden
+    x0, y0, z0, x1, y1, z1 = m.bounding_box()
+    return m.translate([-(x0 + x1) / 2, -(y0 + y1) / 2, -z0])
 
 
 def main():
@@ -195,11 +214,11 @@ def main():
         "kozijndeel_rechterdeur": mirrored(frame_part()),
     }
     for name, m in parts.items():
-        tm = to_trimesh(print_orient(m, name.startswith("deur")))
+        tm = to_trimesh(print_orient(m, name.split("_")[0][:4]))
         assert tm.is_watertight, name
         tm.export(os.path.join(out, f"{name}.stl"))
         print(f"{name:24s} {m.volume() / 1000:6.1f} cm3  {m.num_tri():6d} tri  "
-              f"bbox {np.round(tm.extents, 1)}")
+              f"printmaat {np.round(tm.extents, 1)}")
 
 
 if __name__ == "__main__":
