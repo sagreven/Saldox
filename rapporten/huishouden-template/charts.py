@@ -121,12 +121,19 @@ def kasstroom(investering, scenarios, horizon=15, titel="Normaal is het pakket n
     for (naam, netto, jaren, accent), t in zip(scenarios, ts):
         o.append(f'<circle class="pt {"accent" if accent else "muted"}" cx="{X(t):.1f}" cy="{Y(0):.1f}" r="{6.5 if accent else 5}"/>')
         o.append(pill(X(t) + 4, Y(0) + dy[naam[0]], f"{jaren} jaar", "accent" if accent else "light"))
-    # eindlabels
+    # eindlabels: minstens 34px uit elkaar, gecentreerd rond de eindpunten
+    ys = sorted((Y(end[s[0]]), s[0]) for s in scenarios)
+    ly = {}
+    for y, naam in ys:
+        ly[naam] = max(y, max(ly.values()) + 34) if ly else y
+    schuif = (sum(ly[n] for _, n in ys) - sum(y for y, _ in ys)) / len(ys)
+    if schuif and all(ly[n] - y >= 0 for y, n in ys):
+        ly = {n: v - schuif for n, v in ly.items()}
     for naam, netto, jaren, accent in scenarios:
-        y = Y(end[naam])
+        y, t = Y(end[naam]), ly[naam]
         o.append(f'<circle class="pt {"accent" if accent else "muted"} small" cx="{X(15):.1f}" cy="{y:.1f}" r="3.5"/>')
-        o.append(f'<text class="end-label {"accent" if accent else ""}" x="{X(15) + 10:.1f}" y="{y - 2:.1f}">{naam}</text>')
-        o.append(f'<text class="end-sub" x="{X(15) + 10:.1f}" y="{y + 13:.1f}">{eur(netto)} per jaar</text>')
+        o.append(f'<text class="end-label {"accent" if accent else ""}" x="{X(15) + 10:.1f}" y="{t - 2:.1f}">{naam}</text>')
+        o.append(f'<text class="end-sub" x="{X(15) + 10:.1f}" y="{t + 13:.1f}">{eur(netto)} per jaar</text>')
     # hover
     o.append(f'<line class="crosshair" x1="0" x2="0" y1="{mt}" y2="{mt + ph}" visibility="hidden"/>')
     o.append(f'<rect class="hit kasstroom" x="{ml}" y="{mt}" width="{pw}" height="{ph}" fill="transparent" '

@@ -26,6 +26,8 @@ De gebruiker staat vaak bij de klant en geeft een korte beschrijving. Zet die om
 | 1-fase aansluiting (1x35 A) | `--aansluiting 1-fase` (Sofar valt dan af) |
 | 3-fase aansluiting | `--aansluiting 3-fase` |
 | klant wil een specifieke batterij | `--batterij marstek` / `marstek2` / `sofar` (anders `auto`) |
+| zonder batterij, alleen panelen | `--batterij geen` (batterijpakketten komen ter vergelijking in de tabel) |
+| legplan, afmetingen ("2 rijen van 4, 4,5 × 3,5 m") | `--opstelling "2 rijen van 4, ca. 4,5 × 3,5 m"` |
 | klantnaam en plaats | `--klant "…" --plaats "…"` |
 
 Ontbreekt iets, neem dan de standaard en noem die aanname kort in je antwoord; vraag alleen door als het

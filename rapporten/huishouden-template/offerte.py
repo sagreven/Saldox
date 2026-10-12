@@ -27,6 +27,7 @@ HUISHOUDEN = {"klein": 2000, "gemiddeld": 2500, "groot": 3600}  # kWh/jaar (Mili
 HUISHOUDEN_TEKST = {"klein": "klein huishouden (1 tot 2 personen)", "gemiddeld": "gemiddeld huishouden",
                     "groot": "groot huishouden (4 personen)"}
 JAREN_HORIZON = 15
+MAANDEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
 
 
 # ───────────────────────────────────────────── pakketten samenstellen
@@ -49,12 +50,40 @@ def zonnedeel(n, dak, micro):
     return p
 
 
+def micro_installatie(n):
+    """Installatieteksten voor n panelen A Solar met APsystems DS3 (1 per 2 panelen)."""
+    k = math.ceil(n / 2)
+    return [f"- **A Solar 460 Wp ({n}×):** N-type, glas-glas, zwart; 1.762 × 1.134 mm per paneel, samen ca. {B.nl(n * 1.762 * 1.134)} m² dak.",
+            f"- **APsystems DS3 ({k}×):** micro-omvormer voor twee panelen, 880 VA, 2 MPPT's, rendement ca. 97%. Elk paneelpaar werkt apart, "
+            "dus schaduw op één paneel kost weinig. Monitoring via de APsystems ECU-B."]
+
+
 def pakket(soort, n, dak):
-    if soort == "marstek":
+    if soort == "geen":
+        P = dict(B.PAKKETTEN["marstek"])
+        P["prijzen"] = zonnedeel(n, dak, True)
+        P["model"] = dict(P["model"], panelen=n, wp=460, batt_kwh=0)
+        P["naam"] = "Zonnepanelen met micro-omvormers, zonder batterij"
+        P["batterij_kort"] = f"{math.ceil(n / 2)} APsystems DS3 micro-omvormers (elk voor twee panelen), monitoring via de APsystems ECU-B"
+        P["btw_bullet"] = "- **Alles 0%:** panelen, micro-omvormers, bekabeling en montage vallen onder het nultarief."
+        P["aansluiting"] = "- **Aansluiting:** de micro-omvormers zijn 1-fase; een gewone aansluiting volstaat, met een eigen groep voor de panelen."
+        P["uitbreiding"] = ("- **Later een batterij:** een AC-gekoppelde thuisbatterij, zoals de Marstek Venus E, kan later worden bijgeplaatst "
+                            "zonder iets aan de panelen te veranderen. Dat loont vooral bij een groter verbruik (warmtepomp{ev}).")
+        P["installatie"] = micro_installatie(n) + [
+            "- **Uitbreidbaar:** later kunnen er panelen met extra micro-omvormers{laad} bij, en een thuisbatterij op een eigen groep."]
+        P["schouw_extra"] = ", ruimte in de groepenkast voor een groep voor de panelen"
+        P["checklist_aansluiting"] = "- [ ] Ruimte in de groepenkast voor een eigen groep voor de zonnepanelen"
+        P["begrip_omvormer"] = "| Micro-omvormer | Kleine omvormer onder de panelen; de APsystems DS3 bedient twee panelen. |"
+        P["installatie_omvormer"] = "micro-omvormers"
+        P["jaarkosten"] = ("Reservering vervanging micro-omvormers", 20, "na een kleine reservering voor de micro-omvormers")
+        P["label_zon"] = "Zonnepanelen (panelen, micro-omvormers, montage)"
+        P["batt_kosten_zin"] = ""
+    elif soort == "marstek":
         P = dict(B.PAKKETTEN["marstek"])
         P["prijzen"] = zonnedeel(n, dak, True) + [p for p in B.PAKKETTEN["marstek"]["prijzen"] if p[4] == "batt"]
         P["model"] = dict(P["model"], panelen=n, wp=460)
         P["naam"] = "Marstek Venus E (5,12 kWh) met micro-omvormers"
+        P["installatie"] = micro_installatie(n) + P["installatie"][2:]
     elif soort == "marstek2":
         P = dict(B.PAKKETTEN["marstek"])
         P["prijzen"] = zonnedeel(n, dak, True) + [
@@ -68,6 +97,7 @@ def pakket(soort, n, dak):
         P["batt_oordeel"] = "twee Venus E's (10 kWh) zijn ruim voor een verbruik van {verbruik} kWh; het rendement van 85% en het stand-byverbruik drukken de winst"
         P["label_batt"] = "Batterij (2× Venus E, eigen groepen, EMS)"
         P["naam"] = "2× Marstek Venus E (10,24 kWh) met micro-omvormers"
+        P["installatie"] = micro_installatie(n) + P["installatie"][2:]
     else:  # sofar
         P = dict(B.PAKKETTEN["sofar"])
         P["prijzen"] = zonnedeel(n, dak, False) + [p for p in B.PAKKETTEN["sofar"]["prijzen"] if p[4] == "batt"]
@@ -94,21 +124,26 @@ def main():
     ap.add_argument("--dak", choices=["plat", "schuin"], default="schuin")
     ap.add_argument("--panelen", type=int, default=10)
     ap.add_argument("--aansluiting", choices=["1-fase", "3-fase", "onbekend"], default="onbekend")
-    ap.add_argument("--batterij", choices=["auto", "marstek", "marstek2", "sofar"], default="auto")
+    ap.add_argument("--batterij", choices=["auto", "geen", "marstek", "marstek2", "sofar"], default="auto")
+    ap.add_argument("--opstelling", default="", help='legplan, bijvoorbeeld "2 rijen van 5, ca. 5,7 × 3,5 m"')
     ap.add_argument("--datum", default=dt.date.today().isoformat())
     a = ap.parse_args()
 
     verbruik = a.verbruik or HUISHOUDEN[a.huishouden]
+    d = dt.date.fromisoformat(a.datum)
+    B.KLANT["datum"] = f"{d.day} {MAANDEN[d.month - 1]} {d.year}"
     auto = dict(B.AUTO[a.auto]) if a.auto != "geen" else None
     if auto and a.auto_kwh:
         auto["kwh"] = a.auto_kwh
-    kandidaten = [a.batterij] if a.batterij != "auto" else (
-        ["marstek", "marstek2"] + ([] if a.aansluiting == "1-fase" else ["sofar"]))
+    met_batt = ["marstek", "marstek2"] + ([] if a.aansluiting == "1-fase" else ["sofar"])
+    # "geen": zonder batterij, met de batterijpakketten ter vergelijking
+    kandidaten = met_batt if a.batterij == "auto" else (["geen"] + met_batt if a.batterij == "geen" else [a.batterij])
 
     profiel_tekst = ", ".join(filter(None, [
         HUISHOUDEN_TEKST[a.huishouden] if not a.verbruik else f"verbruik {B.nl(verbruik)} kWh",
         {"phev": "plug-in hybride, dagelijks geladen", "ev": "elektrische auto"}.get(a.auto, "geen auto"),
-        f"{'plat' if a.dak == 'plat' else 'schuin'} dak", f"{a.panelen} panelen"]))
+        f"{'plat' if a.dak == 'plat' else 'schuin'} dak", f"{a.panelen} panelen" + (f" ({a.opstelling})" if a.opstelling else ""),
+        "zonder batterij" if a.batterij == "geen" else ""]))
     meta = f"offerte voor {a.klant}" + (f", {a.plaats}" if a.plaats else "") + f" · {profiel_tekst}"
 
     print(f"Profiel: {profiel_tekst}; verbruik {verbruik} kWh; kandidaten: {', '.join(kandidaten)}")
@@ -116,7 +151,7 @@ def main():
     for k in kandidaten:
         P = pakket(k, a.panelen, a.dak)
         v = dict(titel=f"Energieplan {a.klant}", laadpaal=bool(auto), P=P, auto=auto,
-                 model=dict(verbruik_kwh=verbruik), meta=meta,
+                 model=dict(verbruik_kwh=verbruik), meta=meta, opstelling=a.opstelling,
                  chip="Energieplan · " + profiel_tekst)
         R = B.reken(v)
         N = R["sc"][1]
@@ -124,12 +159,12 @@ def main():
         res[k] = (v, R, winst)
         print(f"  {P['naam']:52} investering €{R['inv']:>9,.2f}  netto €{N['netto']:>6,.0f}/jr  "
               f"{N['jaren']:>5} jr  winst 15 jr €{winst:>8,.0f}")
-    keuze = max(res, key=lambda k: res[k][2])
+    keuze = "geen" if a.batterij == "geen" else max(res, key=lambda k: res[k][2])
     v, R, winst = res[keuze]
     N = R["sc"][1]
 
     # referentie: alleen zonnepanelen (met micro-omvormers) en eventueel laadpaal
-    ref = res.get("marstek") or res[keuze]
+    ref = res.get("geen") or res.get("marstek") or res[keuze]
     Rr = ref[1]
     zon_netto = Rr["sc"][1]["zon"] + (Rr["sc"][1]["laden"] + Rr["sc"][1]["ere"] if auto else 0)
     zon_inv = Rr["inv_zon"] + (Rr["inv_laad"] if auto else 0)
@@ -137,22 +172,35 @@ def main():
     rijen = []
     for k, (vv, RR, w) in sorted(res.items(), key=lambda x: -x[1][2]):
         NN = RR["sc"][1]
-        rijen.append(f"| {'**' if k == keuze else ''}{vv['P']['naam']}{' (advies)**' if k == keuze else ''} | "
+        rijen.append(f"| {'**' if k == keuze else ''}{vv['P']['naam']}{(' (uw keuze)**' if keuze == 'geen' else ' (advies)**') if k == keuze else ''} | "
                      f"{B.eur2(RR['inv'])} | {B.eur(NN['netto'])} | {NN['jaren']} jaar | {B.eur(w)} |")
-    rijen.append(f"| Alleen zonnepanelen{' en laadpaal' if auto else ''}, zonder batterij (ter vergelijking) | {B.eur2(zon_inv)} | "
-                 f"{B.eur(zon_netto)} | {B.jr(zon_inv, zon_netto)} jaar | {B.eur(JAREN_HORIZON * zon_netto - zon_inv)} |")
+    if "geen" not in res:
+        rijen.append(f"| Alleen zonnepanelen{' en laadpaal' if auto else ''}, zonder batterij (ter vergelijking) | {B.eur2(zon_inv)} | "
+                     f"{B.eur(zon_netto)} | {B.jr(zon_inv, zon_netto)} jaar | {B.eur(JAREN_HORIZON * zon_netto - zon_inv)} |")
     batt_meer = winst - (JAREN_HORIZON * zon_netto - zon_inv)
+    beste = max(res, key=lambda k: res[k][2])
+    if keuze == "geen":
+        bv, bR, bw = res[beste]
+        lede = (f"U kiest voor zonnepanelen zonder batterij: na 15 jaar levert dat na aftrek van de investering ca. {B.eur(winst)} op."
+                + ("" if beste == "geen" else f" Met een {bv['P']['naam'].split(' met ')[0]} erbij zou dat ca. {B.eur(bw)} zijn, {B.eur(bw - winst)} meer,"
+                   f" voor {B.eur2(bR['inv'] - R['inv'])} extra investering."))
+        batt_bullet = ("- **Een batterij later toevoegen** kan altijd: de micro-omvormers blijven gewoon werken en een AC-gekoppelde batterij "
+                       "komt op een eigen groep. De tabel laat zien wat dat bij dit verbruik zou opleveren.")
+    else:
+        lede = f"Voor dit huishouden levert {v['P']['naam']} over 15 jaar het meeste op: na aftrek van de investering ca. {B.eur(winst)}."
+        batt_bullet = (f"- **De batterij** voegt over 15 jaar ca. {B.eur(batt_meer)} toe ten opzichte van alleen zonnepanelen"
+                       f"{'' if batt_meer > 0 else '; bij dit profiel kunt u de batterij ook later toevoegen'}.")
     v["waarom"] = f"""## Waarom dit pakket
 
-Voor dit huishouden levert {v['P']['naam']} over 15 jaar het meeste op: na aftrek van de investering ca. {B.eur(winst)}.
+{lede}
 
 | Pakket | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd | Opbrengst na 15 jaar |
 | --- | --- | --- | --- | --- |
 {chr(10).join(rijen)}
 
 - **Profiel:** {profiel_tekst}; verbruik ca. {B.nl(verbruik)} kWh per jaar""" + (f"; {auto['naam']} ca. {B.nl(auto['kwh'])} kWh per jaar thuis geladen" if auto else "") + f""".
-- **Keuze:** Saldox rekent elk passend pakket door met dezelfde uurprijzen en kiest het pakket met de hoogste opbrengst na 15 jaar, de levensduur van de batterij en de omvormers.
-- **De batterij** voegt over 15 jaar ca. {B.eur(batt_meer)} toe ten opzichte van alleen zonnepanelen{'' if batt_meer > 0 else '; bij dit profiel kunt u de batterij ook later toevoegen'}.""" + (
+- **Keuze:** Saldox rekent elk passend pakket door met dezelfde uurprijzen{'' if keuze == 'geen' else ' en kiest het pakket met de hoogste opbrengst na 15 jaar, de levensduur van de batterij en de omvormers'}.
+{batt_bullet}""" + (
         "\n- **Sofar 10 kWh** is niet meegenomen: die vraagt een 3-fase aansluiting." if a.aansluiting == "1-fase" and a.batterij == "auto" else "") + "\n"
 
     map_ = UIT / f"{a.datum}-{slug(a.klant)}"
@@ -164,7 +212,9 @@ Voor dit huishouden levert {v['P']['naam']} over 15 jaar het meeste op: na aftre
             (B.eur(N["netto"]), "netto per jaar (normaal)", False),
             (f"{B.nl(round(R['n']['met_pv']['pv_kwh'], -1))} kWh", "zonnestroom per jaar", False)]
     html = map_ / "offerte.html"
-    titel = bouw(src, B.HEADLINES, B.figuren(v, R), kpis, v["chip"], html)
+    koppen = dict(B.HEADLINES, **(B.HEADLINES_ZONDER_BATTERIJ if keuze == "geen" else {}),
+                  **({"Waarom dit pakket": "Zonder batterij, met ruimte voor later."} if keuze == "geen" else {}))
+    titel = bouw(src, koppen, B.figuren(v, R), kpis, v["chip"], html)
     subprocess.run(["node", str(HERE / "render_pdf.js"), str(html), str(map_ / "offerte.pdf"), titel], check=True,
                    stdout=subprocess.DEVNULL)
     uit = {"offerte": dict(inv=R["inv"], inv_ex=R["inv_ex"], netto=[s["netto"] for s in R["sc"]],

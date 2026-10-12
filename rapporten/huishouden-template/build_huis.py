@@ -374,9 +374,10 @@ def markdown_tekst(v, R):
     kwp = A["panelen"] * A["wp"] / 1000
     zv_pv, zv_b = n["met_pv"]["zelfverbruik"], n["met_beide"]["zelfverbruik"]
     batt_bruikbaar = A["batt_kwh"] * A["batt_bruikbaar"]
+    gb = not A["batt_kwh"]  # pakket zonder batterij
     zon_n, batt_n = N["zon"], N["batt"]
-    j_zon = jr(R["inv_zon"], zon_n)
-    j_batt = jr(R["inv_batt"], batt_n - RESERVERING)
+    j_zon = jr(R["inv_zon"], zon_n - (RESERVERING if gb else 0))
+    j_batt = None if gb else jr(R["inv_batt"], batt_n - RESERVERING)
     vast_netto = round(R["vast"]["zon"], -1) + round(R["vast"]["batterij"], -1) - RESERVERING + (
         round(R["vast"]["laden"], -1) + N["ere"] if lp else 0)
     p27_netto = round(R["p27"]["zon"], -1) + round(R["p27"]["batterij"], -1) - RESERVERING + (
@@ -390,8 +391,8 @@ def markdown_tekst(v, R):
     assert zonder_netto == N["netto"], (zonder_netto, N["netto"])
     verlies_zon = round(sal["zon"], -1) - round(n["zon"], -1)
     gesaldeerd = min(sal["met_beide"]["export_kwh"], sal["met_beide"]["import_kwh"])
-    batt_rel_met = round(sal["batterij"], -1) / (round(sal["zon"], -1) + round(sal["batterij"], -1))
-    batt_rel_zonder = round(n["batterij"], -1) / (round(n["zon"], -1) + round(n["batterij"], -1))
+    batt_rel_met = 0 if gb else round(sal["batterij"], -1) / (round(sal["zon"], -1) + round(sal["batterij"], -1))
+    batt_rel_zonder = 0 if gb else round(n["batterij"], -1) / (round(n["zon"], -1) + round(n["batterij"], -1))
 
     platdak_bullet = "" if R["montage_basis"] == PLATDAK_MONTAGE else (
         f"- **Optie plat dak:** de montage kost bij een plat dak vast {eur2(PLATDAK_MONTAGE)} (0% btw) in plaats van "
@@ -405,19 +406,25 @@ def markdown_tekst(v, R):
 
 Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
 
-- **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. Zonder batterij gebruikt u {pct(zv_pv)} zelf, met batterij {pct(zv_b)}.
+- **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. """ + (
+        f"""U gebruikt daarvan ca. {pct(zv_pv)} direct zelf.
+- **Omvormers:** {P['batterij_kort']}.
+- **Stroomcontract:** dynamisch of vast; zie *Stroomcontract en prijzen*.
+""" if gb else f"""Zonder batterij gebruikt u {pct(zv_pv)} zelf, met batterij {pct(zv_b)}.
 - **Thuisbatterij:** {P['batterij_kort'].format(bruikbaar=nl(batt_bruikbaar, 1))}. Laadt goedkoop van het net en met zonnestroom, en levert op dure uren.
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij{' en laadpaal' if lp else ''} op de uurprijs.
-""" + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} {EVd['basis_kort']}, plus ERE-vergoeding.
-""" if lp else "") + f"""- **Zonnepanelen** verdienen zich het snelst terug (ca. {j_zon} jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
+""") + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} {EVd['basis_kort']}, plus ERE-vergoeding.
+""" if lp else "") + (f"""- **Zonnepanelen** zijn normaal in ca. {j_zon} jaar terugverdiend. Een batterij kan later worden toegevoegd.
+- **Btw:** 0% op zonnepanelen, micro-omvormers en montage{'; 21% op de laadpaal' if lp else ''}.
+""" if gb else f"""- **Zonnepanelen** verdienen zich het snelst terug (ca. {j_zon} jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij{' en de laadpaal' if lp else ''}.
-""")
+"""))
 
     # 2 Begroting
     rows = "\n".join(f"| {p} | {eur2(ex)} | {int(b * 100)}% | {eur2(inc)} | {st} |" for p, ex, b, st, inc, _ in R["regels"])
     t.append(f"""## Begroting
 
-Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op zonnepanelen geldt het nultarief; de batterijset valt onder 21%.
+Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op zonnepanelen geldt het nultarief{'; de laadpaal valt onder 21%' if gb and lp else '' if gb else '; de batterijset valt onder 21%'}.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
@@ -442,8 +449,8 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 | Per jaar | Pessimistisch | Normaal | Optimistisch |
 | --- | --- | --- | --- |
 | Zon (minder stroom inkopen, teruglevering) | {eur(sc[0]['zon'])} | {eur(sc[1]['zon'])} | {eur(sc[2]['zon'])} |
-| Batterij (slim laden en ontladen) | {eur(sc[0]['batt'])} | {eur(sc[1]['batt'])} | {eur(sc[2]['batt'])} |
-""" + (f"""| Thuis laden in plaats van {EVd['basis_kort']} | {eur(sc[0]['laden'])} | {eur(sc[1]['laden'])} | {eur(sc[2]['laden'])} |
+""" + ("" if gb else f"""| Batterij (slim laden en ontladen) | {eur(sc[0]['batt'])} | {eur(sc[1]['batt'])} | {eur(sc[2]['batt'])} |
+""") + (f"""| Thuis laden in plaats van {EVd['basis_kort']} | {eur(sc[0]['laden'])} | {eur(sc[1]['laden'])} | {eur(sc[2]['laden'])} |
 | ERE-vergoeding laadpaal | {eur(sc[0]['ere'])} | {eur(sc[1]['ere'])} | {eur(sc[2]['ere'])} |
 """ if lp else "") + f"""| **Bruto per jaar** | **{eur(sc[0]['bruto'])}** | **{eur(sc[1]['bruto'])}** | **{eur(sc[2]['bruto'])}** |
 | {P['jaarkosten'][0]} | −{eur(RESERVERING)} | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
@@ -451,9 +458,9 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 
 <!-- FIG:waterval -->
 
-**Hoe dit is berekend.** Saldox simuleert elk uur van een jaar met de echte uurprijzen van 2025 (EPEX day-ahead Nederland) en het echte zonneprofiel van Nederland. Het EMS zet de batterij in zoals in de praktijk: met de day-ahead prijzen, die een dag vooruit bekend zijn.
+**Hoe dit is berekend.** Saldox simuleert elk uur van een jaar met de echte uurprijzen van 2025 (EPEX day-ahead Nederland) en het echte zonneprofiel van Nederland.""" + ("" if gb else """ Het EMS zet de batterij in zoals in de praktijk: met de day-ahead prijzen, die een dag vooruit bekend zijn.""") + f"""
 
-- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid); batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""" + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
+- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid)""" + ("" if gb else """; batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""") + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
 - **Stroomprijs:** uurprijs plus opslag van de leverancier (ca. €0,02 per kWh incl. btw), plus btw en energiebelasting ({eur(A['eb_incl'], 4)} per kWh incl. btw in 2026). Teruglevering tegen de uurprijs, zonder terugleverkosten; bij een negatieve prijs zet het EMS de teruglevering stop.
 - **Verbruik:** {nl(A['verbruik_kwh'])} kWh per jaar ({v.get('verbruik_bron') or 'Milieu Centraal: gemiddeld 2.430 kWh, 2 personen ca. 2.550 kWh'}) met een standaard dagprofiel: ochtend- en avondpiek, in de winter hoger.""" + (f"""
 - **{EVd['naam'][0].upper() + EVd['naam'][1:]}:** {nl(EV_KWH)} kWh per jaar thuis geladen ({EVd['bron']}).""" if lp else "") + "\n")
@@ -467,16 +474,17 @@ Het pakket van {eur2(R['inv'])} is normaal in ca. {N['jaren']} jaar terugverdien
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
-| {P['label_zon']} | {eur2(R['inv_zon'])} | {eur(zon_n)} | {j_zon} jaar |
-| {P['label_batt']} | {eur2(R['inv_batt'])} | {eur(batt_n - RESERVERING)} | {j_batt} jaar |
-""" + (f"""| Laadpaal (Zaptec Go 2 en installatie) | {eur2(R['inv_laad'])} | {eur(N['laden'] + N['ere'])} | {jr(R['inv_laad'], N['laden'] + N['ere'])} jaar |
+| {P['label_zon']} | {eur2(R['inv_zon'])} | {eur(zon_n - (RESERVERING if gb else 0))} | {j_zon} jaar |
+""" + ("" if gb else f"""| {P['label_batt']} | {eur2(R['inv_batt'])} | {eur(batt_n - RESERVERING)} | {j_batt} jaar |
+""") + (f"""| Laadpaal (Zaptec Go 2 en installatie) | {eur2(R['inv_laad'])} | {eur(N['laden'] + N['ere'])} | {jr(R['inv_laad'], N['laden'] + N['ere'])} jaar |
 """ if lp else "") + f"""| **Totaal** | **{eur2(R['inv'])}** | **{eur(N['netto'])}** | **{N['jaren']} jaar** |
 
 <!-- FIG:payback -->
 
 - **Zonnepanelen** verdienen zich snel terug, ook zonder saldering: het grootste deel van de waarde zit in de stroom die u zelf gebruikt.
-- **De batterij** verdient minder dan de panelen: {P['batt_oordeel'].format(verbruik=nl(A['verbruik_kwh']))}. Hij verdient sneller bij een groter verbruik (warmtepomp{', elektrische auto' if not lp else ''}) en bij grotere prijsverschillen.{P['batt_kosten_zin']}
-""" + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is {EVd['basis_lang']}. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
+""" + (f"""- **{P['jaarkosten'][0]}:** {eur(RESERVERING)} per jaar, verrekend bij de zonnepanelen.
+""" if gb else f"""- **De batterij** verdient minder dan de panelen: {P['batt_oordeel'].format(verbruik=nl(A['verbruik_kwh']))}. Hij verdient sneller bij een groter verbruik (warmtepomp{', elektrische auto' if not lp else ''}) en bij grotere prijsverschillen.{P['batt_kosten_zin']}
+""") + (f"""- **De laadpaal** verdient zich het snelst terug, omdat thuis laden veel goedkoper is {EVd['basis_lang']}. Laadt u nu al thuis aan een gewone laadpaal, dan is de winst kleiner: dan bespaart slim laden ca. {eur((R['ev_prijs_dom'] - n['ev_prijs_thuis']) * EV_KWH)} per jaar, plus de ERE-vergoeding.
 """ if lp else ""))
 
     if R.get("schaal"):
@@ -485,7 +493,24 @@ Het pakket van {eur2(R['inv'])} is normaal in ca. {N['jaren']} jaar terugverdien
         t.append(v["waarom"])
 
     # 5 Zelfverbruik
-    t.append(f"""## Zonnestroom zelf gebruiken
+    if gb:
+        t.append(f"""## Zonnestroom zelf gebruiken
+
+Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat terug het net op. U gebruikt ca. {pct(zv_pv)} van de zonnestroom direct zelf.
+
+| | Per jaar |
+| --- | --- |
+| Opwek | {nl(round(n['met_pv']['pv_kwh'], -1))} kWh |
+| Zelf gebruikt | {pct(zv_pv)} |
+| Teruggeleverd | {nl(round(n['met_pv']['export_kwh'], -1))} kWh |
+| Ingekocht van het net | {nl(round(n['met_pv']['import_kwh'], -1))} kWh |
+
+- **Teruglevering is weinig waard:** zonder saldering krijgt u bij een dynamisch contract de uurprijs, en die is laag als de zon schijnt (in 2025 gemiddeld ca. €0,05 per kWh tijdens zonne-uren).
+- **Meer zelf gebruiken:** zet de vaatwasser, wasmachine en droger aan als de zon schijnt.
+{P['uitbreiding'].format(ev=' of elektrische auto' if not lp else '')}
+""")
+    else:
+        t.append(f"""## Zonnestroom zelf gebruiken
 
 Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaat zonder batterij terug het net op. Met de batterij gebruikt u {pct(zv_b)} van de zonnestroom zelf in plaats van {pct(zv_pv)}.
 
@@ -526,15 +551,16 @@ Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(
     # 7 Contract en prijzen
     t.append(f"""## Stroomcontract en prijzen
 
-Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto {eur(vast_netto)} per jaar ({jr(R['inv'], vast_netto)} jaar).
+""" + (f"""Met een dynamisch contract levert het pakket normaal {eur(N['netto'])} per jaar op, met een vast contract {eur(vast_netto)} ({jr(R['inv'], vast_netto)} jaar).""" + (
+        " Zonder batterij is een vast contract hier gunstiger: teruggeleverde stroom krijgt dan een vaste vergoeding in plaats van de lage uurprijs op zonnige uren." if vast_netto > N['netto'] else "") if gb else f"""Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto {eur(vast_netto)} per jaar ({jr(R['inv'], vast_netto)} jaar).""") + f"""
 
 | | Dynamisch (advies) | Vast |
 | --- | --- | --- |
 | Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
 | Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
 | Zon per jaar | {eur(round(n['zon'], -1))} | {eur(round(R['vast']['zon'], -1))} |
-| Batterij per jaar | {eur(round(n['batterij'], -1))} | {eur(round(R['vast']['batterij'], -1))} |
-| Netto per jaar (normaal) | {eur(N['netto'])} | {eur(vast_netto)} |
+""" + ("" if gb else f"""| Batterij per jaar | {eur(round(n['batterij'], -1))} | {eur(round(R['vast']['batterij'], -1))} |
+""") + f"""| Netto per jaar (normaal) | {eur(N['netto'])} | {eur(vast_netto)} |
 | Terugverdientijd (normaal) | {N['jaren']} jaar | {jr(R['inv'], vast_netto)} jaar |
 
 - **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
@@ -554,26 +580,26 @@ Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afn
 | Dynamisch contract, normaal scenario | Met saldering (tot 2027) | Zonder saldering (vanaf 2027) |
 | --- | --- | --- |
 | Zon per jaar | {eur(round(sal['zon'], -1))} | {eur(round(n['zon'], -1))} |
-| Batterij per jaar | {eur(round(sal['batterij'], -1))} | {eur(round(n['batterij'], -1))} |
-{laad_rij}| Jaarlijkse kosten | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
+""" + ("" if gb else f"""| Batterij per jaar | {eur(round(sal['batterij'], -1))} | {eur(round(n['batterij'], -1))} |
+""") + f"""{laad_rij}| Jaarlijkse kosten | −{eur(RESERVERING)} | −{eur(RESERVERING)} |
 | **Netto per jaar** | **{eur(sal_netto)}** | **{eur(zonder_netto)}** |
 | Terugverdientijd | {jr(R['inv'], sal_netto)} jaar | {jr(R['inv'], zonder_netto)} jaar |
 | Netto per jaar bij een vast contract | {eur(sal_vast_netto)} | {eur(vast_netto)} |
 
 - **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van {eur(A['eb_incl'], 4)} per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. {nl(round(gesaldeerd, -1))} kWh per jaar.
 - **Zonnepanelen leveren minder op:** zonder saldering ca. {eur(verlies_zon)} per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
-- **De batterij wordt belangrijker:** zonder saldering komt {pct(batt_rel_zonder)} van de opbrengst van zon en batterij uit de batterij, met saldering {pct(batt_rel_met)}. De batterij vangt de zonnestroom op die anders bijna niets oplevert.
+""" + ("""- **Een batterij wordt interessanter:** zonder saldering levert teruggeleverde zonnestroom bijna niets op; een batterij vangt die op en kan later worden toegevoegd.""" if gb else f"""- **De batterij wordt belangrijker:** zonder saldering komt {pct(batt_rel_zonder)} van de opbrengst van zon en batterij uit de batterij, met saldering {pct(batt_rel_met)}. De batterij vangt de zonnestroom op die anders bijna niets oplevert.""") + f"""
 {laad_bullet}- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van {jr(R['inv'], zonder_netto)} jaar geldt voor de regels vanaf 2027.
 """)
 
     # 8 Installatie en veiligheid
     t.append(f"""## Installatie en veiligheid
 
-De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie.
+{"De installatie is in één dag klaar; de micro-omvormers komen onder de panelen." if gb else "De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie."}
 
 {chr(10).join(P['installatie']).format(laad=' of een laadpaal' if not lp else '')}
-- **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.
-- **Aanmelden:** meld de zonnepanelen en de batterij bij de netbeheerder via energieleveren.nl.
+""" + ("""- **Veiligheid:** de installatie moet voldoen aan NEN 1010. Micro-omvormers zetten de stroom al onder de panelen om, dus er loopt geen hoge gelijkspanning door het huis. Meld de zonnepanelen bij de opstalverzekeraar.""" if gb else """- **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.""") + f"""
+- **Aanmelden:** meld de zonnepanelen{'' if gb else ' en de batterij'} bij de netbeheerder via energieleveren.nl.
 """)
 
     # 9 Planning
@@ -583,10 +609,10 @@ Van akkoord tot werkend systeem duurt het ca. 4 tot 6 weken.
 
 | Week | Wat |
 | --- | --- |
-| 1 | Schouw: dak, meterkast, plek batterij{' en laadpaal' if lp else ''}{P['schouw_extra']} |
+| 1 | Schouw: dak, meterkast{'' if gb else ', plek batterij'}{' en laadpaal' if lp else ''}{P['schouw_extra']} |
 | 2 tot 3 | Bestellen en leveren; dynamisch contract regelen |
-| 4 | Installatie panelen, {P['installatie_omvormer']}{', laadpaal' if lp else ''} (1 tot 2 dagen) |
-| 4 tot 5 | Aanmelden energieleveren.nl, EMS koppelen{', ERE-inboekdienst kiezen' if lp else ''}, oplevering en uitleg |
+| 4 | Installatie panelen, {P['installatie_omvormer']}{', laadpaal' if lp else ''} ({'1 dag' if gb and not lp else '1 tot 2 dagen'}) |
+| 4 tot 5 | Aanmelden energieleveren.nl, {'monitoring instellen' if gb else 'EMS koppelen'}{', ERE-inboekdienst kiezen' if lp else ''}, oplevering en uitleg |
 """)
 
     # 10 Aannames
@@ -597,18 +623,18 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 **Te bevestigen bij de klant**
 
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter){'; aantal kilometers en huidige laadkosten van de auto' if lp else ''}
-- [ ] Dak: plat of schuin (plat dak: montage vast {eur(PLATDAK_MONTAGE)}), oriëntatie, hellingshoek, schaduw en ruimte voor {A['panelen']} panelen (ca. {A['panelen'] * 2} m²)
+- [ ] Dak: plat of schuin (plat dak: montage vast {eur(PLATDAK_MONTAGE)}), oriëntatie, hellingshoek, schaduw en ruimte voor {A['panelen']} panelen ({v.get('opstelling') or f"ca. {A['panelen'] * 2} m²"})
 {P['checklist_aansluiting']}
-- [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
-- [ ] Stroomcontract: dynamisch voor afname en teruglevering
+""" + ("" if gb else """- [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
+""") + f"""- [ ] Stroomcontract: {'dynamisch of vast' if gb else 'dynamisch voor afname en teruglevering'}
 - [ ] Offerte installateur voor de stelposten
 
 **Aannames**
 
 - Verbruik {nl(A['verbruik_kwh'])} kWh per jaar; opbrengst {OPBRENGST[1]} kWh per kWp
 - Uurprijzen en zonneprofiel van 2025; opslag dynamisch contract ca. €0,02 per kWh incl. btw; energiebelasting 2026
-- {P['batt_aanname'].format(bruikbaar=nl(batt_bruikbaar, 1))}
-- {P['jaarkosten'][0]} €{RESERVERING} per jaar""" + (f"""
+""" + ("" if gb else f"""- {P['batt_aanname'].format(bruikbaar=nl(batt_bruikbaar, 1))}
+""") + f"""- {P['jaarkosten'][0]} €{RESERVERING} per jaar""" + (f"""
 - {EVd['naam'][0].upper() + EVd['naam'][1:]} {nl(EV_KWH)} kWh per jaar thuis; {EVd['basis_reeks']} {eur(PUBLIEK[1], 2)} per kWh; ERE {eur(ERE[1], 3)} per kWh netto""" if lp else "") + "\n")
 
     # 11 Begrippen
@@ -630,6 +656,10 @@ De technische termen in dit advies, in gewone taal.
 | Stelpost | Geschat bedrag voor een post waarvan de exacte prijs nog niet bekend is. |
 | Zelfverbruik | Het deel van de zonnestroom dat u zelf gebruikt in plaats van terug te leveren. |
 """)
+    if gb:  # zonder batterij: geen EMS en geen batterijchemie
+        t[-1] = "\n".join(r for r in t[-1].split("\n") if not r.startswith(("| EMS", "| LFP")))
+    if gb and not lp:
+        t[-1] = "\n".join(r for r in t[-1].split("\n") if not r.startswith(("| ERE", "| MID-meter")))
     return "\n".join(t)
 
 
@@ -652,6 +682,13 @@ HEADLINES = {
 }
 
 
+HEADLINES_ZONDER_BATTERIJ = {
+    "Terugverdientijd": "Zonnepanelen verdienen zich snel terug.",
+    "Stroomcontract en prijzen": "Kies het contract dat bij uw verbruik past.",
+    "Installatie en veiligheid": "Eén dag werk, klaar voor een batterij later.",
+}
+
+
 def figuren(v, R):
     sc, N = R["sc"], R["sc"][1]
     lp = v["laadpaal"]
@@ -661,10 +698,11 @@ def figuren(v, R):
     f = {}
     f["kasstroom"] = charts.kasstroom(R["inv"], scen, horizon=15,
                                       titel=f"Normaal is het pakket na ca. {N['jaren']} jaar terugverdiend")
-    items = [("Zonnepanelen", R["inv_zon"]), ("Batterij", R["inv_batt"])] + ([("Laadpaal", R["inv_laad"])] if lp else [])
+    gb = not R["A"]["batt_kwh"]
+    items = [("Zonnepanelen", R["inv_zon"])] + ([] if gb else [("Batterij", R["inv_batt"])]) + ([("Laadpaal", R["inv_laad"])] if lp else [])
     f["begroting"] = charts.begroting(items, R["inv"], titel="Investering per onderdeel, incl. btw",
                                       sub=f"Totaal {eur2(R['inv'])} incl. btw")
-    wf = [("Zon", N["zon"], "plus"), ("Batterij", N["batt"], "plus")]
+    wf = [("Zon", N["zon"], "plus")] + ([] if gb else [("Batterij", N["batt"], "plus")])
     if lp:
         wf += [("Thuis laden", N["laden"], "plus"), ("ERE", N["ere"], "plus")]
     wf += [("Bruto", N["bruto"], "totaal"), (R["P"]["jaarkosten"][0], -RESERVERING, "min"), ("Netto per jaar", N["netto"], "totaal")]
@@ -672,8 +710,11 @@ def figuren(v, R):
     pb = []
     zon = [s["zon"] for s in sc]
     pb.append(("Zonnepanelen",) + tuple(R["inv_zon"] / z for z in zon))
-    bt = [s["batt"] - RESERVERING for s in sc]
-    pb.append(("Batterij",) + tuple((R["inv_batt"] / b if b > 0 and R["inv_batt"] / b <= 25 else None) for b in bt))
+    if gb:
+        pb[0] = ("Zonnepanelen",) + tuple(R["inv_zon"] / (z - RESERVERING) for z in zon)
+    else:
+        bt = [s["batt"] - RESERVERING for s in sc]
+        pb.append(("Batterij",) + tuple((R["inv_batt"] / b if b > 0 and R["inv_batt"] / b <= 25 else None) for b in bt))
     if lp:
         la = [s["laden"] + s["ere"] for s in sc]
         pb.append(("Laadpaal",) + tuple(R["inv_laad"] / x for x in la))

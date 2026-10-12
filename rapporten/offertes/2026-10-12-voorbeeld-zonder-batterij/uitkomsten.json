@@ -1,0 +1,33 @@
+{
+ "offerte": {
+  "inv": 2282.05,
+  "inv_ex": 2282.05,
+  "netto": [
+   300.0,
+   310.0,
+   340.0
+  ],
+  "jaren": [
+   "7,6",
+   "7,4",
+   "6,7"
+  ],
+  "keuze": "geen",
+  "pakket": "Zonnepanelen met micro-omvormers, zonder batterij",
+  "profiel": {
+   "klant": "Voorbeeld zonder batterij",
+   "plaats": "",
+   "huishouden": "gemiddeld",
+   "verbruik": null,
+   "auto": "geen",
+   "auto_kwh": null,
+   "dak": "schuin",
+   "panelen": 8,
+   "aansluiting": "onbekend",
+   "batterij": "geen",
+   "opstelling": "2 rijen van 4, ca. 4,5 × 3,5 m",
+   "datum": "2026-10-12"
+  },
+  "verbruik": 2500
+ }
+}

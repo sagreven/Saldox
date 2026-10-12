@@ -185,8 +185,8 @@ Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afn
 
 De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie.
 
-- **A Solar 460 Wp (8×):** N-type, glas-glas, zwart; 1.762 × 1.134 mm per paneel, samen ca. 16 m² dak.
-- **APsystems DS3 (4×):** micro-omvormer voor twee panelen, 880 VA, 2 MPPT's, rendement ca. 97%. Elk paneelpaar werkt apart, dus schaduw op één paneel kost weinig. Monitoring via de APsystems ECU-B.
+- **A Solar 460 Wp (10×):** N-type, glas-glas, zwart; 1.762 × 1.134 mm per paneel, samen ca. 20 m² dak.
+- **APsystems DS3 (5×):** micro-omvormer voor twee panelen, 880 VA, 2 MPPT's, rendement ca. 97%. Elk paneelpaar werkt apart, dus schaduw op één paneel kost weinig. Monitoring via de APsystems ECU-B.
 - **Marstek Venus E 3.0:** LFP-batterij, 5,12 kWh, bruikbaar ca. 4,6 kWh, 2.500 W laden en ontladen op een eigen groep, rendement ca. 85% heen en terug, stand-by ca. 5 W. Meer dan 6.000 cycli, garantie 10 jaar. Het EMS van Saldox stuurt hem via Modbus TCP op de uurprijs.
 - **Plaatsing:** op een eigen groep, nooit via een verlengsnoer of stekkerdoos; op een droge, geventileerde plek buiten de vluchtroute. De batterij schakelt zichzelf uit bij stroomuitval van het net.
 - **Uitbreidbaar:** later kunnen er panelen met extra micro-omvormers bij, en tot 3 Venus E's op één fase.
