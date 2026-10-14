@@ -143,8 +143,8 @@ def scene_exploded():
         (S.door_part().translate([0, 0, 40]), PLA2),
         (S.door_screws().translate([-45, 0, 40]), STEEL),
         (S.frame_part(), PLA),
-        (bolt.translate([0, 0, 95]), STEEL),
-        (nuts.translate([0, 0, -25]), STEEL),
+        (bolt.translate([0, 0, -45]), STEEL),
+        (nuts.translate([0, 0, 18]), STEEL),
     ]
 
 
@@ -189,7 +189,7 @@ def main():
     os.makedirs(out, exist_ok=True)
     legend = [("deurdeel (schroeven in paumelle-gaten)", PLA2),
               ("kozijndeel (sleufgaten)", PLA),
-              ("M8x130 bout, ring, moer + contramoer", STEEL)]
+              ("M8x120 bout (pen), stelmoer + contramoer, ringen", STEEL)]
 
     img = render(scene_overview(), eye=(700, 3600, 700), target=(-800, 0, 0), fov=36)
     label(img, legend + [("deuren / gevel", WOOD)],

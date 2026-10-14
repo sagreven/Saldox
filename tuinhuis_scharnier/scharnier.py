@@ -1,5 +1,5 @@
 """Verstelbaar opdekdeur-scharnier voor de dubbele deuren van het tuinhuis
-(3D-print), versie 2: staal draagt, plastic klemt.
+(3D-print): staal draagt, plastic klemt.
 
 Waarom v1 brak: de onderdelen werden rechtop geprint, waardoor de lagen
 dwars op de buigspanning in de flenzen lagen (scheuren langs een laag in de
@@ -10,10 +10,12 @@ v2:
 - Beide delen worden PLAT geprint (op de flens), zodat de lagen in het vlak
   van de buigspanning liggen.
 - Flenzen 8 mm, knokkels Ø28 mm, knokkelbrug over de volle breedte.
-- Eén doorgaande M8 bout door beide knokkels: de bout neemt alle dwarskrachten,
-  het plastic krijgt alleen stuik (druk) op de boring.
-- De deur hangt aan de boutkop (met sluitring); de bout draait onder in een
-  ingesloten moer: kop draaien = deur omhoog/omlaag, contramoer eronder borgt.
+- Een M8 bout zit als vaste pen in het kozijndeel (kop onder, moer verzonken
+  in de bovenkant van de knokkel). De deurknokkel rust op een stalen
+  stelmoer + ring op die pen; contramoer eronder borgt. De bout neemt alle
+  dwarskrachten, het plastic krijgt alleen druk.
+- Het kozijndeel heeft een schoor en afschuining op de laagnaad tussen plaat
+  en knokkel: daar trekt het gewicht van de deur dwars op de lagen.
 - In de bestaande paumelle-gaten komen stalen verzonken (constructie)schroeven
   in plaats van geprinte pennen.
 
@@ -30,7 +32,7 @@ import os
 
 import numpy as np
 import trimesh
-from manifold3d import Manifold
+from manifold3d import CrossSection, Manifold
 
 # ---------------------------------------------------------------- parameters
 # >>> meet deze aan je deur / de oude paumelle (kant die in de muur gaat) <<<
@@ -44,9 +46,11 @@ PLATE_T = 8.0        # dikte van de flenzen
 KNUCKLE_R = 14.0     # straal van de knokkels (Ø28)
 AX = PLATE_T + 1.0 + KNUCKLE_R   # as 1 mm naast de deurflens
 AY = PLATE_T + 1.0 + KNUCKLE_R   # as 1 mm voor de kozijnplaat
-HALF_H = 55.0        # knokkels lopen van +-GAP/2 tot +-HALF_H
-GAP = 6.0            # nominale spleet tussen de knokkels (instelbereik +-4 mm)
-FRAME_W = 70.0       # breedte kozijnplaat
+HALF_H = 60.0        # knokkels lopen van +-GAP/2 tot +-HALF_H
+GAP = 19.0           # spleet tussen de knokkels: ruimte voor stelmoer, contramoer en ring
+FRAME_W = 75.0       # breedte kozijnplaat
+GUSSET = 13.0        # schoor naast de kozijnknokkel (45°)
+FILLET = 6.0         # afschuining bovenkant kozijnknokkel -> plaat (45°)
 
 BOLT_CLEAR = 8.5     # boring voor M8
 NUT_AF = 13.3        # M8 moer sleutelwijdte + speling
@@ -127,28 +131,40 @@ def door_part():
 
 def frame_part():
     """Kozijndeel: plaat met sleufgaten op de voorkant van kozijn/gevel naast
-    de deur + onderste knokkel met ingesloten M8 moer aan de onderkant."""
+    de deur + onderste knokkel. De M8 bout zit hier vast als pen: kop onder,
+    moer verzonken in de bovenkant van de knokkel."""
     x0 = PLATE_T + 1
+    k0, k1 = -HALF_H, -GAP / 2
     plate = box(x0, x0 + FRAME_W, 0, PLATE_T, -HALF_H, HALF_H)
-    bridge = box(AX - KNUCKLE_R, AX + KNUCKLE_R, 0, AY, -HALF_H, -GAP / 2)
-    knuckle = zcyl(KNUCKLE_R, -HALF_H, -GAP / 2, AX, AY)
-    body = plate + bridge + knuckle
+    bridge = box(AX - KNUCKLE_R, AX + KNUCKLE_R, 0, AY, k0, k1)
+    knuckle = zcyl(KNUCKLE_R, k0, k1, AX, AY)
+    # schoor naast de knokkel en afschuining aan de bovenkant: geen scherpe
+    # binnenhoek op de laagnaad tussen brug en plaat (zie README, sterkte)
+    xs = AX + KNUCKLE_R
+    gusset = Manifold.extrude(CrossSection([[(xs - 0.5, PLATE_T - 0.5), (xs + GUSSET, PLATE_T - 0.5),
+                                             (xs - 0.5, PLATE_T + GUSSET)]]), k1 - k0).translate([0, 0, k0])
+    # driehoek in het (y, z)-vlak, uitgetrokken langs x over de brugbreedte
+    tri = CrossSection([[(PLATE_T - 0.5, k1 - 0.5), (PLATE_T + FILLET, k1 - 0.5),
+                         (PLATE_T - 0.5, k1 + FILLET)]])
+    fillet = Manifold.extrude(tri, 2 * KNUCKLE_R).rotate([90, 0, 90]).translate([AX - KNUCKLE_R, 0, 0])
+    body = plate + bridge + knuckle + gusset + fillet
 
-    holes = [zcyl(BOLT_CLEAR / 2, -HALF_H - 1, 1, AX, AY)]
+    holes = [zcyl(BOLT_CLEAR / 2, k0 - 1, k1 + FILLET + 1, AX, AY)]
     nut_r = NUT_AF / math.sqrt(3)  # omgeschreven straal van de zeskant
     holes.append(Manifold.cylinder(NUT_H + 1, nut_r, nut_r, 6).rotate([0, 0, 30])
-                 .translate([AX, AY, -HALF_H - 1]))
-    xa = AX + KNUCKLE_R + 9
-    xb = x0 + FRAME_W - 9
-    holes += [slot_y(xa, 38), slot_y(xa, 0), slot_y(xa, -38),
-              slot_y(xb, 38), slot_y(xb, 0), slot_y(xb, -38)]
+                 .translate([AX, AY, k1 - NUT_H]))
+    xa = xs + GUSSET + 8
+    xb = x0 + FRAME_W - 8
+    holes += [slot_y(xa, 40), slot_y(xa, 0), slot_y(xa, -40),
+              slot_y(xb, 40), slot_y(xb, 0), slot_y(xb, -40)]
     for h in holes:
         body = body - h
     return body
 
 
 # ---------------------------------------------------------------- hardware (alleen voor de render)
-BOLT_L = 130.0       # DIN 931 M8x130 (deels draad, 28 mm draad)
+BOLT_L = 120.0       # DIN 933 M8x120 (volledig draad)
+W_T = 2.0            # carrosseriering DIN 9021 M8: Ø24 x 2
 
 
 def hexprism(af, z0, h, x=AX, y=AY):
@@ -156,16 +172,27 @@ def hexprism(af, z0, h, x=AX, y=AY):
     return Manifold.cylinder(h, r, r, 6).rotate([0, 0, 30]).translate([x, y, z0])
 
 
-def bolt_assembly(split=False):
-    top = HALF_H + 1.6
-    washer = zcyl(12.0, HALF_H, top, AX, AY, seg=48) - zcyl(4.2, HALF_H - 1, top + 1, AX, AY, seg=32)
-    head = hexprism(13, top, 5.3)
-    shank = zcyl(4.0, top - BOLT_L, top, AX, AY, seg=32)
-    nut1 = hexprism(13, -HALF_H, 6.5) - zcyl(4.0, -HALF_H - 1, -HALF_H + 8, AX, AY, seg=32)
-    nut2 = hexprism(13, -HALF_H - 6.6, 6.5) - zcyl(4.0, -HALF_H - 8, -HALF_H + 1, AX, AY, seg=32)
+def _nut(z0):
+    return hexprism(13, z0, 6.5) - zcyl(4.0, z0 - 1, z0 + 8, AX, AY, seg=32)
+
+
+def _washer(z0, r=12.0):
+    return zcyl(r, z0, z0 + W_T, AX, AY, seg=48) - zcyl(4.3, z0 - 1, z0 + W_T + 1, AX, AY, seg=32)
+
+
+def bolt_assembly(split=False, lift=0.0):
+    """Bout als vaste pen in het kozijndeel (kop onder, moer verzonken boven);
+    de deurknokkel rust op ring + stelmoer, geborgd met een contramoer.
+    lift = hoeveel de deur hoger staat dan nominaal."""
+    k1 = -GAP / 2
+    bottom = -HALF_H - W_T
+    pin = _washer(bottom) + hexprism(13, bottom - 5.3, 5.3) + \
+        zcyl(4.0, bottom, bottom + BOLT_L, AX, AY, seg=32) + _nut(k1 - 6.5)
+    seat = GAP / 2 + lift                      # onderkant deurknokkel
+    adj = _washer(seat - W_T) + _nut(seat - W_T - 6.5) + _nut(seat - W_T - 13.1)
     if split:
-        return washer + head + shank, nut1 + nut2
-    return washer + head + shank + nut1 + nut2
+        return pin, adj
+    return pin + adj
 
 
 def door_screws():
