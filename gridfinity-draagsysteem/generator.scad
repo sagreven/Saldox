@@ -15,20 +15,23 @@
 // loopt (zwaluwstaartgroef, zonder support te printen). De deksel schuift er
 // aan de rechterkant (+x) uit.
 // Cassette: Gridfinity-bodem binnenin, scharnier met 1,75 mm filament als pen,
-// twee klikbeugels; 1 of 2 lagen bakjes hoog.
+// twee klikbeugels; hoogte in halve bakjes.
+//
+// De generator controleert of het onderdeel op je printbed past (instelling
+// Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel (één printplaat), cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
-// Breedte in Gridfinity-vakken (42 mm)
-gx = 1; // [1:1:8]
-// Diepte in Gridfinity-vakken (42 mm)
-gy = 1; // [1:1:6]
+// Breedte (maat van het bakje; een cassette is 0.6 cm groter)
+gx = 1; // [1:1 vak - 4.2 cm, 2:2 vakken - 8.4 cm, 3:3 vakken - 12.6 cm, 4:4 vakken - 16.8 cm, 5:5 vakken - 21.0 cm, 6:6 vakken - 25.2 cm, 7:7 vakken - 29.4 cm, 8:8 vakken - 33.6 cm]
+// Diepte (maat van het bakje; een cassette is 0.6 cm groter plus 1.3 cm voor scharnier en klikbeugels)
+gy = 1; // [1:1 vak - 4.2 cm, 2:2 vakken - 8.4 cm, 3:3 vakken - 12.6 cm, 4:4 vakken - 16.8 cm, 5:5 vakken - 21.0 cm, 6:6 vakken - 25.2 cm, 7:7 vakken - 29.4 cm, 8:8 vakken - 33.6 cm]
 
 /* [Bakje] */
 // Hoogte van het bakje (heel past in de Packout low-profile organizer; 2 halve = 1 heel)
-hu = 5; // [2.5:half, 5:heel]
+hu = 2.5; // [2.5:half - 2.2 cm hoog - stapelt per 1.75 cm, 5:heel - 3.9 cm hoog - stapelt per 3.5 cm]
 // Indeling binnenin
 vakken = "per_vak"; // [per_vak:Elk vak apart, open:Eén open ruimte]
 // Schuifdeksel (uit = open bakje)
@@ -45,12 +48,16 @@ steunen = 2; // [0:1:5]
 klik = false;
 
 /* [Cassette] */
-// Aantal lagen bakjes in de cassette (een laag = één heel of twee halve bakjes)
-lagen = 1; // [1, 2]
+// Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette
+lagen = 2; // [1:1 half bakje - 2.5 cm, 2:2 halve - 4.3 cm, 3:3 halve - 6.1 cm, 4:4 halve - 7.8 cm, 5:5 halve - 9.6 cm, 6:6 halve - 11.3 cm]
 // Gridfinity-bodem binnenin (uit = vlakke bodem voor schuim/TPU-inleg)
 baseplate = true;
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
+
+/* [Printer] */
+// Maat van je printbed in mm (vierkant)
+bed = 350; // [180:10:400]
 
 /* [Hidden] */
 $fn = 40;
@@ -71,7 +78,7 @@ ceil_t  = 1.0;     // materiaal boven de groef, tot de stapelrand
 groove  = 1.4;     // hoe ver de groef in de wand gaat
 
 // cassette
-laag_hu  = 5;     // hoogte van een laag bakjes, in eenheden van 7 mm
+laag_hu  = 2.5;   // hoogte van een half bakje, in eenheden van 7 mm
 c_wall   = 2.4;   // wanddikte
 c_floor  = 1.2;   // bodem onder het baseplate-patroon
 top_t    = 2.0;   // dikte deksel
@@ -379,12 +386,30 @@ else if (onderdeel == "voorbeeld_cassette") { cassette_body(); cassette_deksel()
 
 is_cassette = onderdeel == "cassette_onderbak" || onderdeel == "cassette_deksel"
            || onderdeel == "cassette_beide" || onderdeel == "voorbeeld_cassette";
+
+// ruimte op het bed (x, y) per onderdeel
+c_ext_d = out_d + 2 * kr + 0.3 + ridge_d + 0.3 + latch_t + 2;  // incl. scharnier en klikbeugels
+footprint =
+    onderdeel == "schuifdeksel"    ? [lid_w, lid_d] :
+    onderdeel == "bakje_en_deksel" ? [W, D + 10 + (D - open_i + 2 * groove)] :
+    onderdeel == "cassette_beide"  ? [out_w, 2 * c_ext_d + 20] :
+    is_cassette                    ? [out_w, c_ext_d] :
+                                     [W, D];
+
+function cm(mm) = round(mm) / 10;
+
+assert(footprint[0] <= bed && footprint[1] <= bed,
+       str("Past niet op je printbed van ", cm(bed), " cm: dit onderdeel is ",
+           cm(footprint[0]), " x ", cm(footprint[1]), " cm. Kies minder vakken",
+           onderdeel == "bakje_en_deksel" || onderdeel == "cassette_beide"
+               ? " of print de onderdelen los." : "."));
+
 if (is_cassette) {
-    echo(str("Cassette ", gx, "x", gy, ", ", lagen, " laag/lagen: ", out_w, " x ", out_d,
-             " mm, hoogte dicht ", H_body + c_lid_h, " mm"));
+    echo(str("Cassette ", gx, "x", gy, ": ", cm(out_w), " x ", cm(c_ext_d), " x ",
+             cm(H_body + c_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
 } else {
     if (deksel && label_d > 0)
-        echo(str("Stickervlak op de deksel: ", label_x1 - label_x0, " x ", label_y, " mm"));
-    echo(str("Bakje ", gx, "x", gy, "x", hu, "u: ", W, " x ", D, " x ", Hb + lip_h,
-             " mm (gestapeld telt elk bakje ", Hb, " mm)"));
+        echo(str("Stickervlak op de deksel: ", cm(label_x1 - label_x0), " x ", cm(label_y), " cm"));
+    echo(str("Bakje ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " x ", cm(Hb + lip_h),
+             " cm (stapelt per ", Hb / 10, " cm)"));
 }
