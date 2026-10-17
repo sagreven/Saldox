@@ -80,6 +80,17 @@ uitsparing van 0,4 mm diep voor een sticker:
 
 Elk bestand bestaat uit een `-onderbak` en een `-deksel`.
 
+### Voorbeeld: krimptang voor adereindhulzen
+
+`cassette-5x3-4.5cm-krimptang` (21,7 × 14,6 × 4,5 cm, binnen 21,1 × 12,7 cm)
+voor een zelfinstellende krimptang van ca. 19,5 × 8 × 3 cm. De tang ligt op
+de voorste twee rijen; in de achterste rij passen vijf `bakje-1x1-heel` voor
+adereindhulzen per maat (bijvoorbeeld 0,5 / 0,75 / 1 / 1,5 / 2,5 mm²).
+
+![krimptang-cassette](img/krimptang.png)
+
+Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
+
 ### Magneten en staalband: naast en op elkaar
 
 - **Naast elkaar (Packout):** in beide zijwanden twee gaten per vak van 4,2 cm
