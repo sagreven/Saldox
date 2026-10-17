@@ -28,10 +28,11 @@ floor_t = 1.2;     // bodem boven de voeten
 
 /* [Schuifdeksel] */
 lid_t   = 1.5;     // dikte deksel
-slot_t  = 1.8;     // hoogte van de groef
+lid_bev = 1.1;     // afschuining (45 graden) van de deksel- en groefrand
 ceil_t  = 1.0;     // materiaal boven de groef, tot de stapelrand
 groove  = 1.4;     // hoe ver de groef in de wand gaat (deksel grijpt 1,4 mm in)
-lid_fit = 0.2;     // speling deksel in de groef, per kant
+lid_fit = 0.1;     // speling deksel in de groef, per kant (0,1 getest: strak, schuift goed)
+steunen = 2;       // breekbare steuntjes in de sleuf aan de voorkant (0 = geen)
 klik    = false;   // klik-nokje tegen vanzelf openschuiven (standaard: alleen schuiven)
 
 $fn = 40;
@@ -42,7 +43,10 @@ Hb = hu * U;               // bovenkant wand = onderkant stapelrand
 z_floor = foot_h + floor_t;
 open_i  = 5.6;             // opening aan de onderkant van de stapelrand = W - 5.6
 z_g1    = Hb - ceil_t;     // bovenkant groef
-z_g0    = z_g1 - slot_t;   // onderkant groef = bovenkant tussenwanden
+z_g0    = z_g1 - lid_t - lid_fit; // onderkant groef = bovenkant tussenwanden
+lid_w   = W - (wall + lid_fit) - 0.3;          // lengte deksel (x)
+lid_d   = D - open_i + 2 * groove - 2 * lid_fit; // breedte deksel (y)
+lid_x   = lid_w / 2 - (W / 2 - wall - lid_fit); // middelpunt deksel in gesloten stand
 
 module cavity(w, d) {
     c = 2 * wall;          // binnenmaat = buitenmaat - 2 wanden
@@ -66,15 +70,39 @@ module cavity_lid(w, d) {
     }
 }
 
+// Vorm van de deksel (g = 0) of van de groef (g = speling): onderaan recht,
+// bovenaan aan -x en beide zijkanten 45 graden afgeschuind. Zo heeft de groef
+// een schuin plafond (zwaluwstaart) dat zonder support te printen is.
+module lid_shape(g = 0) {
+    hull() {
+        translate([-lid_w / 2 - g, -lid_d / 2 - g, 0])
+            cube([lid_w + 2 * g, lid_d + 2 * g, lid_t - lid_bev + g]);
+        translate([-lid_w / 2 - g + lid_bev, -lid_d / 2 - g + lid_bev, 0])
+            cube([lid_w + 2 * g - lid_bev, lid_d + 2 * g - 2 * lid_bev, lid_t + g]);
+    }
+}
+
 module groove_cut() {
     // groef: aan -x dicht (aanslag), aan +x door de wand naar buiten
-    gw = D - open_i + 2 * groove;
-    translate([-(W / 2 - wall - lid_fit), -gw / 2, z_g0]) cube([W, gw, slot_t]);
+    hull() {
+        translate([lid_x, 0, z_g0]) lid_shape(lid_fit);
+        translate([lid_x + W, 0, z_g0]) lid_shape(lid_fit);
+    }
     // opening tussen groef en stapelrand
     translate([0, 0, z_g1 - 0.01]) rsq(W - open_i, D - open_i, (41.5 - open_i - 34) / 2, ceil_t + 0.02);
 }
 
+// Breekbare steuntjes in de sleuf door de voorwand (+x), zodat de brug boven
+// de sleuf niet te lang wordt. Dun in de schuifrichting: de deksel drukt ze
+// er bij de eerste keer insteken uit.
+module steuntjes() {
+    for (k = [1 : steunen])
+        translate([W / 2 - wall / 2 - 0.2, -lid_d / 2 + k * lid_d / (steunen + 1) - 0.4, z_g0 - 0.01])
+            cube([0.4, 0.8, lid_t + lid_fit + 0.02]);
+}
+
 module bakje() {
+    if (deksel && steunen > 0) steuntjes();
     difference() {
         union() {
             for (i = [0 : gx - 1], j = [0 : gy - 1])
@@ -98,21 +126,18 @@ module bakje() {
 // Schuifdeksel, plat op het bed. Aan de +x kant een greepsleuf voor je nagel.
 // Optioneel (klik = true) een nokje dat achter de bovenrand van de groef valt.
 module schuifdeksel() {
-    lw = W - (wall + lid_fit) - 0.3;   // van aanslag tot net binnen de voorkant
-    ld = D - open_i + 2 * groove - 2 * lid_fit;
     difference() {
-        translate([-lw / 2, -ld / 2, 0]) cube([lw, ld, lid_t]);
-        translate([lw / 2 - 9, 0, lid_t - 0.8]) rsq(3, min(20, ld - 10), 1, 1);
+        lid_shape();
+        translate([lid_w / 2 - 9, 0, lid_t - 0.8]) rsq(3, min(20, lid_d - 10), 1, 1);
     }
     bw = D - open_i - 2;               // alleen onder de opening, niet in de zijgroeven
-    if (klik) translate([lw / 2 - 4.5, 0, lid_t])
+    if (klik) translate([lid_w / 2 - 4.5, 0, lid_t])
         scale([1, 1, 0.5]) rotate([90, 0, 0]) cylinder(r = 1.2, h = bw, center = true);
 }
 
 // deksel in gesloten stand (voor previews)
 module schuifdeksel_dicht() {
-    lw = W - (wall + lid_fit) - 0.3;
-    translate([lw / 2 - (W / 2 - wall - lid_fit), 0, z_g0]) schuifdeksel();
+    translate([lid_x, 0, z_g0]) schuifdeksel();
 }
 
 if (part == "bakje") bakje();

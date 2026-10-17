@@ -31,7 +31,8 @@ die je nodig hebt: elk bakje is zelf al dicht.
 2. **Schuifdeksel per bakje.** De deksel loopt in een groef vlak onder de
    stapelrand en rust op de tussenwanden, zodat elk vakje apart dicht is.
    Er zit geen klik op: de deksel schuift, en blijft door wrijving zitten. In de
-   cassette houdt de wand ernaast hem op zijn plek.
+   cassette houdt de wand ernaast hem op zijn plek. De groef is een
+   zwaluwstaart met een plafond van 45°, zodat hij zonder support print.
 3. **Stapelbaar.** De deksel zit onder de stapelrand, dus het bakje erboven valt
    gewoon met zijn Gridfinity-voeten in de rand. Gestapeld telt elk bakje 35 mm.
 4. **Cassettes** hebben binnen een Gridfinity-raster (`gx` × `gy` vakken van
@@ -81,6 +82,9 @@ Kant-en-klare STL's staan in [`stl/`](stl/).
   **cassette-deksel** met de bovenkant op het bed (de STL's zijn al zo
   georiënteerd). Geen support nodig.
 - 3 wanden, 15–20 % infill.
+- **Steuntjes in de sleuf:** in de sleuf aan de voorkant van elk bakje staan
+  twee hele dunne steuntjes, zodat de brug erboven kort blijft. Die drukt de
+  deksel er de eerste keer uit; eventuele restjes haal je weg met een mesje.
 - **Scharnierpen cassette:** schuif een stuk 1,75 mm filament door de knokkels
   en smelt of knip de uiteinden iets dikker.
 
@@ -106,7 +110,8 @@ openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="lid"'  -o lid.stl  cassette.scad
 | `hu` | hoogte in eenheden van 7 mm (standaard 5, past in de low-profile organizer) |
 | `vakken` | `per_vak` (elk 42 mm-vak apart) of `open` (één grote ruimte) |
 | `deksel` | `false` = open bakje zonder groef |
-| `lid_fit` | speling van de schuifdeksel in de groef, per kant (kleiner = stroever) |
+| `lid_fit` | speling van de schuifdeksel in de groef, per kant (standaard 0,1: getest, strak) |
+| `steunen` | aantal breekbare steuntjes in de sleuf aan de voorkant (0 = geen) |
 | `klik` | `true` = klein nokje tegen vanzelf openschuiven (standaard uit) |
 | `part` | `bakje`, `deksel`, `both` of `dicht` (preview) |
 
@@ -128,12 +133,11 @@ de korte kant.
 
 De modellen zijn gerenderd, gecontroleerd op geldige geometrie en in
 doorsnede nagemeten (stapelen, deksel in de groef, scharnier, klikbeugels),
-maar nog niet geprint. Print eerst één `bakje-2x1-vakjes` met deksel en één
-`cassette-4x2-1laag`, en controleer:
+en de schuifdeksel van een 1×1-bakje is geprint en getest (speling 0,1 mm is
+goed). Print nog één `cassette-4x2-1laag` en een paar bakjes, en controleer:
 
-1. Schuift de deksel soepel maar niet te los? Pas `lid_fit` aan (0,1–0,3).
-2. Valt een bakje goed op een ander bakje en in de cassette?
-3. Klikken de beugels van de cassette goed? Te stug: maak `latch_t` dunner.
+1. Valt een bakje goed op een ander bakje en in de cassette?
+2. Klikken de beugels van de cassette goed? Te stug: maak `latch_t` dunner.
    Te los: vergroot `ridge_d`.
-4. Past een bakje van 39,4 mm in jouw low-profile organizer met de
+3. Past een bakje van 39,4 mm in jouw low-profile organizer met de
    Gridfinity-bodem erin?
