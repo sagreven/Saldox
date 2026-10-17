@@ -4,108 +4,136 @@
 Packout-koffer. Ga je met de motor, dan moet alles één voor één de rugzak in, en
 daarna weer terug.
 
-**Het idee:** je pakt geen spullen meer over, maar **dichte cassettes**. Elke
-cassette is een plat doosje met deksel, scharnier en twee klikbeugels, met
-binnenin een Gridfinity-bodem. In de werkplaats en in de Packout staan de
-cassettes naast elkaar. Ga je met de motor, dan schuif je de cassettes die je
-nodig hebt zó in de rugzak.
+**Het idee:** de kleinste eenheid is een **stapelbaar bakje met schuifdeksel**.
+Bakjes staan in **cassettes** (dichte doosjes met scharnier en klikbeugels,
+binnenin een Gridfinity-raster). Je pakt de cassette over, of alleen de bakjes
+die je nodig hebt: elk bakje is zelf al dicht.
 
-![open](img/open.png)
-![dicht](img/dicht.png)
+![bakje met schuifdeksel](img/bakje.png)
+![cassette met twee lagen bakjes, doorgesneden](img/stapel.png)
+![cassette open](img/open.png)
+![cassette dicht](img/dicht.png)
 
-## Hoe het systeem werkt
+## Opbouw
 
 ```
- Werkplaats / Packout-koffer            Rugzak (motor)
-┌───────────────────────────┐          ┌──────────────┐
-│ [cassette A] [cassette B] │  ──────► │ [cassette A] │
-│ [cassette C] [cassette D] │  pak de  │ [cassette C] │
-└───────────────────────────┘ cassette └──────────────┘
-        │                     niet de
-        └─ binnenin: losse Gridfinity-bakjes (42 mm raster)
+ bakje (5u, 39,4 mm)          cassette, 1 of 2 lagen          Packout / rugzak
+┌──────────────┐  schuif-    ┌──────────────────────┐
+│ ▭▭▭▭▭▭▭▭▭▭▭▭ │◄─ deksel   │ [bakje][bakje] laag 2 │ ──► Large Tool Box
+│  │    │    │ │             │ [bakje][bakje] laag 1 │ ──► rugzak
+└──┴────┴────┴─┘             └──────────────────────┘ ──► low-profile organizer
+   Gridfinity-voeten          binnen: Gridfinity 42 mm      (losse bakjes)
 ```
 
-1. **Eén cassette per taak**, niet per soort spul. Bijvoorbeeld:
-   - *Basis*: bitset, kleine schroevendraaiers, cutter, potlood, meetlint
-   - *Bevestiging*: schroeven, pluggen en ringen in kleine bakjes
-   - *Elektra*: lasklemmen, wago's, spanningzoeker, striptang
-   - *Schroevendraaiers*: de volle lengtes, in een cassette met vlakke bodem
-2. **De deksel klemt de bakjes vast.** De binnenhoogte is zo berekend dat de
-   deksel net (0,4 mm) boven de bakjes sluit. Kantelt de cassette in je rugzak,
-   dan kunnen schroeven niet van het ene vakje naar het andere: elk bakje is
-   zelf ook dicht. Dat is het belangrijkste detail van het systeem.
-3. **Binnen is het gewoon Gridfinity.** Bakjes uit je bestaande
-   Gridfinity-verzameling passen erin, en je kunt de indeling later nog
-   wijzigen.
-4. **Plat en rechthoekig formaat (4×2).** Een 4×2-cassette is ca. 173 × 102 ×
-   29 mm. Daarvan passen er meerdere naast elkaar in een gewone rugzak en in
-   een Packout-koffer.
+1. **Bakjes**, 5 hoogte-eenheden (39,4 mm). Die hoogte is gekozen op de
+   **Packout low-profile organizer** (binnen ca. 46 mm), zodat dezelfde bakjes
+   ook daarin passen.
+2. **Schuifdeksel per bakje.** De deksel loopt in een groef vlak onder de
+   stapelrand en rust op de tussenwanden, zodat elk vakje apart dicht is.
+   Er zit geen klik op: de deksel schuift, en blijft door wrijving zitten. In de
+   cassette houdt de wand ernaast hem op zijn plek.
+3. **Stapelbaar.** De deksel zit onder de stapelrand, dus het bakje erboven valt
+   gewoon met zijn Gridfinity-voeten in de rand. Gestapeld telt elk bakje 35 mm.
+4. **Cassettes** hebben binnen een Gridfinity-raster (`gx` × `gy` vakken van
+   42 mm) en zijn 1 of 2 lagen bakjes hoog. De deksel van de cassette klemt de
+   bovenste laag vast.
 
 ## Maten
 
-| Variant | Buitenmaat (b × d × h) | Inhoud |
+**Bakjes** (allemaal 5u, 39,4 mm hoog)
+
+| Bestand | Vakken | Buitenmaat |
 |---|---|---|
-| `klein-4x2-h3` | 173 × 102 × 29 mm | 8 vakjes, bakjes 3u hoog (schroeven, bits) |
-| `hoog-4x2-h6`  | 173 × 102 × 50 mm | 8 vakjes, bakjes 6u hoog (gereedschap) |
-| `schroevendraaiers-5x2-vlak` | 215 × 102 × 36 mm | vlakke bodem voor schuim/TPU-inleg, schroevendraaiers tot ~210 mm |
+| `bakje-1x1` | 1 | 41,5 × 41,5 mm |
+| `bakje-2x1-vakjes` / `-open` | 2 / 1 | 83,5 × 41,5 mm |
+| `bakje-2x2-vakjes` / `-open` | 4 / 1 | 83,5 × 83,5 mm |
+| `bakje-4x1-open` | 1 | 167,5 × 41,5 mm |
 
-De diepte is inclusief scharnier en klikbeugels; de romp zelf is 89 mm diep.
+Bij elk formaat hoort `schuifdeksel-<formaat>.stl` (vakjes en open gebruiken
+dezelfde deksel).
 
-**Meet eerst je Packout-koffer** (binnenmaat, en de hoogte tot de deksel), en
-kies daarna `gx`, `gy` en `hu`. Elke eenheid in `gx`/`gy` voegt 42 mm toe en
-elke eenheid in `hu` 7 mm.
+**Cassettes** (diepte inclusief scharnier en klikbeugels)
+
+| Bestand | Binnen | Buitenmaat (b × d × h) |
+|---|---|---|
+| `cassette-4x2-1laag` | 4 × 2 vakken, 1 laag | 173 × 102 × 43 mm |
+| `cassette-4x2-2lagen` | 4 × 2 vakken, 2 lagen | 173 × 102 × 78 mm |
+| `cassette-5x2-schroevendraaiers` | vlakke bodem, 1 laag hoog | 215 × 102 × 43 mm |
+
+**In de Packout** (winkelopgaven, niet officieel; meet je eigen koffer na)
+
+| Koffer | Binnenmaat (ca.) | Wat past |
+|---|---|---|
+| Large Tool Box 48-22-8425 | 478–500 × 335–340 × 216–229 mm | per laag 6 cassettes 4×2 (2 naast, 3 achter elkaar); in de hoogte 2× 2-lagen + 1× 1-laag (199 mm) |
+| Low-profile organizer 48-22-8431 | 457 × 305 × 46 mm | Gridfinity-bodem van 10 × 7 vakken, losse bakjes van 5u (39,4 mm) |
+
+Voor de low-profile organizer haal je de originele bakjes eruit en leg je een
+Gridfinity-baseplate in de bodem (bijvoorbeeld
+[deze op MakerWorld](https://makerworld.com/en/models/1534482-gridfinity-base-for-packout-low-profile-organizer)).
 
 ## Printen
 
-Kant-en-klare STL's staan in [`stl/`](stl/). Body en deksel zijn twee aparte
-prints:
+Kant-en-klare STL's staan in [`stl/`](stl/).
 
-- **Materiaal:** PETG (aanbevolen voor de klikbeugels; PLA wordt na een tijdje
-  bros en kan in een warme koffer/zon vervormen).
-- **Body** rechtop, **deksel** met de bovenkant op het bed (de STL is al zo
+- **Materiaal:** PETG (aanbevolen voor de klikbeugels en het scharnier van de
+  cassette; PLA wordt na een tijdje bros en kan in een warme koffer vervormen).
+- **Bakjes** rechtop, **schuifdeksels** plat, **cassette-body** rechtop,
+  **cassette-deksel** met de bovenkant op het bed (de STL's zijn al zo
   georiënteerd). Geen support nodig.
 - 3 wanden, 15–20 % infill.
-- **Scharnierpen:** schuif een stuk 1,75 mm filament door de knokkels en smelt
-  of knip de uiteinden iets dikker, zodat de pen er niet uitglijdt.
-- Druk de deksel dicht: de veerbeugels klikken achter de nok. Openen doe je
-  door aan het randje onderaan de beugel naar buiten te trekken.
+- **Scharnierpen cassette:** schuif een stuk 1,75 mm filament door de knokkels
+  en smelt of knip de uiteinden iets dikker.
 
 ## Zelf aanpassen
 
-Het model is parametrisch ([`cassette.scad`](cassette.scad), OpenSCAD):
+Alles is parametrisch (OpenSCAD). Gedeelde Gridfinity-vormen staan in
+[`gridfinity.scad`](gridfinity.scad).
 
 ```sh
-openscad -D gx=3 -D gy=2 -D hu=4 -D 'part="body"' -o body.stl cassette.scad
-openscad -D gx=3 -D gy=2 -D hu=4 -D 'part="lid"'  -o lid.stl  cassette.scad
+# bakje 3x1 met losse vakjes, en de bijbehorende deksel
+openscad -D gx=3 -D gy=1 -D 'part="bakje"'  -o bakje-3x1.stl     bakje.scad
+openscad -D gx=3 -D gy=1 -D 'part="deksel"' -o deksel-3x1.stl    bakje.scad
+# cassette 3x2, twee lagen
+openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="body"' -o body.stl cassette.scad
+openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="lid"'  -o lid.stl  cassette.scad
 ```
+
+**[`bakje.scad`](bakje.scad)**
 
 | Parameter | Betekenis |
 |---|---|
-| `gx`, `gy` | aantal Gridfinity-vakjes (42 mm) in breedte en diepte |
-| `hu` | hoogte van de bakjes erin (eenheden van 7 mm) |
-| `bin_lip` | stapelrand van je bakjes; **meet een bakje na** en zet dit op 0 als je bakjes zonder rand print |
-| `lid_gap` | speling tussen bakje en deksel: kleiner = vaster |
+| `gx`, `gy` | grootte in vakken van 42 mm |
+| `hu` | hoogte in eenheden van 7 mm (standaard 5, past in de low-profile organizer) |
+| `vakken` | `per_vak` (elk 42 mm-vak apart) of `open` (één grote ruimte) |
+| `deksel` | `false` = open bakje zonder groef |
+| `lid_fit` | speling van de schuifdeksel in de groef, per kant (kleiner = stroever) |
+| `klik` | `true` = klein nokje tegen vanzelf openschuiven (standaard uit) |
+| `part` | `bakje`, `deksel`, `both` of `dicht` (preview) |
+
+De deksel schuift er aan de rechterkant (+x) uit. Bij een bakje van 4×1 is dat
+de korte kant.
+
+**[`cassette.scad`](cassette.scad)**
+
+| Parameter | Betekenis |
+|---|---|
+| `gx`, `gy` | binnenmaat in Gridfinity-vakken |
+| `levels` | aantal lagen bakjes (1 of 2) |
+| `bin_hu` | hoogte van één bakje (moet gelijk zijn aan `hu` in `bakje.scad`) |
+| `lid_gap` | speling tussen bovenste bakje en deksel: kleiner = vaster |
 | `baseplate` | `false` = vlakke bodem voor een schuim- of TPU-inleg |
 | `part` | `body`, `lid`, `both` (printlay-out) of `assembled` (preview) |
 
-## Tips voor de bakjes erin
-
-- **Schroeven:** print de bakjes *zonder* stapelrand (`bin_lip = 0`). De deksel
-  sluit dan vlak over alle vakjes, en er kan niets tussen de vakjes door.
-- **Bits en kleine schroevendraaiers:** gebruik een Gridfinity-bithouder of een
-  bakje met uitsparingen (genoeg ontwerpen op Printables/MakerWorld, zoek op
-  "gridfinity bit holder" of "gridfinity screwdriver").
-- **Schroevendraaiers:** gebruik de vlakke variant met een inleg van Kaizen-schuim
-  of een TPU-bed met uitsparingen, zodat niets rammelt.
-- **Label op de deksel:** plak een label op de voorkant of de deksel, zodat je
-  in de Packout meteen ziet welke cassette je moet pakken.
-
 ## Nog niet getest
 
-Het model is gerenderd en gecontroleerd op geldige (manifold) geometrie, maar
-nog niet geprint. Print eerst één `klein-4x2-h3` en controleer:
+De modellen zijn gerenderd, gecontroleerd op geldige geometrie en in
+doorsnede nagemeten (stapelen, deksel in de groef, scharnier, klikbeugels),
+maar nog niet geprint. Print eerst één `bakje-2x1-vakjes` met deksel en één
+`cassette-4x2-1laag`, en controleer:
 
-1. Klikken de beugels goed? Is het te stug, maak dan `latch_t` dunner. Gaan ze
-   te makkelijk open, vergroot dan `ridge_d`.
-2. Zit de tong strak in de groef? Pas dit aan met `fit`.
-3. Klemt de deksel je eigen bakjes vast? Pas `bin_lip` / `lid_gap` aan.
+1. Schuift de deksel soepel maar niet te los? Pas `lid_fit` aan (0,1–0,3).
+2. Valt een bakje goed op een ander bakje en in de cassette?
+3. Klikken de beugels van de cassette goed? Te stug: maak `latch_t` dunner.
+   Te los: vergroot `ridge_d`.
+4. Past een bakje van 39,4 mm in jouw low-profile organizer met de
+   Gridfinity-bodem erin?

@@ -1,6 +1,7 @@
 // Gridfinity draagcassette — afsluitbare doos met Gridfinity-bodem binnenin.
 // Past in een Milwaukee Packout-koffer én in een rugzak: je pakt de cassette
-// over, niet de inhoud.
+// over, niet de inhoud. Binnenin staan 1 of 2 lagen stapelbare bakjes
+// (bakje.scad); de deksel drukt de bovenste laag vast.
 //
 // Onderdelen: body (onderbak met baseplate-patroon), lid (deksel met
 // scharnier-knokkels en klikbeugels). Scharnierpen = stukje 1,75 mm filament.
@@ -8,12 +9,14 @@
 // Render:  openscad -D 'part="body"' -o body.stl cassette.scad
 //          openscad -D 'part="lid"'  -o lid.stl  cassette.scad
 
+include <gridfinity.scad>
+
 /* [Formaat] */
-gx = 4;          // breedte in Gridfinity-eenheden (42 mm)
-gy = 2;          // diepte in Gridfinity-eenheden
-hu = 3;          // hoogte van de bakjes erin, in eenheden van 7 mm
-bin_lip = 4.4;   // stapelrand bovenop de bakjes (0 als je bakjes zonder rand print)
-lid_gap = 0.4;   // speling tussen bakje en deksel: klein = deksel klemt bakjes vast
+gx = 4;          // binnenmaat in Gridfinity-vakken (42 mm), breedte
+gy = 2;          // binnenmaat in Gridfinity-vakken, diepte
+levels = 1;      // aantal lagen bakjes op elkaar (1 of 2)
+bin_hu = 5;      // hoogte van één bakje in eenheden van 7 mm (zie bakje.scad)
+lid_gap = 0.4;   // speling tussen bovenste bakje en deksel: klein = deksel klemt vast
 
 /* [Opties] */
 baseplate = true; // false = vlakke bodem (voor schuim/TPU-inleg, bv. schroevendraaiers)
@@ -42,43 +45,17 @@ ridge_d   = 1.2;  // hoe ver de nok uitsteekt
 $fn = 48;
 
 // ---- afgeleide maten ----
-G       = 42;
-gf_base = 4.65;                                  // hoogte baseplate-profiel
 cav_w   = gx * G + 0.5;
 cav_d   = gy * G + 0.5;
 cav_r   = 4;
 out_w   = cav_w + 2 * wall;
 out_d   = cav_d + 2 * wall;
 out_r   = cav_r + wall;
-inner_h = hu * 7 + bin_lip + lid_gap; // vanaf bodemvloer
+inner_h = levels * bin_hu * U + lip_h + lid_gap; // vanaf bodemvloer
 H_body  = floor_t + inner_h - (lid_h - top_t);  // scheidingslijn body/deksel
 k_axis_y = out_d + kr + 0.3;                    // scharnieras (y), achterkant
 
 // ---- hulpvormen ----
-module rsq(w, d, r, h) {
-    linear_extrude(h)
-        offset(r = r) square([w - 2 * r, d - 2 * r], center = true);
-}
-
-// afgeronde rechthoek, gecentreerd in xy, met dunne schijf op hoogte z
-module slice(w, d, r, z) { translate([0, 0, z]) rsq(w, d, max(r, 0.01), 0.01); }
-
-// Eén Gridfinity baseplate-uitsparing (42 mm), top op z = 0, naar beneden
-module gf_socket() {
-    hull() {
-        slice(42,   42,   4,    -0.01 + 0.01);
-        slice(37.7, 37.7, 1.85, -2.15);
-    }
-    hull() {
-        slice(37.7, 37.7, 1.85, -2.15);
-        slice(37.7, 37.7, 1.85, -3.95);
-    }
-    hull() {
-        slice(37.7, 37.7, 1.85, -3.95);
-        slice(36.3, 36.3, 1.15, -gf_base - 0.01);
-    }
-}
-
 // rand die de tong vormt: tussen holte en holte + halve wand
 module tongue_ring(h, grow = 0) {
     difference() {
