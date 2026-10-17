@@ -41,11 +41,13 @@ die je nodig hebt: elk bakje is zelf al dicht.
 
 ## Maten
 
-**Bakjes** (allemaal 5u, 39,4 mm hoog)
+**Bakjes** (5u, 39,4 mm hoog; het halve bakje is 2,5u, twee halve stapelen
+tot de hoogte van één heel bakje)
 
 | Bestand | Vakken | Buitenmaat |
 |---|---|---|
 | `bakje-1x1` | 1 | 41,5 × 41,5 mm |
+| `bakje-1x1-half` | 1, half hoog (2,5u, 21,9 mm; binnen ca. 9 mm diep) | 41,5 × 41,5 mm |
 | `bakje-2x1-vakjes` / `-open` | 2 / 1 | 83,5 × 41,5 mm |
 | `bakje-2x2-vakjes` / `-open` | 4 / 1 | 83,5 × 83,5 mm |
 | `bakje-4x1-open` | 1 | 167,5 × 41,5 mm |
