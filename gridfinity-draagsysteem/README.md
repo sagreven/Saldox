@@ -53,6 +53,16 @@ die je nodig hebt: elk bakje is zelf al dicht.
 Bij elk formaat hoort `schuifdeksel-<formaat>.stl` (vakjes en open gebruiken
 dezelfde deksel).
 
+Op elke deksel zit naast de greepsleuf een uitsparing van 0,4 mm diep voor
+een sticker:
+
+| Deksel | Stickervlak |
+|---|---|
+| 1×1 | 25 × 34 mm |
+| 2×1 | 67 × 34 mm |
+| 2×2 | 67 × 76 mm |
+| 4×1 | 151 × 34 mm |
+
 **Cassettes** (diepte inclusief scharnier en klikbeugels)
 
 | Bestand | Binnen | Buitenmaat (b × d × h) |
@@ -111,6 +121,7 @@ openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="lid"'  -o lid.stl  cassette.scad
 | `vakken` | `per_vak` (elk 42 mm-vak apart) of `open` (één grote ruimte) |
 | `deksel` | `false` = open bakje zonder groef |
 | `lid_fit` | speling van de schuifdeksel in de groef, per kant (standaard 0,1: getest, strak) |
+| `label_d` | diepte van de stickeruitsparing op de deksel (standaard 0,4 mm, 0 = geen) |
 | `steunen` | aantal breekbare steuntjes in de sleuf aan de voorkant (0 = geen) |
 | `klik` | `true` = klein nokje tegen vanzelf openschuiven (standaard uit) |
 | `part` | `bakje`, `deksel`, `both` of `dicht` (preview) |

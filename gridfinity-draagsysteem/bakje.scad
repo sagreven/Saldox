@@ -32,6 +32,7 @@ lid_bev = 1.1;     // afschuining (45 graden) van de deksel- en groefrand
 ceil_t  = 1.0;     // materiaal boven de groef, tot de stapelrand
 groove  = 1.4;     // hoe ver de groef in de wand gaat (deksel grijpt 1,4 mm in)
 lid_fit = 0.1;     // speling deksel in de groef, per kant (0,1 getest: strak, schuift goed)
+label_d = 0.4;     // diepte van de stickeruitsparing op de deksel (0 = geen)
 steunen = 2;       // breekbare steuntjes in de sleuf aan de voorkant (0 = geen)
 klik    = false;   // klik-nokje tegen vanzelf openschuiven (standaard: alleen schuiven)
 
@@ -123,12 +124,24 @@ module bakje() {
     }
 }
 
-// Schuifdeksel, plat op het bed. Aan de +x kant een greepsleuf voor je nagel.
+// Stickervlak: het deel van de deksel dat zichtbaar is als hij dicht zit
+// (binnen de opening W - open_i), tussen de achterkant en de greepsleuf.
+// Coordinaten ten opzichte van het midden van de deksel.
+grip_x  = lid_w / 2 - 9;                                   // greepsleuf
+label_x0 = -(W / 2 - open_i / 2) + 1 - lid_x;              // achterkant zichtbaar deel
+label_x1 = grip_x - 1.5 - 1.5;                             // tot net voor de greepsleuf
+label_y  = D - open_i - 2;
+
+// Schuifdeksel, plat op het bed. Aan de +x kant een greepsleuf voor je nagel,
+// daarnaast een ondiepe uitsparing voor een sticker.
 // Optioneel (klik = true) een nokje dat achter de bovenrand van de groef valt.
 module schuifdeksel() {
     difference() {
         lid_shape();
-        translate([lid_w / 2 - 9, 0, lid_t - 0.8]) rsq(3, min(20, lid_d - 10), 1, 1);
+        translate([grip_x, 0, lid_t - 0.8]) rsq(3, min(20, lid_d - 10), 1, 1);
+        if (label_d > 0)
+            translate([(label_x0 + label_x1) / 2, 0, lid_t - label_d])
+                rsq(label_x1 - label_x0, label_y, 1.5, label_d + 1);
     }
     bw = D - open_i - 2;               // alleen onder de opening, niet in de zijgroeven
     if (klik) translate([lid_w / 2 - 4.5, 0, lid_t])
@@ -148,5 +161,7 @@ else if (part == "both") {
     if (deksel) translate([0, D / 2 + 10 + (D - open_i + 2 * groove) / 2, 0]) schuifdeksel();
 }
 
+if (deksel && label_d > 0)
+    echo(str("Stickervlak op de deksel: ", label_x1 - label_x0, " x ", label_y, " mm"));
 echo(str("Bakje ", gx, "x", gy, "x", hu, "u: ", W, " x ", D, " x ", Hb + lip_h,
          " mm (gestapeld telt elk bakje ", Hb, " mm)"));
