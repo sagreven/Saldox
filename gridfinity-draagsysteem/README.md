@@ -73,48 +73,53 @@ uitsparing van 0,4 mm diep voor een sticker:
 
 | Bestand | Binnen | Breed × diep × hoog (dicht) |
 |---|---|---|
-| `cassette-2x2-4.6cm-schroeven` | 2 × 2 vakken, 2 halve bakjes hoog | 9,1 × 10,4 × 4,6 cm |
-| `cassette-5x2-4.6cm-schroevendraaiers` | vlakke bodem voor een inleg, binnen 21,7 × 8,5 × 4,0 cm | 21,7 × 10,4 × 4,6 cm |
-| `cassette-4x2-4.6cm` | 4 × 2 vakken, 2 halve bakjes (= 1 heel) hoog | 17,5 × 10,4 × 4,6 cm |
-| `cassette-4x2-8.1cm` | 4 × 2 vakken, 4 halve bakjes (= 2 hele) hoog | 17,5 × 10,4 × 8,1 cm |
+| `cassette-2x2-4.5cm-schroeven` | 2 × 2 vakken, 2 halve bakjes hoog | 9,1 × 10,4 × 4,5 cm |
+| `cassette-5x2-4.5cm-schroevendraaiers` | vlakke bodem voor een inleg, binnen 21,1 × 8,5 × 4,0 cm | 21,7 × 10,4 × 4,5 cm |
+| `cassette-4x2-4.5cm` | 4 × 2 vakken, 2 halve bakjes (= 1 heel) hoog | 17,5 × 10,4 × 4,5 cm |
+| `cassette-4x2-8.0cm` | 4 × 2 vakken, 4 halve bakjes (= 2 hele) hoog | 17,5 × 10,4 × 8,0 cm |
 
 Elk bestand bestaat uit een `-onderbak` en een `-deksel`.
 
-### Magneten: naast en op elkaar
+### Magneten en staalband: naast en op elkaar
 
-De cassettes hebben gaten voor ronde magneetjes (standaard 6 × 2 mm, zoals
-die van Gridfinity): aan beide zijkanten, in de bodem en bovenop de deksel,
-twee per vak van 4,2 cm. Wanden, bodem en deksel zijn daarvoor 3,2 mm dik.
+- **Naast elkaar (Packout):** in beide zijwanden twee gaten per vak van 4,2 cm
+  voor ronde magneetjes (standaard 6 × 2 mm), op een vaste hoogte vanaf de
+  bodem. Zet de cassettes met de voorkant gelijk, dan liggen de magneten
+  altijd tegenover elkaar, hoe breed of hoog de cassettes ook zijn.
+- **Op elkaar (rugzak):** één magneet per vak in de bodem, en bovenop de
+  deksel per rij vakken een verdiepte baan voor **zelfklevende staalband**
+  (ferrotape, 12,7 mm breed, 0,5 mm dik) over de hele breedte. Een magneet pakt
+  overal op de band, dus het maakt niet uit hoe ver een cassette opzij ligt.
+  Zet de cassettes alleen met de voorkant gelijk.
 
-- **In de Packout naast elkaar:** zet de cassettes met de voorkant gelijk. Alle
-  cassettes met dezelfde diepte klikken dan aan elkaar, ook als ze verschillend
-  breed of hoog zijn.
-- **In de rugzak op elkaar:** zet ze met de voorkant en de linkerkant gelijk.
-  Een smallere cassette klikt zo op een bredere.
+Waarom staalband bovenop en geen magneten: elke cassette is 0,7 cm breder dan
+zijn vakken. Met magneet-op-magneet loopt dat bij het stapelen op (hoe meer en
+hoe breder de cassettes, hoe verder de magneten naast elkaar liggen). Met
+staalband speelt dat niet.
 
-**Polariteit** (één regel voor alle gaten): neem een stapel magneten en zet een
-streepje op de bovenste kant. Druk in alle gaten **met een stipje** een
-magneet met het streepje naar buiten, in alle gaten **zonder stipje** met het
-streepje naar binnen. Een druppel secondelijm erbij en klaar. Daarna trekt elke
-rechterkant elke linkerkant aan, en elke bovenkant elke onderkant.
+Wanden en bodem zijn 3,2 mm dik, zodat er 1 mm achter een magneet blijft.
+
+**Polariteit (alleen zijkanten):** neem een stapel magneten en zet een streepje
+op de bovenste kant. Druk in de zijgaten **met een stipje** een magneet met het
+streepje naar buiten, in de zijgaten **zonder stipje** met het streepje naar
+binnen. Een druppel secondelijm erbij. Daarna trekt elke rechterkant elke
+linkerkant aan. Bij de bodemmagneten maakt de richting niet uit.
 
 ### Voorbeeld: twee kleine cassettes en een grote
 
-Twee `cassette-2x2-4.6cm-schroeven` voor kleine schroeven en één
-`cassette-5x2-4.6cm-schroevendraaiers`:
+Twee `cassette-2x2-4.5cm-schroeven` voor kleine schroeven en één
+`cassette-5x2-4.5cm-schroevendraaiers`:
 
 | Waar | Zo | Totaal (b × d × h) |
 |---|---|---|
-| Packout | naast elkaar, voorkant gelijk | 39,9 × 10,4 × 4,6 cm |
-| Rugzak | de twee kleine naast elkaar op de grote | 21,7 × 10,4 × 9,2 cm |
+| Packout | naast elkaar, voorkant gelijk | 39,9 × 10,4 × 4,5 cm |
+| Rugzak | de twee kleine naast elkaar op de grote | 21,7 × 10,4 × 9,0 cm |
 
 ![naast elkaar in de Packout](img/combi-packout.png)
 ![gestapeld in de rugzak](img/combi-rugzak.png)
 
-Twee kleine cassettes zijn samen 18,2 cm breed: 0,7 cm meer dan 4 vakken. Op
-de grote cassette ligt daarom alleen de linker precies op de magneten. De
-rechter ligt 0,7 cm verschoven en houdt daardoor minder goed; de magneten
-trekken hem wel tegen de linker aan.
+Gestapeld pakken de bodemmagneten van beide kleine cassettes op de staalband
+van de grote, waar ze ook liggen.
 
 **Maximaal op een printbed van 35 cm**
 
@@ -131,7 +136,7 @@ een melding als iets niet past.
 
 | Koffer | Binnenmaat (ca.) | Wat past |
 |---|---|---|
-| Large Tool Box 48-22-8425 | 478–500 × 335–340 × 216–229 mm | per laag 6 cassettes 4×2 (2 naast, 3 achter elkaar); in de hoogte bijvoorbeeld 2× 8,1 cm + 1× 4,6 cm (20,8 cm) |
+| Large Tool Box 48-22-8425 | 478–500 × 335–340 × 216–229 mm | per laag 6 cassettes 4×2 (2 naast, 3 achter elkaar); in de hoogte bijvoorbeeld 2× 8,0 cm + 1× 4,5 cm (20,5 cm) |
 | Low-profile organizer 48-22-8431 | 457 × 305 × 46 mm | Gridfinity-bodem van 10 × 7 vakken, losse hele bakjes (3,9 cm) of twee halve op elkaar |
 
 Voor de low-profile organizer haal je de originele bakjes eruit en leg je een
@@ -187,9 +192,10 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | Cassette | `lagen` | binnenhoogte in halve bakjes (1–6), met de hoogte van de dichte cassette in cm erbij |
 | | `baseplate` | uit = vlakke bodem voor een schuim- of TPU-inleg |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
-| Cassette - magneten | `magneten` | gaten voor magneten aan, uit = dunnere bodem en deksel |
+| Cassette - magneten | `magneten` | magneetgaten en staalbaan aan; uit = dunnere bodem |
 | | `magneet_d`, `magneet_h` | maat van je magneten (de wand wordt zo nodig dikker) |
 | | `magneet_speling` | extra ruimte in het gat (0,1–0,2 = klemmend) |
+| | `staalband_b`, `staalband_t` | breedte en dikte van je staalband |
 | Printer | `bed` | maat van je printbed in mm (standaard 350) |
 
 De schuifdeksel past op elk bakje met dezelfde `gx` × `gy`, heel of half.
@@ -211,7 +217,7 @@ openscad -D 'onderdeel="cassette_onderbak"' -D gx=3 -D gy=2 -D lagen=4 -o onderb
 De modellen zijn gerenderd, gecontroleerd op geldige geometrie en in
 doorsnede nagemeten (stapelen, deksel in de groef, scharnier, klikbeugels),
 en de schuifdeksel van een 1×1-bakje is geprint en getest (speling 0,1 mm is
-goed). Print nog één `cassette-2x2-4.6cm-schroeven` en een paar bakjes, en controleer:
+goed). Print nog één `cassette-2x2-4.5cm-schroeven` en een paar bakjes, en controleer:
 
 1. Valt een bakje goed op een ander bakje en in de cassette?
 2. Passen je magneten in de gaten? Te los: verklein `magneet_speling`.

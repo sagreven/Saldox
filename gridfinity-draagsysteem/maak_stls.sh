@@ -29,8 +29,8 @@ for maat in "1 1" "2 1" "2 2" "4 1"; do
 done
 
 # cassettes: naam = vakken en hoogte dicht (met magneten)
-for c in "2 2 2 true 2x2-4.6cm-schroeven" "5 2 2 false 5x2-4.6cm-schroevendraaiers" \
-         "4 2 2 true 4x2-4.6cm" "4 2 4 true 4x2-8.1cm"; do
+for c in "2 2 2 true 2x2-4.5cm-schroeven" "5 2 2 false 5x2-4.5cm-schroevendraaiers" \
+         "4 2 2 true 4x2-4.5cm" "4 2 4 true 4x2-8.0cm"; do
     set -- $c
     gen "cassette-$5-onderbak" -D 'onderdeel="cassette_onderbak"' -D gx=$1 -D gy=$2 -D lagen=$3 -D baseplate=$4
     gen "cassette-$5-deksel"   -D 'onderdeel="cassette_deksel"'   -D gx=$1 -D gy=$2 -D lagen=$3 -D baseplate=$4

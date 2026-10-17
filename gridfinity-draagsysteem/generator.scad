@@ -48,15 +48,15 @@ steunen = 2; // [0:1:5]
 klik = false;
 
 /* [Cassette] */
-// Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.3 cm lager)
-lagen = 2; // [1:1 half bakje - 2.9 cm, 2:2 halve - 4.6 cm, 3:3 halve - 6.4 cm, 4:4 halve - 8.1 cm, 5:5 halve - 9.9 cm, 6:6 halve - 11.6 cm]
+// Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.2 cm lager)
+lagen = 2; // [1:1 half bakje - 2.7 cm, 2:2 halve - 4.5 cm, 3:3 halve - 6.3 cm, 4:4 halve - 8.0 cm, 5:5 halve - 9.8 cm, 6:6 halve - 11.5 cm]
 // Gridfinity-bodem binnenin (uit = vlakke bodem voor schuim/TPU-inleg)
 baseplate = true;
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
 
 /* [Cassette - magneten] */
-// Gaten voor magneten in de zijwanden, de bodem en de bovenkant van de deksel: cassettes klikken naast en op elkaar vast
+// Magneten in de zijwanden en de bodem, en een baan voor zelfklevende staalband bovenop de deksel: cassettes klikken naast en op elkaar vast
 magneten = true;
 // Diameter van de magneten in mm
 magneet_d = 6; // [4, 5, 6, 8, 10]
@@ -64,6 +64,10 @@ magneet_d = 6; // [4, 5, 6, 8, 10]
 magneet_h = 2; // [1, 1.5, 2, 3, 4]
 // Extra ruimte in het gat, op de diameter (0.1-0.2 = klemmend, met een druppel lijm vast)
 magneet_speling = 0.2; // [0:0.05:0.4]
+// Breedte van de zelfklevende staalband bovenop de deksel in mm
+staalband_b = 12.7; // [10, 12, 12.7, 15, 19, 25]
+// Dikte van de staalband in mm (de baan wordt zo diep, zodat de band vlak ligt)
+staalband_t = 0.5; // [0.3:0.1:1]
 
 /* [Printer] */
 // Maat van je printbed in mm (vierkant)
@@ -92,7 +96,7 @@ laag_hu  = 2.5;   // hoogte van een half bakje, in eenheden van 7 mm
 c_skin   = 1.0;   // materiaal achter een magneet, aan de binnenkant
 c_wall   = max(3.2, magneet_h + 0.2 + c_skin); // wanddikte (3,2 mm past bij magneten van 2 mm)
 c_floor  = magneten ? max(1.2, magneet_h + 0.2 + c_skin) : 1.2; // bodem (dikker voor magneten)
-top_t    = magneten ? max(2.0, magneet_h + 0.2 + c_skin) : 2.0; // dikte bovenkant deksel
+top_t    = 2.0;   // dikte bovenkant deksel
 c_lid_h  = 8;     // totale hoogte deksel
 tongue_h = 3;     // hoogte van de sluitrand (tong-en-groef)
 c_fit    = 0.2;   // passpeling tong/groef
@@ -317,22 +321,25 @@ module cassette_body() {
         translate([0, 0, c_floor + (baseplate ? gf_base : 0)])
             rsq(cav_w, cav_d, cav_r, H_body + tongue_h + 1);
         pin_hole();
-        if (magneten) { magnet_pockets(); magnet_grid(0, 1); }
+        if (magneten) { magnet_pockets(); bottom_magnets(); }
     }
     if (baseplate) baseplate_insert();
 }
 
-// Magneten. Alle gaten zitten per vak van 42 mm op vaste plekken: twee per vak
-// aan elke zijkant (op vaste hoogte vanaf de bodem) en twee per vak in de bodem
-// en bovenop de deksel. Zet je cassettes met de voorkant (en bij stapelen de
-// linkerkant) gelijk, dan liggen de magneten tegenover elkaar, ook als de ene
-// cassette breder, dieper of hoger is dan de andere.
+// Magneten en staalband.
 //
-// Polariteit, voor alle gaten dezelfde regel: in de gaten met een stipje gaan
-// alle magneten met dezelfde kant naar buiten, in de gaten zonder stipje met
-// de andere kant. Rechts en bovenop zit het stipje bij het voorste gat van elk
-// vak, links en onderop bij het achterste. Zo trekt elke rechterkant elke
-// linkerkant aan, en elke bovenkant elke onderkant.
+// Naast elkaar (Packout): twee magneten per vak van 42 mm in elke zijwand, op
+// vaste hoogte vanaf de bodem. Met de voorkant gelijk liggen ze altijd
+// tegenover elkaar, hoe breed of hoog de cassettes ook zijn.
+// Polariteit: in de gaten met een stipje gaan alle magneten met dezelfde kant
+// naar buiten, in de gaten zonder stipje met de andere kant. Rechts zit het
+// stipje bij het voorste gat van elk vak, links bij het achterste; zo trekt
+// elke rechterkant elke linkerkant aan.
+//
+// Op elkaar (rugzak): een magneet per vak in de bodem, en bovenop de deksel per
+// rij vakken een baan voor zelfklevende staalband over de hele breedte. Een
+// magneet pakt overal op de band, dus het maakt niet uit hoe ver een cassette
+// opzij ligt; ook de polariteit doet er hier niet toe.
 function mag_d() = magneet_d + magneet_speling;
 
 // één gat met (optioneel) stipje, vanaf het oppervlak de holte in langs +z
@@ -348,12 +355,17 @@ module magnet_pockets() {
             rotate([0, side * -90, 0]) rotate([0, 0, 90]) mag_hole(side * k < 0);
 }
 
-// gaten in een horizontaal vlak op hoogte z; dir = 1: bodem (gat naar boven),
-// dir = -1: bovenkant deksel (gat naar beneden)
-module magnet_grid(z, dir) {
-    for (i = [0 : gx - 1], j = [0 : gy - 1], k = [-1, 1])
-        translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G + k * G / 4, z])
-            mirror([0, 0, dir < 0 ? 1 : 0]) mag_hole(dir * k > 0);
+// één magneet per vak in de bodem, in het midden van het vak
+module bottom_magnets() {
+    for (i = [0 : gx - 1], j = [0 : gy - 1])
+        translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) mag_hole(false);
+}
+
+// baan voor staalband bovenop de deksel, per rij vakken over de hele breedte
+module steel_strips() {
+    for (j = [0 : gy - 1])
+        translate([0, (j - (gy - 1) / 2) * G, H_body + c_lid_h - staalband_t])
+            rsq(out_w - 4, staalband_b + 0.4, 0.5, staalband_t + 1);
 }
 
 module baseplate_insert() {
@@ -387,7 +399,7 @@ module cassette_deksel() {
         // groef voor de tong
         translate([0, 0, H_body - 1]) tongue_ring(tongue_h + c_fit + 1, c_fit);
         pin_hole();
-        if (magneten) magnet_grid(H_body + c_lid_h, -1);
+        if (magneten) steel_strips();
     }
     for (x = latch_xs()) latch_arm(x);
 }
