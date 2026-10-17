@@ -105,9 +105,10 @@ Kant-en-klare STL's staan in [`stl/`](stl/).
 Alles komt uit één bestand: [`generator.scad`](generator.scad). Je kiest wat je
 wilt printen en hoe groot, en krijgt een STL.
 
-**In de browser, zonder installatie:** upload `generator.scad` in de
-[Parametric Model Maker van MakerWorld](https://makerworld.com/en/makerlab/parametricModelMaker).
-Je krijgt dan dezelfde keuzelijsten en schuifjes, en kunt de STL downloaden.
+**In de browser, zonder installatie:** open op MakerWorld de *Parametric
+Model Maker* (onder MakerLab) en laad `generator.scad`. Je krijgt dezelfde
+keuzelijsten en schuifjes en downloadt een printklare 3MF. Het bestand is één
+los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 
 **Op je pc met OpenSCAD** (gratis, [openscad.org](https://openscad.org)):
 
