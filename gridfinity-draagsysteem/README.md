@@ -100,47 +100,52 @@ Kant-en-klare STL's staan in [`stl/`](stl/).
 - **Scharnierpen cassette:** schuif een stuk 1,75 mm filament door de knokkels
   en smelt of knip de uiteinden iets dikker.
 
-## Zelf aanpassen
+## Zelf genereren
 
-Alles is parametrisch (OpenSCAD). Gedeelde Gridfinity-vormen staan in
-[`gridfinity.scad`](gridfinity.scad).
+Alles komt uit één bestand: [`generator.scad`](generator.scad). Je kiest wat je
+wilt printen en hoe groot, en krijgt een STL.
 
-```sh
-# bakje 3x1 met losse vakjes, en de bijbehorende deksel
-openscad -D gx=3 -D gy=1 -D 'part="bakje"'  -o bakje-3x1.stl     bakje.scad
-openscad -D gx=3 -D gy=1 -D 'part="deksel"' -o deksel-3x1.stl    bakje.scad
-# cassette 3x2, twee lagen
-openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="body"' -o body.stl cassette.scad
-openscad -D gx=3 -D gy=2 -D levels=2 -D 'part="lid"'  -o lid.stl  cassette.scad
-```
+**In de browser, zonder installatie:** upload `generator.scad` in de
+[Parametric Model Maker van MakerWorld](https://makerworld.com/en/makerlab/parametricModelMaker).
+Je krijgt dan dezelfde keuzelijsten en schuifjes, en kunt de STL downloaden.
 
-**[`bakje.scad`](bakje.scad)**
+**Op je pc met OpenSCAD** (gratis, [openscad.org](https://openscad.org)):
 
-| Parameter | Betekenis |
-|---|---|
-| `gx`, `gy` | grootte in vakken van 42 mm |
-| `hu` | hoogte in eenheden van 7 mm (standaard 5, past in de low-profile organizer) |
-| `vakken` | `per_vak` (elk 42 mm-vak apart) of `open` (één grote ruimte) |
-| `deksel` | `false` = open bakje zonder groef |
-| `lid_fit` | speling van de schuifdeksel in de groef, per kant (standaard 0,1: getest, strak) |
-| `label_d` | diepte van de stickeruitsparing op de deksel (standaard 0,4 mm, 0 = geen) |
-| `steunen` | aantal breekbare steuntjes in de sleuf aan de voorkant (0 = geen) |
-| `klik` | `true` = klein nokje tegen vanzelf openschuiven (standaard uit) |
-| `part` | `bakje`, `deksel`, `both` of `dicht` (preview) |
+1. Open `generator.scad`.
+2. Zet de Customizer aan: *Window → Customizer* (of *Venster → Customizer*).
+3. Kies onder *Wat wil je printen?* het onderdeel en stel de maat in.
+4. Druk **F6** (renderen) en daarna **F7** (STL exporteren).
 
+**Instellingen**
+
+| Groep | Instelling | Betekenis |
+|---|---|---|
+| Wat wil je printen? | `onderdeel` | bakje, schuifdeksel, bakje + deksel, cassette-onderbak, cassette-deksel, beide, of een voorbeeld |
+| Maat | `gx`, `gy` | breedte en diepte in Gridfinity-vakken (42 mm); geldt voor bakje én cassette |
+| Bakje | `hu` | half (17,5 mm) of heel (35 mm); twee halve = één heel |
+| | `vakken` | elk vak apart of één open ruimte |
+| | `deksel` | uit = open bakje zonder groef |
+| Schuifdeksel | `lid_fit` | speling in de groef, per kant (0,1 getest: strak, schuift goed) |
+| | `label_d` | diepte van de stickeruitsparing (0 = geen) |
+| | `steunen` | breekbare steuntjes in de sleuf aan de voorkant (0 = geen) |
+| | `klik` | klein nokje tegen vanzelf openschuiven (standaard uit) |
+| Cassette | `lagen` | 1 of 2 lagen bakjes |
+| | `baseplate` | uit = vlakke bodem voor een schuim- of TPU-inleg |
+| | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
+
+De schuifdeksel past op elk bakje met dezelfde `gx` × `gy`, heel of half.
 De deksel schuift er aan de rechterkant (+x) uit. Bij een bakje van 4×1 is dat
 de korte kant.
 
-**[`cassette.scad`](cassette.scad)**
+**Vanaf de commandoregel:**
 
-| Parameter | Betekenis |
-|---|---|
-| `gx`, `gy` | binnenmaat in Gridfinity-vakken |
-| `levels` | aantal lagen bakjes (1 of 2) |
-| `bin_hu` | hoogte van één bakje (moet gelijk zijn aan `hu` in `bakje.scad`) |
-| `lid_gap` | speling tussen bovenste bakje en deksel: kleiner = vaster |
-| `baseplate` | `false` = vlakke bodem voor een schuim- of TPU-inleg |
-| `part` | `body`, `lid`, `both` (printlay-out) of `assembled` (preview) |
+```sh
+openscad -D 'onderdeel="bakje"'        -D gx=3 -D gy=1 -o bakje-3x1.stl  generator.scad
+openscad -D 'onderdeel="schuifdeksel"' -D gx=3 -D gy=1 -o deksel-3x1.stl generator.scad
+openscad -D 'onderdeel="cassette_onderbak"' -D gx=3 -D gy=2 -D lagen=2 -o body.stl generator.scad
+```
+
+[`maak_stls.sh`](maak_stls.sh) maakt de complete standaardset in `stl/` opnieuw.
 
 ## Nog niet getest
 
