@@ -50,6 +50,12 @@ label_d = 0.4; // [0:0.1:1]
 steunen = 2; // [0:1:5]
 // Klik-nokje tegen vanzelf openschuiven
 klik = false;
+// Kant waar de deksel uit schuift (voor = kant van de klikbeugels van de cassette)
+schuif = "rechts"; // [rechts:Rechts, links:Links, voor:Voor, achter:Achter]
+
+/* [Stapelen] */
+// Bakjes klikken op elkaar vast: nokjes in de stapelrand vallen in een groefje in de voeten van het bakje erboven. Hoe ver de nokjes ingrijpen in mm (0 = geen klik)
+stapel_klik = 0.2; // [0:0.05:0.4]
 
 /* [Cassette] */
 // Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.2 cm lager)
@@ -121,18 +127,25 @@ z_floor = foot_h + floor_t;
 open_i  = 5.6;             // opening aan de onderkant van de stapelrand = W - 5.6
 z_g1    = Hb - ceil_t;     // bovenkant groef
 z_g0    = z_g1 - lid_t - lid_fit; // onderkant groef = bovenkant tussenwanden
-lid_w   = W - (wall + lid_fit) - 0.3;          // lengte deksel (x)
-lid_d   = D - open_i + 2 * groove - 2 * lid_fit; // breedte deksel (y)
-lid_x   = lid_w / 2 - (W / 2 - wall - lid_fit); // middelpunt deksel in gesloten stand
+// De deksel wordt getekend alsof hij naar +x schuift en daarna gedraaid naar
+// de gekozen kant. Wl x Dl is de maat van het bakje in dat gedraaide stelsel,
+// nl het aantal vakken langs de sleuf.
+sl_rot  = schuif == "achter" ? 90 : schuif == "links" ? 180 : schuif == "voor" ? 270 : 0;
+Wl      = sl_rot % 180 == 0 ? W : D;
+Dl      = sl_rot % 180 == 0 ? D : W;
+nl      = sl_rot % 180 == 0 ? gy : gx;
+lid_w   = Wl - (wall + lid_fit) - 0.3;          // lengte deksel (in schuifrichting)
+lid_d   = Dl - open_i + 2 * groove - 2 * lid_fit; // breedte deksel
+lid_x   = lid_w / 2 - (Wl / 2 - wall - lid_fit); // middelpunt deksel in gesloten stand
 
 
 // Stickervlak: het deel van de deksel dat zichtbaar is als hij dicht zit
 // (binnen de opening W - open_i), tussen de achterkant en de greepsleuf.
 // Coordinaten ten opzichte van het midden van de deksel.
 grip_x  = lid_w / 2 - 9;                                   // greepsleuf
-label_x0 = -(W / 2 - open_i / 2) + 1 - lid_x;              // achterkant zichtbaar deel
+label_x0 = -(Wl / 2 - open_i / 2) + 1 - lid_x;             // achterkant zichtbaar deel
 label_x1 = grip_x - 1.5 - 1.5;                             // tot net voor de greepsleuf
-label_y  = D - open_i - 2;
+label_y  = Dl - open_i - 2;
 
 // ---- afgeleide maten: cassette ----
 cav_w   = gx * G + 0.5;
@@ -164,9 +177,36 @@ module gf_socket() {
 
 // voet van één vak, onderkant op z = 0
 module gf_foot() {
-    hull() { slice(35.6, 35.6, 0.8, 0);   slice(37.2, 37.2, 1.6, 0.8); }
-    hull() { slice(37.2, 37.2, 1.6, 0.8); slice(37.2, 37.2, 1.6, 2.6); }
-    hull() { slice(37.2, 37.2, 1.6, 2.6); slice(41.5, 41.5, 3.75, foot_h); }
+    difference() {
+        union() {
+            hull() { slice(35.6, 35.6, 0.8, 0);   slice(37.2, 37.2, 1.6, 0.8); }
+            hull() { slice(37.2, 37.2, 1.6, 0.8); slice(37.2, 37.2, 1.6, 2.6); }
+            hull() { slice(37.2, 37.2, 1.6, 2.6); slice(41.5, 41.5, 3.75, foot_h); }
+        }
+        // groefje rondom (45 graden flanken) waar de nokjes van de stapelrand
+        // van het bakje eronder in vallen
+        if (stapel_klik > 0) difference() {
+            translate([-25, -25, klik_z - 0.4]) cube([50, 50, 0.8]);
+            hull() { slice(37.2, 37.2, 1.6, klik_z - 0.4); slice(36.4, 36.4, 1.2, klik_z); }
+            hull() { slice(36.4, 36.4, 1.2, klik_z); slice(37.2, 37.2, 1.6, klik_z + 0.4); }
+        }
+    }
+}
+
+// Klik bij stapelen: hoogte van groefje (voet) en nokje (stapelrand), gemeten
+// vanaf de onderkant van de voet, die in de stapelrand op de randbodem staat.
+klik_z = 2.2;
+
+// Nokje in de stapelrand, gezien vanaf de buitenkant van de wand: a = afstand
+// naar binnen, z = hoogte boven de onderkant van de stapelrand. De punt steekt
+// stapel_klik voorbij het voetvlak van het bakje erboven (dat ligt 2,15 mm naar
+// binnen) en valt bij gestapeld in het groefje van 0,4 mm.
+module klik_nok(len) {
+    a_tip = 2.15 + stapel_klik;
+    p = a_tip - 0.9;
+    rotate([90, 0, 0]) linear_extrude(len, center = true)
+        polygon([[0.4, klik_z - p - 0.4], [0.9, klik_z - p], [a_tip, klik_z],
+                 [0.9, klik_z + p], [0.4, klik_z + p + 0.4]]);
 }
 
 // Uitsparing van de stapelrand voor een rechthoek w x d (buitenmaat bakje),
@@ -215,23 +255,23 @@ module lid_shape(g = 0) {
     }
 }
 
-module groove_cut() {
-    // groef: aan -x dicht (aanslag), aan +x door de wand naar buiten
+module groove_cut() rotate([0, 0, sl_rot]) {
+    // groef: achteraan dicht (aanslag), aan de schuifkant door de wand naar buiten
     hull() {
         translate([lid_x, 0, z_g0]) lid_shape(lid_fit);
-        translate([lid_x + W, 0, z_g0]) lid_shape(lid_fit);
+        translate([lid_x + Wl, 0, z_g0]) lid_shape(lid_fit);
     }
     // opening tussen groef en stapelrand
-    translate([0, 0, z_g1 - 0.01]) rsq(W - open_i, D - open_i, (41.5 - open_i - 34) / 2, ceil_t + 0.02);
+    translate([0, 0, z_g1 - 0.01]) rsq(Wl - open_i, Dl - open_i, (41.5 - open_i - 34) / 2, ceil_t + 0.02);
 }
 
 // Breekbare steuntjes in de sleuf door de voorwand (+x), zodat de brug boven
 // de sleuf niet te lang wordt. Dun in de schuifrichting: de deksel drukt ze
 // er bij de eerste keer insteken uit.
-module steuntjes() {
-    n = steunen * gy;                  // per vak, gelijk verdeeld over de sleuf
+module steuntjes() rotate([0, 0, sl_rot]) {
+    n = steunen * nl;                  // per vak, gelijk verdeeld over de sleuf
     for (k = [1 : n])
-        translate([W / 2 - wall / 2 - 0.2, -lid_d / 2 + k * lid_d / (n + 1) - 0.4, z_g0 - 0.01])
+        translate([Wl / 2 - wall / 2 - 0.2, -lid_d / 2 + k * lid_d / (n + 1) - 0.4, z_g0 - 0.01])
             cube([0.4, 0.8, lid_t + lid_fit + 0.02]);
 }
 
@@ -270,6 +310,15 @@ module bakje() {
             translate([0, 0, Hb]) lip_cut(W, D);
         }
     }
+    // nokjes in de stapelrand, één per vak aan elke buitenkant
+    if (stapel_klik > 0) translate([0, 0, Hb]) {
+        for (j = [0 : gy - 1], side = [-1, 1])
+            translate([side * W / 2, (j - (gy - 1) / 2) * G, 0])
+                rotate([0, 0, side > 0 ? 180 : 0]) klik_nok(10);
+        for (i = [0 : gx - 1], side = [-1, 1])
+            translate([(i - (gx - 1) / 2) * G, side * D / 2, 0])
+                rotate([0, 0, side > 0 ? 270 : 90]) klik_nok(10);
+    }
 }
 
 // Schuifdeksel, plat op het bed. Aan de +x kant een greepsleuf voor je nagel,
@@ -290,7 +339,7 @@ module schuifdeksel() {
 
 // deksel in gesloten stand (voor previews)
 module schuifdeksel_dicht() {
-    translate([lid_x, 0, z_g0]) schuifdeksel();
+    rotate([0, 0, sl_rot]) translate([lid_x, 0, z_g0]) schuifdeksel();
 }
 
 // ==== Cassette ====
@@ -452,7 +501,7 @@ if (onderdeel == "bakje") bakje();
 else if (onderdeel == "schuifdeksel") schuifdeksel();
 else if (onderdeel == "bakje_en_deksel") {
     bakje();
-    if (deksel) translate([0, D / 2 + 10 + (D - open_i + 2 * groove) / 2, 0]) schuifdeksel();
+    if (deksel) translate([0, D / 2 + 10 + lid_d / 2, 0]) schuifdeksel();
 }
 else if (onderdeel == "cassette_onderbak") cassette_body();
 else if (onderdeel == "cassette_deksel") cassette_deksel_print();
@@ -470,7 +519,7 @@ is_cassette = onderdeel == "cassette_onderbak" || onderdeel == "cassette_deksel"
 c_ext_d = out_d + 2 * kr + 0.3 + ridge_d + 0.3 + latch_t + 2;  // incl. scharnier en klikbeugels
 footprint =
     onderdeel == "schuifdeksel"    ? [lid_w, lid_d] :
-    onderdeel == "bakje_en_deksel" ? [W, D + 10 + (D - open_i + 2 * groove)] :
+    onderdeel == "bakje_en_deksel" ? [max(W, lid_w), D + 10 + lid_d] :
     onderdeel == "cassette_beide"  ? [out_w, 2 * c_ext_d + 20] :
     is_cassette                    ? [out_w, c_ext_d] :
                                      [W, D];

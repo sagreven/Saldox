@@ -34,9 +34,12 @@ die je nodig hebt: elk bakje is zelf al dicht.
    Er zit geen klik op: de deksel schuift, en blijft door wrijving zitten. In de
    cassette houdt de wand ernaast hem op zijn plek. De groef is een
    zwaluwstaart met een plafond van 45°, zodat hij zonder support print.
-3. **Stapelbaar.** De deksel zit onder de stapelrand, dus het bakje erboven valt
-   gewoon met zijn Gridfinity-voeten in de rand. Halve en hele bakjes kun je
-   mengen.
+3. **Stapelbaar, met klik.** De deksel zit onder de stapelrand, dus het bakje
+   erboven valt gewoon met zijn Gridfinity-voeten in de rand. In de stapelrand
+   zitten kleine nokjes (één per vak aan elke buitenkant) die in een groefje in
+   de voeten van het bakje erboven klikken. Halve en hele bakjes kun je mengen.
+   Kies per bakje aan welke kant de schuifdeksel eruit gaat, zodat je eerst het
+   vakje opent dat je nodig hebt.
 4. **Cassettes** hebben binnen een Gridfinity-raster (vakken van 4,2 cm). De
    binnenhoogte kies je in halve bakjes (een heel bakje telt als 2). De deksel
    van de cassette klemt de bovenste laag vast.
@@ -205,6 +208,8 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `label_d` | diepte van de stickeruitsparing (0 = geen) |
 | | `steunen` | breekbare steuntjes in de sleuf aan de voorkant, per vak van 4,2 cm (0 = geen) |
 | | `klik` | klein nokje tegen vanzelf openschuiven (standaard uit) |
+| | `schuif` | kant waar de deksel uit schuift: rechts, links, voor of achter |
+| Stapelen | `stapel_klik` | hoe ver de klik-nokjes in de stapelrand ingrijpen (0,2 mm; 0 = geen klik) |
 | Cassette | `lagen` | binnenhoogte in halve bakjes (1–6), met de hoogte van de dichte cassette in cm erbij |
 | | `baseplate` | uit = vlakke bodem voor een schuim- of TPU-inleg |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
