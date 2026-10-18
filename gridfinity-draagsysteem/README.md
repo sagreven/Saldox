@@ -53,6 +53,7 @@ Alle maten zijn buitenmaten. Een bakje is per vak 4,2 cm (precies 4,15 cm).
 | `bakje-2x1-vakjes-half` / `-heel` | 2 | 8,4 × 4,2 × 2,2 / 3,9 cm |
 | `bakje-2x1-open-half` | 1 | 8,4 × 4,2 × 2,2 cm |
 | `bakje-2x2-vakjes-half` / `-heel` | 4 | 8,4 × 8,4 × 2,2 / 3,9 cm |
+| `bakje-2x2-2vakjes-heel` | 2 (elk 1 × 2 vakken) | 8,4 × 8,4 × 3,9 cm |
 | `bakje-2x2-open-half` | 1 | 8,4 × 8,4 × 2,2 cm |
 | `bakje-4x1-open-half` | 1 | 16,8 × 4,2 × 2,2 cm |
 
@@ -194,7 +195,8 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | Wat wil je printen? | `onderdeel` | bakje, schuifdeksel, bakje + deksel, cassette-onderbak, cassette-deksel, beide, of een voorbeeld |
 | Maat | `gx`, `gy` | breedte en diepte in vakken, met de maat in cm erbij; geldt voor bakje én cassette |
 | Bakje | `hu` | half (2,2 cm, standaard) of heel (3,9 cm); twee halve = één heel |
-| | `vakken` | elk vak apart of één open ruimte |
+| | `vakken` | elk vak apart, één open ruimte, of eigen aantal vakjes |
+| | `vakjes_x`, `vakjes_y` | aantal vakjes in breedte en diepte (bij eigen aantal) |
 | | `deksel` | uit = open bakje zonder groef |
 | Schuifdeksel | `lid_fit` | speling in de groef, per kant (0,1 getest: strak, schuift goed) |
 | | `label_d` | diepte van de stickeruitsparing (0 = geen) |

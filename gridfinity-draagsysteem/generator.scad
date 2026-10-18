@@ -33,7 +33,11 @@ gy = 1; // [1:1 vak - 4.2 cm, 2:2 vakken - 8.4 cm, 3:3 vakken - 12.6 cm, 4:4 vak
 // Hoogte van het bakje (heel past in de Packout low-profile organizer; 2 halve = 1 heel)
 hu = 2.5; // [2.5:half - 2.2 cm hoog - stapelt per 1.75 cm, 5:heel - 3.9 cm hoog - stapelt per 3.5 cm]
 // Indeling binnenin
-vakken = "per_vak"; // [per_vak:Elk vak apart, open:Eén open ruimte]
+vakken = "per_vak"; // [per_vak:Elk vak apart, open:Eén open ruimte, eigen:Eigen aantal vakjes]
+// Aantal vakjes in de breedte (alleen bij Eigen aantal vakjes)
+vakjes_x = 2; // [1:1:8]
+// Aantal vakjes in de diepte (alleen bij Eigen aantal vakjes)
+vakjes_y = 1; // [1:1:8]
 // Schuifdeksel (uit = open bakje)
 deksel = true;
 
@@ -177,7 +181,7 @@ module lip_cut(w, d) {
 
 // ==== Bakje en schuifdeksel ====
 
-module cavity(w, d) {
+module cavity(w, d, lip = true) {
     c = 2 * wall;          // binnenmaat = buitenmaat - 2 wanden
     // recht deel, daarna 45 graden afschuining naar de stapelrand
     translate([0, 0, z_floor]) rsq(w - c, d - c, (41.5 - c - 34) / 2 + 0.5, Hb - 1.6 - z_floor + 0.01);
@@ -185,7 +189,7 @@ module cavity(w, d) {
         slice(w - c, d - c, (41.5 - c - 34) / 2 + 0.5, Hb - 1.6);
         slice(w - 5.6, d - 5.6, (41.5 - 5.6 - 34) / 2, Hb + 0.01);
     }
-    translate([0, 0, Hb]) lip_cut(w, d);
+    if (lip) translate([0, 0, Hb]) lip_cut(w, d);
 }
 
 // Vakje met schuifdeksel: recht deel, 45 graden versmalling tot de
@@ -230,7 +234,22 @@ module steuntjes() {
             cube([0.4, 0.8, lid_t + lid_fit + 0.02]);
 }
 
+// Indeling: aantal vakjes in x en y. Per vak = één vakje per 42 mm-vak.
+nvx = vakken == "eigen" ? vakjes_x : vakken == "open" ? 1 : gx;
+nvy = vakken == "eigen" ? vakjes_y : vakken == "open" ? 1 : gy;
+
+// Voert children() uit op het midden van elk vakje, met de maat (w, d) van
+// dat vakje als "buitenmaat" (zoals een los bakje: steek - 0,5 mm).
+module vakjes() {
+    px = (W + 0.5) / nvx;
+    py = (D + 0.5) / nvy;
+    for (i = [0 : nvx - 1], j = [0 : nvy - 1])
+        translate([(i - (nvx - 1) / 2) * px, (j - (nvy - 1) / 2) * py, 0]) children();
+}
+
 module bakje() {
+    vw = (W + 0.5) / nvx - 0.5;
+    vd = (D + 0.5) / nvy - 0.5;
     if (deksel && steunen > 0) steuntjes();
     difference() {
         union() {
@@ -239,16 +258,16 @@ module bakje() {
             translate([0, 0, foot_h - 0.01]) rsq(W, D, 3.75, Hb + lip_h - foot_h + 0.01);
         }
         if (deksel) {
-            if (vakken == "open") cavity_lid(W, D);
-            else for (i = [0 : gx - 1], j = [0 : gy - 1])
-                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) cavity_lid(41.5, 41.5);
+            vakjes() cavity_lid(vw, vd);
             groove_cut();
             translate([0, 0, Hb]) lip_cut(W, D);
-        } else if (vakken == "open")
-            cavity(W, D);
-        else
-            for (i = [0 : gx - 1], j = [0 : gy - 1])
-                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) cavity(41.5, 41.5);
+        } else if (vakken == "per_vak") {
+            // tussenwanden lopen door in de stapelrand (bakje erboven valt per vak vast)
+            vakjes() cavity(vw, vd);
+        } else {
+            vakjes() cavity(vw, vd, lip = false);
+            translate([0, 0, Hb]) lip_cut(W, D);
+        }
     }
 }
 
