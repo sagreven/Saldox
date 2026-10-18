@@ -240,7 +240,8 @@ doorsnede nagemeten (stapelen, deksel in de groef, scharnier, klikbeugels),
 en de schuifdeksel van een 1×1-bakje is geprint en getest (speling 0,1 mm is
 goed). Print nog één `cassette-2x2-4.5cm-schroeven` en een paar bakjes, en controleer:
 
-1. Valt een bakje goed op een ander bakje en in de cassette?
+1. Valt een bakje goed op een ander bakje en in de cassette, en klikt het? Te
+   stug: verklein `stapel_klik`; te los: vergroot hem.
 2. Passen je magneten in de gaten? Te los: verklein `magneet_speling`.
 3. Klikken de beugels van de cassette goed? Te stug: maak `latch_t` dunner.
    Te los: vergroot `ridge_d`.
