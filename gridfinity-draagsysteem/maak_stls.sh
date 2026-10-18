@@ -17,7 +17,7 @@ for maat in "1 1 per_vak 1x1" "2 1 per_vak 2x1-vakjes" "2 2 per_vak 2x2-vakjes" 
     set -- $maat
     gen "bakje-$4-half" -D 'onderdeel="bakje"' -D gx=$1 -D gy=$2 -D "vakken=\"$3\"" -D hu=2.5
 done
-for maat in "1 1 per_vak 1x1" "2 1 per_vak 2x1-vakjes"; do
+for maat in "1 1 per_vak 1x1" "2 1 per_vak 2x1-vakjes" "2 2 per_vak 2x2-vakjes"; do
     set -- $maat
     gen "bakje-$4-heel" -D 'onderdeel="bakje"' -D gx=$1 -D gy=$2 -D "vakken=\"$3\"" -D hu=5
 done
