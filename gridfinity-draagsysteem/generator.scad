@@ -46,7 +46,7 @@ deksel = true;
 lid_fit = 0.1; // [0.05:0.05:0.3]
 // Diepte van de stickeruitsparing (0 = geen)
 label_d = 0.4; // [0:0.1:1]
-// Breekbare steuntjes in de sleuf aan de voorkant (0 = geen)
+// Breekbare steuntjes in de sleuf aan de voorkant, per vak van 4.2 cm (0 = geen)
 steunen = 2; // [0:1:5]
 // Klik-nokje tegen vanzelf openschuiven
 klik = false;
@@ -229,8 +229,9 @@ module groove_cut() {
 // de sleuf niet te lang wordt. Dun in de schuifrichting: de deksel drukt ze
 // er bij de eerste keer insteken uit.
 module steuntjes() {
-    for (k = [1 : steunen])
-        translate([W / 2 - wall / 2 - 0.2, -lid_d / 2 + k * lid_d / (steunen + 1) - 0.4, z_g0 - 0.01])
+    n = steunen * gy;                  // per vak, gelijk verdeeld over de sleuf
+    for (k = [1 : n])
+        translate([W / 2 - wall / 2 - 0.2, -lid_d / 2 + k * lid_d / (n + 1) - 0.4, z_g0 - 0.01])
             cube([0.4, 0.8, lid_t + lid_fit + 0.02]);
 }
 

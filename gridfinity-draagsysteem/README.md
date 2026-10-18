@@ -200,7 +200,7 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `deksel` | uit = open bakje zonder groef |
 | Schuifdeksel | `lid_fit` | speling in de groef, per kant (0,1 getest: strak, schuift goed) |
 | | `label_d` | diepte van de stickeruitsparing (0 = geen) |
-| | `steunen` | breekbare steuntjes in de sleuf aan de voorkant (0 = geen) |
+| | `steunen` | breekbare steuntjes in de sleuf aan de voorkant, per vak van 4,2 cm (0 = geen) |
 | | `klik` | klein nokje tegen vanzelf openschuiven (standaard uit) |
 | Cassette | `lagen` | binnenhoogte in halve bakjes (1–6), met de hoogte van de dichte cassette in cm erbij |
 | | `baseplate` | uit = vlakke bodem voor een schuim- of TPU-inleg |
