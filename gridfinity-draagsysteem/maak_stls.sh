@@ -24,6 +24,7 @@ done
 
 gen bakje-1x1-2vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=1 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
+gen bakje-1x2-vakjes-heel-voor -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'schuif="voor"'
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
@@ -35,7 +36,7 @@ done
 
 # cassettes: naam = vakken en hoogte dicht (met magneten)
 for c in "2 2 2 true 2x2-4.5cm-schroeven" "5 2 2 false 5x2-4.5cm-schroevendraaiers" \
-         "5 3 2 true 5x3-4.5cm-krimptang" \
+         "5 4 2 true 5x4-4.5cm-krimptang" \
          "4 2 2 true 4x2-4.5cm" "4 2 4 true 4x2-8.0cm"; do
     set -- $c
     gen "cassette-$5-onderbak" -D 'onderdeel="cassette_onderbak"' -D gx=$1 -D gy=$2 -D lagen=$3 -D baseplate=$4
