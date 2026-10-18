@@ -54,6 +54,7 @@ Alle maten zijn buitenmaten. Een bakje is per vak 4,2 cm (precies 4,15 cm).
 | `bakje-2x1-open-half` | 1 | 8,4 × 4,2 × 2,2 cm |
 | `bakje-2x2-vakjes-half` / `-heel` | 4 | 8,4 × 8,4 × 2,2 / 3,9 cm |
 | `bakje-2x2-2vakjes-heel` | 2 (elk 1 × 2 vakken) | 8,4 × 8,4 × 3,9 cm |
+| `bakje-1x1-2vakjes-heel` | 2 (elk 1,8 × 3,9 cm, 2,6 cm diep) | 4,2 × 4,2 × 3,9 cm |
 | `bakje-2x2-open-half` | 1 | 8,4 × 8,4 × 2,2 cm |
 | `bakje-4x1-open-half` | 1 | 16,8 × 4,2 × 2,2 cm |
 
@@ -85,8 +86,10 @@ Elk bestand bestaat uit een `-onderbak` en een `-deksel`.
 
 `cassette-5x3-4.5cm-krimptang` (21,7 × 14,6 × 4,5 cm, binnen 21,1 × 12,7 cm)
 voor een zelfinstellende krimptang van ca. 19,5 × 8 × 3 cm. De tang ligt op
-de voorste twee rijen; in de achterste rij passen vijf `bakje-1x1-heel` voor
-adereindhulzen per maat (bijvoorbeeld 0,5 / 0,75 / 1 / 1,5 / 2,5 mm²).
+de voorste twee rijen; in de achterste rij passen vijf `bakje-1x1-2vakjes-heel`:
+één bakje per kabeldikte (bijvoorbeeld 0,5 / 0,75 / 1 / 1,5 / 2,5 mm²), met
+links de adereindhulzen voor één ader en rechts die voor twee aders. Samen 10
+vakjes; op de schuifdeksel van elk bakje een sticker met de maat.
 
 ![krimptang-cassette](img/krimptang.png)
 

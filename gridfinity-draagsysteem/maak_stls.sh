@@ -22,6 +22,8 @@ for maat in "1 1 per_vak 1x1" "2 1 per_vak 2x1-vakjes" "2 2 per_vak 2x2-vakjes";
     gen "bakje-$4-heel" -D 'onderdeel="bakje"' -D gx=$1 -D gy=$2 -D "vakken=\"$3\"" -D hu=5
 done
 
+gen bakje-1x1-2vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=1 -D hu=5 \
+    -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
