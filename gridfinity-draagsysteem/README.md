@@ -107,6 +107,12 @@ dan `inlegplaat-5x2` in de voorste twee rijen: een vlakke plaat met
 Gridfinity-voeten eronder. De tang ligt dan 0,6 cm boven de bodem en heeft nog
 3,4 cm hoogte. In de generator: onderdeel *Inlegplaat*, met de maat in vakken.
 
+Is je cassette met een vlakke bodem geprint (zonder Gridfinity), leg dan
+`baseplate-5x2` in de achterste twee rijen: een losse Gridfinity-bodem van
+21 × 8,4 cm met klik-nokjes, die precies tussen de zij- en achterwand past. De
+bakjes staan met hun voeten op de bodem van de cassette, op dezelfde hoogte als
+met een ingebouwde bodem. In de generator: onderdeel *Losse Gridfinity-bodem*.
+
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
 ### Magneten en staalband: naast en op elkaar

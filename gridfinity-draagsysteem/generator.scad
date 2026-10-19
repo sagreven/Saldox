@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -345,6 +345,24 @@ module schuifdeksel() {
         scale([1, 1, 0.5]) rotate([90, 0, 0]) cylinder(r = 1.2, h = bw, center = true);
 }
 
+// Losse Gridfinity-bodem (open onderkant, zoals een gewone baseplate) met de
+// klik-nokjes van de cassette. Voor een cassette die met een vlakke bodem is
+// geprint: de bakjes staan met hun voeten op de bodem van de cassette, dus op
+// dezelfde hoogte als met een ingebouwde Gridfinity-bodem. Buitenmaat
+// gx x 42 bij gy x 42 mm: 0,25 mm speling rondom in de cassette.
+module losse_baseplate() {
+    difference() {
+        rsq(gx * G, gy * G, cav_r, gf_base);
+        for (i = [0 : gx - 1], j = [0 : gy - 1])
+            translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, gf_base + 0.01])
+                gf_socket();
+    }
+    if (cassette_klik > 0)
+        for (i = [0 : gx - 1], j = [0 : gy - 1], r = [0 : 90 : 270])
+            translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0])
+                rotate([0, 0, r]) socket_nok();
+}
+
 // Inlegplaat: Gridfinity-voeten met een vlakke plaat erop, zonder wanden.
 // Valt in de Gridfinity-bodem en maakt er een vlakke vloer van.
 module inlegplaat() {
@@ -554,6 +572,7 @@ else if (onderdeel == "cassette_beide") {
     translate([0, out_d + 20, 0]) cassette_deksel_print();
 }
 else if (onderdeel == "inlegplaat") inlegplaat();
+else if (onderdeel == "baseplate") losse_baseplate();
 else if (onderdeel == "voorbeeld_bakje") { bakje(); if (deksel) schuifdeksel_dicht(); }
 else if (onderdeel == "voorbeeld_cassette") { cassette_body(); cassette_deksel(); }
 
@@ -580,6 +599,9 @@ assert(footprint[0] <= bed && footprint[1] <= bed,
 if (is_cassette) {
     echo(str("Cassette ", gx, "x", gy, ": ", cm(out_w), " x ", cm(c_ext_d), " x ",
              cm(H_body + c_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
+} else if (onderdeel == "baseplate") {
+    echo(str("Losse Gridfinity-bodem ", gx, "x", gy, ": ", cm(gx * G), " x ", cm(gy * G),
+             " x ", gf_base / 10, " cm"));
 } else if (onderdeel == "inlegplaat") {
     echo(str("Inlegplaat ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " cm, vloer ",
              foot_h + inleg_t, " mm boven de bodem van de cassette"));

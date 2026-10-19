@@ -28,6 +28,7 @@ gen bakje-1x2-vakjes-heel-voor -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
+gen baseplate-5x2 -D 'onderdeel="baseplate"' -D gx=5 -D gy=2
 gen inlegplaat-5x2 -D 'onderdeel="inlegplaat"' -D gx=5 -D gy=2
 
 # schuifdeksels: passen op half en heel
