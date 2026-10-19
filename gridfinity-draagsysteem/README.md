@@ -132,7 +132,6 @@ Te stug of te los: pas `pad_haak`, `pad_t`, `voorspanning` of `boog_t` aan.
 
 ![inleg krimptang](img/inleg-krimptang.png)
 ![doorsnede bij de paddenstoel](img/inleg-krimptang-doorsnede.png)
-![inleg krimptang](img/inleg-krimptang.png)
 
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
