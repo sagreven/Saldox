@@ -102,6 +102,11 @@ hulzen opent.
 
 ![krimptang-cassette](img/krimptang.png)
 
+Heb je de cassette al geprint met overal Gridfinity (een oudere versie), leg
+dan `inlegplaat-5x2` in de voorste twee rijen: een vlakke plaat met
+Gridfinity-voeten eronder. De tang ligt dan 0,6 cm boven de bodem en heeft nog
+3,4 cm hoogte. In de generator: onderdeel *Inlegplaat*, met de maat in vakken.
+
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
 ### Magneten en staalband: naast en op elkaar

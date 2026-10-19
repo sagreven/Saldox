@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -52,6 +52,10 @@ steunen = 2; // [0:1:5]
 klik = false;
 // Kant waar de deksel uit schuift (voor = kant van de klikbeugels van de cassette)
 schuif = "rechts"; // [rechts:Rechts, links:Links, voor:Voor, achter:Achter]
+
+/* [Inlegplaat] */
+// Dikte van de vlakke plaat boven de voeten in mm (een inlegplaat maakt van Gridfinity-vakken een vlakke vloer, bv. voor gereedschap in een al geprinte cassette)
+inleg_t = 1.2; // [0.8:0.2:3]
 
 /* [Stapelen] */
 // Bakjes klikken op elkaar vast: nokjes in de stapelrand vallen in een groefje in de voeten van het bakje erboven. Hoe ver de nokjes ingrijpen in mm (0 = geen klik)
@@ -341,6 +345,14 @@ module schuifdeksel() {
         scale([1, 1, 0.5]) rotate([90, 0, 0]) cylinder(r = 1.2, h = bw, center = true);
 }
 
+// Inlegplaat: Gridfinity-voeten met een vlakke plaat erop, zonder wanden.
+// Valt in de Gridfinity-bodem en maakt er een vlakke vloer van.
+module inlegplaat() {
+    for (i = [0 : gx - 1], j = [0 : gy - 1])
+        translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) gf_foot();
+    translate([0, 0, foot_h - 0.01]) rsq(W, D, 3.75, inleg_t + 0.01);
+}
+
 // deksel in gesloten stand (voor previews)
 module schuifdeksel_dicht() {
     rotate([0, 0, sl_rot]) translate([lid_x, 0, z_g0]) schuifdeksel();
@@ -541,6 +553,7 @@ else if (onderdeel == "cassette_beide") {
     cassette_body();
     translate([0, out_d + 20, 0]) cassette_deksel_print();
 }
+else if (onderdeel == "inlegplaat") inlegplaat();
 else if (onderdeel == "voorbeeld_bakje") { bakje(); if (deksel) schuifdeksel_dicht(); }
 else if (onderdeel == "voorbeeld_cassette") { cassette_body(); cassette_deksel(); }
 
@@ -567,6 +580,9 @@ assert(footprint[0] <= bed && footprint[1] <= bed,
 if (is_cassette) {
     echo(str("Cassette ", gx, "x", gy, ": ", cm(out_w), " x ", cm(c_ext_d), " x ",
              cm(H_body + c_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
+} else if (onderdeel == "inlegplaat") {
+    echo(str("Inlegplaat ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " cm, vloer ",
+             foot_h + inleg_t, " mm boven de bodem van de cassette"));
 } else {
     if (deksel && label_d > 0)
         echo(str("Stickervlak op de deksel: ", cm(label_x1 - label_x0), " x ", cm(label_y), " cm"));
