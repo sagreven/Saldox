@@ -120,15 +120,18 @@ een dunne vloer. De tang wordt vastgehouden door:
 
 - **verende halve bogen aan de kopse kanten**: één tegen de kop en één tegen
   het einde van elk handvat, die de tang in de lengte op spanning houden;
-- **een "paddenstoel" in het midden**, tussen de handvatten: twee verende
-  pootjes met elk een haakje dat over de binnenrand van een handvat valt (van
-  opzij een champignon). Druk de tang erin, de pootjes veren naar binnen en de
-  tang klikt eronder: hij kan niet meer omhoog en niet opzij.
+- **een "paddenstoel" in het midden**, tussen de handvatten: twee pootjes die
+  bovenaan met een halve boog verbonden zijn (een veer als een omgekeerde U),
+  met aan de buitenkant een ratel van 3 haakjes, 1,5 mm boven elkaar, die over
+  de binnenrand van de handvatten vallen (van opzij een champignon). Druk de
+  tang erin, de boog veert in en de tang klikt onder het haakje dat past: hij
+  kan niet meer omhoog en niet opzij. Door de meerdere niveaus maakt ±1,5 mm
+  verschil in de hoogte van de handvatten niet uit.
 
 Leg de tang met de stelknop naar boven. De vorm komt van een foto op A4 (ca.
 18,1 × 7,3 cm). Meet je tang na en vul `tang_lengte`, `tang_breedte` en
 `handvat_hoogte` (hoe hoog de handvatten zijn als de tang plat ligt) in.
-Te stug of te los: pas `pad_haak`, `pad_t`, `voorspanning` of `boog_t` aan.
+Te stug of te los: pas `pad_haak`, `pad_t`, `pad_niveaus`, `pad_stap`, `voorspanning` of `boog_t` aan.
 
 ![inleg krimptang](img/inleg-krimptang.png)
 ![doorsnede bij de paddenstoel](img/inleg-krimptang-doorsnede.png)

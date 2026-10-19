@@ -4,11 +4,14 @@
 // vastgehouden door:
 //  - verende halve bogen aan de kopse kanten: een tegen de kop en een tegen
 //    het einde van elk handvat (houden de tang in de lengte op spanning);
-//  - een "paddenstoel" in het midden, tussen de handvatten: twee verende
-//    pootjes met elk een haakje dat over de binnenrand van een handvat valt.
-//    Van opzij lijkt het een champignon. Bij het indrukken veren de pootjes
-//    naar binnen en klikt de tang eronder; hij kan dan niet meer omhoog en
-//    ook niet opzij.
+//  - een "paddenstoel" in het midden, tussen de handvatten: twee pootjes die
+//    bovenaan met een halve boog verbonden zijn (een veer in de vorm van een
+//    omgekeerde U), met aan de buitenkant een ratel van haakjes die over de
+//    binnenrand van de handvatten vallen. Van opzij lijkt het een champignon.
+//    Bij het indrukken veert de boog in en klikt de tang onder het eerste
+//    haakje dat past; door de meerdere niveaus maakt een paar mm verschil in
+//    de hoogte van de handvatten niet uit. De tang kan dan niet meer omhoog
+//    en ook niet opzij.
 //
 // De vorm is overgetrokken van een foto (op A4-papier, gecorrigeerd voor
 // perspectief en de hoogte van de tang boven het papier) en schaalt mee met
@@ -43,13 +46,19 @@ boog_t = 1.2; // [0.8:0.1:2.4]
 // Plek tussen de handvatten (0 = midden van de tang, 0.5 = einde handvatten)
 pad_x = 0.23; // [0.05:0.01:0.4]
 // Speling tussen pootje en binnenrand van het handvat in mm
-pad_speling = 0.75; // [0:0.25:2]
-// Hoe ver het haakje over het handvat grijpt in mm
+pad_speling = 1.0; // [0:0.25:2]
+// Hoe ver een haakje over het handvat grijpt in mm
 pad_haak = 2.5; // [1:0.5:4]
-// Dikte van een pootje in mm (dunner = slapper)
-pad_t = 2.4; // [1.6:0.2:4]
-// Lengte van een pootje in mm
-pad_l = 14; // [8:1:24]
+// Aantal klik-niveaus (haakjes onder elkaar)
+pad_niveaus = 3; // [1:1:5]
+// Afstand tussen de klik-niveaus in mm
+pad_stap = 1.5; // [1:0.25:3]
+// Hoogte van de boog boven de pootjes in mm
+pad_boog = 5; // [3:0.5:10]
+// Dikte van pootjes en boog in mm (dunner = slapper)
+pad_t = 2.0; // [1.2:0.2:4]
+// Lengte van de paddenstoel (langs de tang) in mm
+pad_l = 12; // [8:1:24]
 
 /* [Frame] */
 // Hoogte van het frame in mm
@@ -142,27 +151,35 @@ module frame_2d() {
     }
 }
 
-// Eén pootje van de paddenstoel: buitenvlak op y = 0 (tegen het handvat,
-// naar +y), haakje naar +y met vlakke onderkant op handvat_hoogte en een
-// schuine bovenkant, zodat het pootje bij indrukken naar binnen veert.
-module pootje() {
-    zh = handvat_hoogte + 0.3;
-    top = zh + 0.8 + pad_haak;
-    translate([-pad_l / 2, -pad_t, 0]) cube([pad_l, pad_t, top]);
-    translate([-pad_l / 2, 0, 0]) rotate([90, 0, 90]) linear_extrude(pad_l)
-        polygon([[-0.01, zh], [pad_haak, zh], [pad_haak, zh + 0.8], [-0.01, top]]);
-}
+// Paddenstoel: twee pootjes evenwijdig aan de tang, bovenaan verbonden met
+// een halve (afgeplatte) boog, met een ratel van haakjes aan de buitenkant.
+// Het middelste klik-niveau ligt op handvat_hoogte; de andere pad_stap mm
+// erboven en eronder.
+function rand_y(k) = (rand1[k] + (rand2[k] - rand1[k]) * (pad_x - rand1[0]) / (rand2[0] - rand1[0])) * B;
 
 module paddenstoel() {
-    for (k = [1, 2]) {   // 1 = onder (-y), 2 = boven (+y)
-        p1 = [rand1[0] * L, rand1[k] * B];
-        p2 = [rand2[0] * L, rand2[k] * B];
-        hoek = atan2(p2[1] - p1[1], p2[0] - p1[0]);
-        f = (pad_x * L - p1[0]) / (p2[0] - p1[0]);   // punt op de rand bij pad_x
-        pr = p1 + f * (p2 - p1);
-        s = k == 2 ? 1 : -1;
-        translate([pr[0], pr[1] - s * pad_speling, 0]) rotate(hoek)
-            mirror([0, s < 0 ? 1 : 0, 0]) pootje();
+    yo = rand_y(2) - pad_speling;          // buitenvlak bovenste pootje
+    yu = rand_y(1) + pad_speling;          // buitenvlak onderste pootje
+    ym = (yo + yu) / 2;
+    hw = (yo - yu) / 2;                    // halve breedte, buitenvlak
+    n  = pad_niveaus;
+    z0 = handvat_hoogte + 0.3 - (n - 1) / 2 * pad_stap;   // onderste haakje
+    zt = z0 + (n - 1) * pad_stap + 0.6 + pad_haak;        // bovenkant pootjes
+    translate([pad_x * L, ym, 0]) rotate([90, 0, 90]) linear_extrude(pad_l, center = true) {
+        // pootjes
+        for (s = [-1, 1]) translate([s > 0 ? hw - pad_t : -hw, 0]) square([pad_t, zt]);
+        // halve boog bovenop
+        translate([0, zt]) intersection() {
+            difference() {
+                scale([hw, pad_boog]) circle(1);
+                scale([hw - pad_t, pad_boog - pad_t]) circle(1);
+            }
+            translate([-hw, 0]) square([2 * hw, pad_boog]);
+        }
+        // ratel: per niveau een haakje met vlakke onderkant en schuine bovenkant
+        for (s = [-1, 1], i = [0 : n - 1])
+            translate([s * hw, z0 + i * pad_stap]) mirror([s < 0 ? 1 : 0, 0])
+                polygon([[-0.01, 0], [pad_haak, 0], [pad_haak, 0.6], [-0.01, 0.6 + pad_haak]]);
     }
 }
 
@@ -173,6 +190,7 @@ mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
 }
 
 echo(str("Frame ", frame_b / 10, " x ", frame_d / 10, " x ", hoogte / 10,
-         " cm; tang ", L / 10, " x ", B / 10, " cm; haakjes op ", handvat_hoogte,
-         " mm boven de vloer; paddenstoel ", pad_haak + 0.8 + handvat_hoogte + 0.3 + vloer_t,
-         " mm hoog"));
+         " cm; tang ", L / 10, " x ", B / 10, " cm; klik-niveaus rond ", handvat_hoogte,
+         " mm boven de vloer; paddenstoel ",
+         vloer_t + handvat_hoogte + 0.3 + (pad_niveaus - 1) / 2 * pad_stap + 0.6 + pad_haak + pad_boog,
+         " mm hoog (cassette binnen: 39,8 mm)"));
