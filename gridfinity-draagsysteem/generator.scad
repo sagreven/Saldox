@@ -60,8 +60,12 @@ stapel_klik = 0.2; // [0:0.05:0.4]
 /* [Cassette] */
 // Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.2 cm lager)
 lagen = 2; // [1:1 half bakje - 2.7 cm, 2:2 halve - 4.5 cm, 3:3 halve - 6.3 cm, 4:4 halve - 8.0 cm, 5:5 halve - 9.8 cm, 6:6 halve - 11.5 cm]
-// Gridfinity-bodem binnenin (uit = vlakke bodem voor schuim/TPU-inleg)
+// Gridfinity-bodem binnenin (uit = helemaal vlakke bodem voor schuim/TPU-inleg)
 baseplate = true;
+// Aantal rijen Gridfinity, gerekend vanaf de achterkant (scharnier); de rijen ervoor krijgen een vlakke, 0.5 cm diepere vloer voor gereedschap (0 = overal Gridfinity)
+gridfinity_rijen = 0; // [0:1:8]
+// Bakjes klikken vast in de Gridfinity-bodem van de cassette: hoe ver de nokjes ingrijpen in mm (0 = geen klik)
+cassette_klik = 0.15; // [0:0.05:0.3]
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
 
@@ -386,8 +390,8 @@ module cassette_body() {
             // nokken voor de klikbeugels (voorkant, y = -out_d/2)
             for (x = latch_xs()) latch_ridge(x);
         }
-        // holte
-        translate([0, 0, c_floor + (baseplate ? gf_base : 0)])
+        // holte (de Gridfinity-bodem wordt er daarna weer in gezet)
+        translate([0, 0, c_floor])
             rsq(cav_w, cav_d, cav_r, H_body + tongue_h + 1);
         pin_hole();
         if (magneten) { magnet_pockets(); bottom_magnets(); }
@@ -437,14 +441,42 @@ module steel_strips() {
             rsq(out_w - 4, staalband_b + 0.4, 0.5, staalband_t + 1);
 }
 
+// Gridfinity-bodem in de cassette: over alle rijen, of alleen over de
+// achterste gridfinity_rijen rijen (dan 2 mm extra rand naar voren, zodat de
+// voorste vakken ook een voorwand hebben).
+bp_rijen = gridfinity_rijen == 0 ? gy : min(gridfinity_rijen, gy);
+bp_y0    = gridfinity_rijen == 0 ? -cav_d / 2 - 1
+                                 : (gy - bp_rijen - (gy - 1) / 2) * G - G / 2 - 2;
+
 module baseplate_insert() {
-    translate([0, 0, c_floor])
+    translate([0, 0, c_floor]) {
         difference() {
-            rsq(cav_w + 0.01, cav_d + 0.01, cav_r, gf_base);
-            for (i = [0 : gx - 1], j = [0 : gy - 1])
+            intersection() {
+                rsq(cav_w + 0.01, cav_d + 0.01, cav_r, gf_base);
+                translate([-cav_w, bp_y0, -1]) cube([2 * cav_w, 2 * cav_d, gf_base + 2]);
+            }
+            for (i = [0 : gx - 1], j = [gy - bp_rijen : gy - 1])
                 translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, gf_base + 0.01])
                     gf_socket();
         }
+        // klik-nokjes: aan elke kant van elk vak, in het rechte stuk van de
+        // uitsparing, op de hoogte van het groefje in de bakvoet
+        if (cassette_klik > 0)
+            for (i = [0 : gx - 1], j = [gy - bp_rijen : gy - 1], r = [0 : 90 : 270])
+                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0])
+                    rotate([0, 0, r]) socket_nok();
+    }
+}
+
+// Nokje op de wand van een baseplate-uitsparing (half 18,85 mm vanaf het
+// midden). De punt steekt cassette_klik voorbij het voetvlak (18,6 mm) en valt
+// bij een geplaatst bakje in het groefje van 0,4 mm.
+module socket_nok() {
+    a_tip = 18.6 - cassette_klik;
+    p = 18.85 - a_tip;
+    translate([0, 0, 0]) rotate([90, 0, 0]) linear_extrude(8, center = true)
+        polygon([[19.2, klik_z - p - 0.3], [18.85, klik_z - p], [a_tip, klik_z],
+                 [18.85, klik_z + p], [19.2, klik_z + p + 0.3]]);
 }
 
 // nok met schuine bovenkant (invoer) en vlakke onderkant (vanghaak)

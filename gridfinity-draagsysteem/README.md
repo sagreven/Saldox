@@ -40,7 +40,9 @@ die je nodig hebt: elk bakje is zelf al dicht.
    de voeten van het bakje erboven klikken. Halve en hele bakjes kun je mengen.
    Kies per bakje aan welke kant de schuifdeksel eruit gaat, zodat je eerst het
    vakje opent dat je nodig hebt.
-4. **Cassettes** hebben binnen een Gridfinity-raster (vakken van 4,2 cm). De
+4. **Cassettes** hebben binnen een Gridfinity-bodem (vakken van 4,2 cm) waarin
+   de bakjes vastklikken. Wil je ook gereedschap kwijt, dan krijgen alleen de
+   achterste rijen Gridfinity en is de rest een vlakke vloer. De
    binnenhoogte kies je in halve bakjes (een heel bakje telt als 2). De deksel
    van de cassette klemt de bovenste laag vast.
 
@@ -90,7 +92,8 @@ Elk bestand bestaat uit een `-onderbak` en een `-deksel`.
 
 `cassette-5x4-4.5cm-krimptang` (21,7 × 18,8 × 4,5 cm, binnen 21,1 × 16,9 cm en
 één heel bakje hoog) voor een zelfinstellende krimptang van ca. 19,5 × 8 × 3 cm.
-De tang ligt op de voorste twee rijen. In de achterste twee rijen staan vijf
+De tang ligt voorin op een vlakke vloer (geen Gridfinity, `gridfinity_rijen = 2`).
+In de achterste twee rijen zit een Gridfinity-bodem met klik, met daarin vijf
 `bakje-1x2-vakjes-heel-voor`, één per kabeldikte (bijvoorbeeld 0,5 / 0,75 / 1 /
 1,5 / 2,5 mm²): voor de adereindhulzen voor één ader, achter die voor twee aders.
 Samen 10 vakjes van 3,4 × 3,4 cm, 2,6 cm diep. De schuifdeksel
@@ -214,7 +217,9 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `schuif` | kant waar de deksel uit schuift: rechts, links, voor of achter |
 | Stapelen | `stapel_klik` | hoe ver de klik-nokjes in de stapelrand ingrijpen (0,2 mm; 0 = geen klik) |
 | Cassette | `lagen` | binnenhoogte in halve bakjes (1–6), met de hoogte van de dichte cassette in cm erbij |
-| | `baseplate` | uit = vlakke bodem voor een schuim- of TPU-inleg |
+| | `baseplate` | uit = helemaal vlakke bodem voor een schuim- of TPU-inleg |
+| | `gridfinity_rijen` | aantal rijen Gridfinity vanaf de achterkant; de rijen ervoor krijgen een vlakke, 0,5 cm diepere vloer voor gereedschap (0 = overal) |
+| | `cassette_klik` | hoe ver de klik-nokjes in de Gridfinity-bodem van de cassette ingrijpen (0,15 mm; 0 = geen klik) |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
 | Cassette - magneten | `magneten` | magneetgaten en staalbaan aan; uit = dunnere bodem |
 | | `magneet_d`, `magneet_h` | maat van je magneten (de wand wordt zo nodig dikker) |
