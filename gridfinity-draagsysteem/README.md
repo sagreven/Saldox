@@ -114,16 +114,24 @@ bakjes staan met hun voeten op de bodem van de cassette, op dezelfde hoogte als
 met een ingebouwde bodem. In de generator: onderdeel *Losse Gridfinity-bodem*.
 
 **Tang op zijn plek:** [`krimptang_inleg.scad`](krimptang_inleg.scad) /
-`inleg-krimptang-5x2` is een frame van 21 × 8,4 × 1,2 cm voor de voorste twee
-rijen, met een ruime, gladde uitsparing (3 mm rondom) en vijf verende halve
-bogen die de tang op spanning houden: twee aan elke kant tegen de handvatten en
-één bij de kop, die de tang in de lengte tegen de andere kant drukt. De bogen
-drukken 1 mm in. Door de speling en de vering maakt een paar mm verschil in de
-maat van de tang niet uit. De vorm komt van een foto op A4 (ca. 18,1 × 7,3 cm);
-meet je tang na en vul `tang_lengte` en `tang_breedte` in als ze afwijken.
-Te stug of te los: pas `voorspanning` of `boog_t` aan.
+`inleg-krimptang-5x2` is een inleg van 21 × 8,4 cm voor de voorste twee rijen:
+een frame van 1,2 cm hoog met een ruime, gladde uitsparing (3 mm rondom) en
+een dunne vloer. De tang wordt vastgehouden door:
 
-![inleg krimptang, bovenaanzicht (rood = tang)](img/inleg-krimptang-boven.png)
+- **verende halve bogen aan de kopse kanten**: één tegen de kop en één tegen
+  het einde van elk handvat, die de tang in de lengte op spanning houden;
+- **een "paddenstoel" in het midden**, tussen de handvatten: twee verende
+  pootjes met elk een haakje dat over de binnenrand van een handvat valt (van
+  opzij een champignon). Druk de tang erin, de pootjes veren naar binnen en de
+  tang klikt eronder: hij kan niet meer omhoog en niet opzij.
+
+Leg de tang met de stelknop naar boven. De vorm komt van een foto op A4 (ca.
+18,1 × 7,3 cm). Meet je tang na en vul `tang_lengte`, `tang_breedte` en
+`handvat_hoogte` (hoe hoog de handvatten zijn als de tang plat ligt) in.
+Te stug of te los: pas `pad_haak`, `pad_t`, `voorspanning` of `boog_t` aan.
+
+![inleg krimptang](img/inleg-krimptang.png)
+![doorsnede bij de paddenstoel](img/inleg-krimptang-doorsnede.png)
 ![inleg krimptang](img/inleg-krimptang.png)
 
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).

@@ -1,29 +1,36 @@
 // Inleg voor de krimptang-cassette (5 x 4, voorste twee rijen)
 // ===============================================================
-// Een frame met een ruime, gladde uitsparing voor de krimptang en verende
-// halve bogen die de tang op spanning houden: twee aan elke kant tegen de
-// handvatten (houden hem in het midden) en een bij de kop (drukt hem in de
-// lengte tegen de andere kant). Door de ruime speling en de vering maakt een
-// paar mm verschil in de maat van de tang niet uit.
+// Een frame met een ruime, gladde uitsparing voor de krimptang. De tang wordt
+// vastgehouden door:
+//  - verende halve bogen aan de kopse kanten: een tegen de kop en een tegen
+//    het einde van elk handvat (houden de tang in de lengte op spanning);
+//  - een "paddenstoel" in het midden, tussen de handvatten: twee verende
+//    pootjes met elk een haakje dat over de binnenrand van een handvat valt.
+//    Van opzij lijkt het een champignon. Bij het indrukken veren de pootjes
+//    naar binnen en klikt de tang eronder; hij kan dan niet meer omhoog en
+//    ook niet opzij.
 //
 // De vorm is overgetrokken van een foto (op A4-papier, gecorrigeerd voor
 // perspectief en de hoogte van de tang boven het papier) en schaalt mee met
-// tang_lengte en tang_breedte. Meet je tang na (handvatten in rust).
+// tang_lengte en tang_breedte. Meet je tang na (handvatten in rust), en meet
+// hoe hoog de handvatten zijn als de tang plat ligt (handvat_hoogte).
 //
 // Het frame ligt op de vlakke bodem van de cassette, in de voorste twee rijen
-// (voor een losse Gridfinity-bodem in de achterste twee rijen). De tang staat
-// op de bodem van de cassette; de uitsparing gaat er helemaal doorheen.
+// (voor een losse Gridfinity-bodem in de achterste twee rijen). Leg de tang
+// met de stelknop naar boven.
 
 /* [Tang] */
 // Totale lengte van de tang in mm (kop tot einde handvatten)
 tang_lengte = 181; // [150:1:205]
 // Grootste breedte van de tang in mm (handvatten in rust)
 tang_breedte = 73; // [50:1:79]
+// Hoogte van de handvatten als de tang plat ligt, in mm (hier grijpen de haakjes overheen)
+handvat_hoogte = 24; // [15:0.5:35]
 // Kop links of rechts in de cassette
 kop = "links"; // [links, rechts]
 
 /* [Uitsparing en bogen] */
-// Ruimte rondom de tang in mm (de bogen vullen dit op)
+// Ruimte rondom de tang in mm
 ruim = 3; // [1:0.5:6]
 // Kleine inhammen in de omtrek dichtgooien tot deze straal, voor een gladde rand
 glad = 6; // [0:1:12]
@@ -31,18 +38,28 @@ glad = 6; // [0:1:12]
 voorspanning = 1.0; // [0:0.25:3]
 // Dikte van de bogen in mm (dunner = slapper)
 boog_t = 1.2; // [0.8:0.1:2.4]
-// Lengte van de bogen (koorde) in mm
-boog_c = 26; // [14:1:40]
+
+/* [Paddenstoel] */
+// Plek tussen de handvatten (0 = midden van de tang, 0.5 = einde handvatten)
+pad_x = 0.23; // [0.05:0.01:0.4]
+// Speling tussen pootje en binnenrand van het handvat in mm
+pad_speling = 0.75; // [0:0.25:2]
+// Hoe ver het haakje over het handvat grijpt in mm
+pad_haak = 2.5; // [1:0.5:4]
+// Dikte van een pootje in mm (dunner = slapper)
+pad_t = 2.4; // [1.6:0.2:4]
+// Lengte van een pootje in mm
+pad_l = 14; // [8:1:24]
 
 /* [Frame] */
-// Hoogte van het frame in mm (de tang is ca. 30 mm dik)
+// Hoogte van het frame in mm
 hoogte = 12; // [6:1:30]
+// Dikte van de vloer onder de tang in mm (houdt de paddenstoel op zijn plek)
+vloer_t = 1.2; // [0.8:0.2:3]
 // Breedte van het frame: binnenmaat van de cassette (5 vakken = 210,5 mm) min speling
 frame_b = 210; // [100:0.5:340]
 // Diepte van het frame: tot aan de losse Gridfinity-bodem (2 vakken) min speling
 frame_d = 83.75; // [40:0.25:200]
-// Diameter van de greep aan het einde van de handvatten, om de tang eruit te pakken
-greep_d = 24; // [0:2:40]
 
 /* [Hidden] */
 $fn = 96;
@@ -86,24 +103,22 @@ tang_omtrek = [
     [-0.4730, -0.1934], [-0.4880, -0.1372], [-0.4991, -0.0529]
 ];
 
-// Plekken van de bogen (genormaliseerd): [x, rand van de tang in y, kant]
-// kant +1 = boven (+y), -1 = onder; gemeten aan de omtrek hierboven.
-bogen_zij = [
-    [0.12,  0.430,  1], [0.38,  0.467,  1],
-    [0.12, -0.400, -1], [0.38, -0.460, -1]
-];
-kop_y = -0.007;   // midden van de kop in y
+// Gemeten aan de foto (genormaliseerd):
+kop_y = -0.007;                         // midden van de kop
+tips = [[0.491, 0.311], [0.497, -0.295]]; // uiteinden van de handvatten
+// binnenranden van de handvatten op twee plekken: [x, y onder, y boven]
+rand1 = [0.193, -0.121, 0.171];
+rand2 = [0.271, -0.150, 0.195];
 
 module tang_2d() scale([L, B]) polygon(tang_omtrek);
 
-// ruime, gladde uitsparing
+// ruime, gladde uitsparing (zonder het gat tussen de handvatten)
 module zak_2d() offset(r = ruim) offset(r = -glad) offset(r = glad) tang_2d();
 
 // Halve boog (verende strip) met de koorde op y = 0, bolling naar +y met de
 // top op y = ruim + voorspanning, plus ankers aan beide uiteinden in de wand.
-module boog_2d() {
+module boog_2d(c) {
     b = ruim + voorspanning;
-    c = boog_c;
     R = (c * c / 4 + b * b) / (2 * b);
     intersection() {
         translate([0, b - R]) difference() { circle(R); circle(R - boog_t); }
@@ -112,27 +127,52 @@ module boog_2d() {
     for (s = [-1, 1]) translate([s * c / 2 - 2, -4]) square([4, 4.5]);
 }
 
+module rechthoek() offset(r = 4) square([frame_b - 8, frame_d - 8], center = true);
+
 module frame_2d() {
-    buiten = [frame_b, frame_d];
-    module rechthoek() offset(r = 4) square(buiten - [8, 8], center = true);
-    difference() {
-        rechthoek();
-        zak_2d();
-        if (greep_d > 0) translate([L / 2 + ruim, 0]) circle(d = greep_d);
-    }
+    difference() { rechthoek(); zak_2d(); }
     intersection() {
         rechthoek();
         union() {
-            for (p = bogen_zij)
-                translate([p[0] * L, p[1] * B + p[2] * ruim])
-                    rotate(p[2] > 0 ? 180 : 0) boog_2d();
-            translate([-L / 2 - ruim, kop_y * B]) rotate(-90) boog_2d();
+            // tegen de kop
+            translate([-L / 2 - ruim, kop_y * B]) rotate(-90) boog_2d(26);
+            // tegen het einde van elk handvat
+            for (t = tips) translate([L / 2 + ruim, t[1] * B]) rotate(90) boog_2d(18);
         }
     }
 }
 
-linear_extrude(hoogte) mirror([kop == "rechts" ? 1 : 0, 0]) frame_2d();
+// Eén pootje van de paddenstoel: buitenvlak op y = 0 (tegen het handvat,
+// naar +y), haakje naar +y met vlakke onderkant op handvat_hoogte en een
+// schuine bovenkant, zodat het pootje bij indrukken naar binnen veert.
+module pootje() {
+    zh = handvat_hoogte + 0.3;
+    top = zh + 0.8 + pad_haak;
+    translate([-pad_l / 2, -pad_t, 0]) cube([pad_l, pad_t, top]);
+    translate([-pad_l / 2, 0, 0]) rotate([90, 0, 90]) linear_extrude(pad_l)
+        polygon([[-0.01, zh], [pad_haak, zh], [pad_haak, zh + 0.8], [-0.01, top]]);
+}
+
+module paddenstoel() {
+    for (k = [1, 2]) {   // 1 = onder (-y), 2 = boven (+y)
+        p1 = [rand1[0] * L, rand1[k] * B];
+        p2 = [rand2[0] * L, rand2[k] * B];
+        hoek = atan2(p2[1] - p1[1], p2[0] - p1[0]);
+        f = (pad_x * L - p1[0]) / (p2[0] - p1[0]);   // punt op de rand bij pad_x
+        pr = p1 + f * (p2 - p1);
+        s = k == 2 ? 1 : -1;
+        translate([pr[0], pr[1] - s * pad_speling, 0]) rotate(hoek)
+            mirror([0, s < 0 ? 1 : 0, 0]) pootje();
+    }
+}
+
+mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
+    linear_extrude(vloer_t) rechthoek();
+    linear_extrude(hoogte) frame_2d();
+    translate([0, 0, vloer_t - 0.01]) paddenstoel();
+}
 
 echo(str("Frame ", frame_b / 10, " x ", frame_d / 10, " x ", hoogte / 10,
-         " cm; tang ", L / 10, " x ", B / 10, " cm, ", ruim, " mm ruimte, bogen drukken ",
-         voorspanning, " mm in"));
+         " cm; tang ", L / 10, " x ", B / 10, " cm; haakjes op ", handvat_hoogte,
+         " mm boven de vloer; paddenstoel ", pad_haak + 0.8 + handvat_hoogte + 0.3 + vloer_t,
+         " mm hoog"));
