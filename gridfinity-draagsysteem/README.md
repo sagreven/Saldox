@@ -88,6 +88,11 @@ uitsparing van 0,4 mm diep voor een sticker:
 
 Elk bestand bestaat uit een `-onderbak` en een `-deksel`.
 
+Bovenop elke deksel zit een stickervlak van 0,3 mm diep, 5 mm van de rand
+(bij 4×2: 16,5 × 8,1 cm; bij 5×4: 20,7 × 16,5 cm). De staalband ligt daar nog
+dieper in; plak eerst de staalband en dan de sticker eroverheen. De magneten
+van een cassette erboven pakken gewoon door een papieren sticker heen.
+
 ### Voorbeeld: krimptang voor adereindhulzen
 
 `cassette-5x4-4.5cm-krimptang` (21,7 × 18,8 × 4,5 cm, binnen 21,1 × 16,9 cm en
@@ -258,6 +263,7 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `gridfinity_rijen` | aantal rijen Gridfinity vanaf de achterkant; de rijen ervoor krijgen een vlakke, 0,5 cm diepere vloer voor gereedschap (0 = overal) |
 | | `cassette_klik` | hoe ver de klik-nokjes in de Gridfinity-bodem van de cassette ingrijpen (0,15 mm; 0 = geen klik) |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
+| | `cassette_sticker` | diepte van het stickervlak bovenop de deksel (0,3 mm; 0 = geen) |
 | Cassette - magneten | `magneten` | magneetgaten en staalbaan aan; uit = dunnere bodem |
 | | `magneet_d`, `magneet_h` | maat van je magneten (de wand wordt zo nodig dikker) |
 | | `magneet_speling` | extra ruimte in het gat (0,1–0,2 = klemmend) |

@@ -72,6 +72,8 @@ gridfinity_rijen = 0; // [0:1:8]
 cassette_klik = 0.15; // [0:0.05:0.3]
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
+// Diepte van de stickeruitsparing bovenop de deksel van de cassette in mm (0 = geen); de staalband ligt er nog dieper in, de sticker gaat eroverheen
+cassette_sticker = 0.3; // [0:0.1:1]
 
 /* [Cassette - magneten] */
 // Magneten in de zijwanden en de bodem, en een baan voor zelfklevende staalband bovenop de deksel: cassettes klikken naast en op elkaar vast
@@ -467,8 +469,15 @@ module bottom_magnets() {
 // baan voor staalband bovenop de deksel, per rij vakken over de hele breedte
 module steel_strips() {
     for (j = [0 : gy - 1])
-        translate([0, (j - (gy - 1) / 2) * G, H_body + c_lid_h - staalband_t])
-            rsq(out_w - 4, staalband_b + 0.4, 0.5, staalband_t + 1);
+        translate([0, (j - (gy - 1) / 2) * G, H_body + c_lid_h - cassette_sticker - staalband_t])
+            rsq(out_w - 4, staalband_b + 0.4, 0.5, staalband_t + cassette_sticker + 1);
+}
+
+// Stickervlak bovenop de deksel: bijna de hele bovenkant, 5 mm van de rand.
+sticker_c = [out_w - 10, out_d - 10];
+module cassette_sticker_cut() {
+    translate([0, 0, H_body + c_lid_h - cassette_sticker])
+        rsq(sticker_c[0], sticker_c[1], 3, cassette_sticker + 1);
 }
 
 // Gridfinity-bodem in de cassette: over alle rijen, of alleen over de
@@ -531,6 +540,7 @@ module cassette_deksel() {
         translate([0, 0, H_body - 1]) tongue_ring(tongue_h + c_fit + 1, c_fit);
         pin_hole();
         if (magneten) steel_strips();
+        if (cassette_sticker > 0) cassette_sticker_cut();
     }
     for (x = latch_xs()) latch_arm(x);
 }
@@ -599,6 +609,8 @@ assert(footprint[0] <= bed && footprint[1] <= bed,
 if (is_cassette) {
     echo(str("Cassette ", gx, "x", gy, ": ", cm(out_w), " x ", cm(c_ext_d), " x ",
              cm(H_body + c_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
+    if (cassette_sticker > 0)
+        echo(str("Stickervlak op de deksel: ", cm(sticker_c[0]), " x ", cm(sticker_c[1]), " cm"));
 } else if (onderdeel == "baseplate") {
     echo(str("Losse Gridfinity-bodem ", gx, "x", gy, ": ", cm(gx * G), " x ", cm(gy * G),
              " x ", gf_base / 10, " cm"));
