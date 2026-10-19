@@ -113,6 +113,15 @@ Is je cassette met een vlakke bodem geprint (zonder Gridfinity), leg dan
 bakjes staan met hun voeten op de bodem van de cassette, op dezelfde hoogte als
 met een ingebouwde bodem. In de generator: onderdeel *Losse Gridfinity-bodem*.
 
+**Tang op zijn plek:** [`krimptang_inleg.scad`](krimptang_inleg.scad) /
+`inleg-krimptang-5x2` is een frame van 21 × 8,4 × 1,2 cm voor de voorste twee
+rijen, met een uitsparing in de vorm van de tang (overgetrokken van een foto op
+A4, ca. 18,1 × 7,3 cm) en een greep aan beide uiteinden. De tang staat op de
+bodem van de cassette en kan niet meer schuiven. Meet je tang na en vul
+`tang_lengte` en `tang_breedte` in als ze afwijken; de vorm schaalt mee.
+
+![inleg krimptang](img/inleg-krimptang.png)
+
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
 ### Magneten en staalband: naast en op elkaar

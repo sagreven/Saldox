@@ -1,0 +1,91 @@
+// Inleg voor de krimptang-cassette (5 x 4, voorste twee rijen)
+// ===============================================================
+// Een frame met een uitsparing in de vorm van de krimptang, zodat de tang
+// niet kan schuiven. De vorm is overgetrokken van een foto (op A4-papier,
+// gecorrigeerd voor perspectief en de hoogte van de tang boven het papier) en
+// wordt geschaald naar de lengte en breedte die je hieronder invult.
+// Meet je tang na (handvatten in rust) en pas tang_lengte en tang_breedte aan.
+//
+// Het frame ligt op de vlakke bodem van de cassette, in de voorste twee rijen
+// (voor een losse Gridfinity-bodem in de achterste twee rijen). De tang staat
+// op de bodem van de cassette; de uitsparing gaat er helemaal doorheen.
+
+/* [Tang] */
+// Totale lengte van de tang in mm (kop tot einde handvatten)
+tang_lengte = 181; // [150:1:205]
+// Grootste breedte van de tang in mm (handvatten in rust)
+tang_breedte = 73; // [50:1:79]
+// Speling rondom de tang in mm
+speling = 1.0; // [0.5:0.25:3]
+// Kop links of rechts in de cassette
+kop = "links"; // [links, rechts]
+
+/* [Frame] */
+// Hoogte van het frame in mm (de tang is ca. 30 mm dik)
+hoogte = 12; // [6:1:30]
+// Breedte van het frame: binnenmaat van de cassette (5 vakken = 210,5 mm) min speling
+frame_b = 210; // [100:0.5:340]
+// Diepte van het frame: tot aan de losse Gridfinity-bodem (2 vakken) min speling
+frame_d = 83.75; // [40:0.25:200]
+// Diameter van de grepen aan beide uiteinden, om de tang eruit te pakken
+greep_d = 24; // [0:2:40]
+
+/* [Hidden] */
+$fn = 48;
+// Omtrek van de tang, genormaliseerd naar lengte 1 en breedte 1, kop bij x < 0
+tang_omtrek = [
+    [-0.4998, 0.0286], [-0.4932, 0.0960], [-0.4805, 0.1576], [-0.4632, 0.2083],
+    [-0.4395, 0.2509], [-0.4211, 0.2711], [-0.4018, 0.2828], [-0.3707, 0.2841],
+    [-0.3482, 0.2768], [-0.3101, 0.2981], [-0.3046, 0.3068], [-0.3041, 0.3470],
+    [-0.2956, 0.3834], [-0.2880, 0.4022], [-0.2842, 0.4018], [-0.2812, 0.4149],
+    [-0.2631, 0.4316], [-0.2468, 0.4330], [-0.2334, 0.4265], [-0.2196, 0.4076],
+    [-0.2105, 0.3861], [-0.1516, 0.3833], [-0.1594, 0.3871], [-0.1607, 0.3954],
+    [-0.1569, 0.4196], [-0.1502, 0.4271], [-0.1526, 0.4703], [-0.1493, 0.4893],
+    [-0.1443, 0.5000], [-0.1332, 0.4917], [-0.1098, 0.4464], [-0.0909, 0.4260],
+    [-0.0811, 0.4271], [-0.0786, 0.4187], [-0.0729, 0.4160], [-0.0680, 0.4328],
+    [-0.0606, 0.4412], [-0.0390, 0.4409], [-0.0320, 0.4524], [-0.0145, 0.4505],
+    [-0.0101, 0.4419], [-0.0076, 0.4478], [-0.0023, 0.4472], [0.0005, 0.4398],
+    [0.0171, 0.4472], [0.0195, 0.4408], [0.0377, 0.4389], [0.0433, 0.4303],
+    [0.0494, 0.4316], [0.0578, 0.4217], [0.0763, 0.4187], [0.0779, 0.4296],
+    [0.0848, 0.4319], [0.0880, 0.4286], [0.0891, 0.4184], [0.0916, 0.4312],
+    [0.1084, 0.4234], [0.1100, 0.4303], [0.1148, 0.4308], [0.1172, 0.4406],
+    [0.1216, 0.4371], [0.1223, 0.4260], [0.1252, 0.4377], [0.1351, 0.4387],
+    [0.1614, 0.4299], [0.1646, 0.4375], [0.1852, 0.4333], [0.1872, 0.4391],
+    [0.2042, 0.4373], [0.2065, 0.4451], [0.2109, 0.4366], [0.2231, 0.4353],
+    [0.2255, 0.4430], [0.2357, 0.4439], [0.2381, 0.4536], [0.2604, 0.4472],
+    [0.2628, 0.4549], [0.2792, 0.4532], [0.2875, 0.4602], [0.3062, 0.4621],
+    [0.3128, 0.4575], [0.3249, 0.4720], [0.3354, 0.4708], [0.3377, 0.4765],
+    [0.3427, 0.4700], [0.3586, 0.4722], [0.3609, 0.4621], [0.3667, 0.4615],
+    [0.3691, 0.4751], [0.3733, 0.4667], [0.3872, 0.4652], [0.3922, 0.4745],
+    [0.4014, 0.4606], [0.4033, 0.4516], [0.4156, 0.4502], [0.4260, 0.4589],
+    [0.4513, 0.4650], [0.4680, 0.4543], [0.4836, 0.4261], [0.4885, 0.4001],
+    [0.4940, 0.3241], [0.4927, -0.2487], [0.4992, -0.2707], [0.5002, -0.3030],
+    [0.4947, -0.3810], [0.4810, -0.4214], [0.4611, -0.4489], [0.4320, -0.4632],
+    [0.3971, -0.4674], [0.3767, -0.4615], [0.3532, -0.4436], [0.3326, -0.4356],
+    [0.1465, -0.4064], [0.0991, -0.3929], [0.0328, -0.3632], [0.0175, -0.3634],
+    [-0.0113, -0.3740], [-0.0345, -0.3971], [-0.0648, -0.4454], [-0.0846, -0.4943],
+    [-0.0936, -0.5000], [-0.0993, -0.4926], [-0.1042, -0.4761], [-0.1319, -0.3075],
+    [-0.1364, -0.3022], [-0.4033, -0.2964], [-0.4195, -0.2851], [-0.4443, -0.2566],
+    [-0.4730, -0.1934], [-0.4880, -0.1372], [-0.4991, -0.0529]
+];
+
+module tang_2d() {
+    mirror([kop == "rechts" ? 1 : 0, 0, 0])
+        offset(r = speling) scale([tang_lengte, tang_breedte]) polygon(tang_omtrek);
+}
+
+difference() {
+    linear_extrude(hoogte)
+        offset(r = 4) square([frame_b - 8, frame_d - 8], center = true);
+    translate([0, 0, -1]) linear_extrude(hoogte + 2) {
+        tang_2d();
+        // grepen: halve cirkels aan kop- en handvateinde
+        if (greep_d > 0)
+            for (s = [-1, 1])
+                translate([s * (tang_lengte / 2 + speling), 0]) circle(d = greep_d);
+    }
+}
+
+echo(str("Frame ", frame_b / 10, " x ", frame_d / 10, " x ", hoogte / 10,
+         " cm; uitsparing ", (tang_lengte + 2 * speling) / 10, " x ",
+         (tang_breedte + 2 * speling) / 10, " cm"));
