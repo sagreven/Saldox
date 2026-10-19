@@ -8,7 +8,8 @@
 //    bovenaan met een halve boog verbonden zijn (een veer in de vorm van een
 //    omgekeerde U), met aan de buitenkant een ratel van haakjes die over de
 //    binnenrand van de handvatten vallen; elk hoger haakje steekt iets verder
-//    uit. Van opzij lijkt het een champignon.
+//    uit. De haakjes zijn driehoekig (45 graden boven en onder), zodat alles
+//    zonder support print. Van opzij lijkt het een champignon.
 //    Bij het indrukken veert de boog in en klikt de tang onder het eerste
 //    haakje dat past; door de meerdere niveaus maakt een paar mm verschil in
 //    de hoogte van de handvatten niet uit. De tang kan dan niet meer omhoog
@@ -54,8 +55,8 @@ pad_haak = 2.5; // [1:0.5:4]
 pad_groei = 0.5; // [0:0.1:1]
 // Aantal klik-niveaus (haakjes onder elkaar)
 pad_niveaus = 3; // [1:1:5]
-// Afstand tussen de klik-niveaus in mm
-pad_stap = 1.5; // [1:0.25:3]
+// Afstand tussen de klik-niveaus in mm (groter = diepere inkeping, steviger klik)
+pad_stap = 2.0; // [1:0.25:3]
 // Hoogte van de boog boven de pootjes in mm
 pad_boog = 5; // [3:0.5:10]
 // Dikte van pootjes en boog in mm (dunner = slapper)
@@ -177,24 +178,30 @@ module paddenstoel() {
     ym = (yo + yu) / 2;
     hw = (yo - yu) / 2;                    // halve breedte, buitenvlak
     n  = pad_niveaus;
-    z0 = handvat_hoogte + 0.3 - (n - 1) / 2 * pad_stap;   // onderste haakje
-    zt = z0 + (n - 1) * pad_stap + 0.6 + pad_haak;        // bovenkant pootjes
+    z0 = handvat_hoogte + 0.3 - (n - 1) / 2 * pad_stap;   // punt onderste haakje
+    zt = z0 + (n - 1) * pad_stap + pad_haak;              // bovenkant pootjes
     translate([pad_x * L, ym, 0]) rotate([90, 0, 90]) linear_extrude(pad_l, center = true) {
-        // pootjes
-        for (s = [-1, 1]) translate([s > 0 ? hw - pad_t : -hw, 0]) square([pad_t, zt]);
-        // halve boog bovenop
-        translate([0, zt]) intersection() {
-            difference() {
-                scale([hw, pad_boog]) circle(1);
-                scale([hw - pad_t, pad_boog - pad_t]) circle(1);
+        // pootjes met een halve (afgeplatte) boog erover; van binnen een spits
+        // dak van 45 graden, zodat er geen vlak plafond is (print zonder support)
+        wi = hw - pad_t;                                  // halve binnenbreedte
+        zs = zt + pad_boog - pad_t - wi;                  // begin van het dak
+        difference() {
+            union() {
+                translate([-hw, 0]) square([2 * hw, zt]);
+                translate([0, zt]) intersection() {
+                    scale([hw, pad_boog]) circle(1);
+                    translate([-hw, 0]) square([2 * hw, pad_boog]);
+                }
             }
-            translate([-hw, 0]) square([2 * hw, pad_boog]);
+            polygon([[-wi, -1], [wi, -1], [wi, zs], [0, zs + wi], [-wi, zs]]);
         }
-        // ratel: per niveau een haakje met vlakke onderkant en schuine bovenkant
+        // ratel: per niveau een driehoekig haakje met 45 graden boven en onder
+        // (print zonder support); samen een kartelrand die naar boven breder
+        // wordt. De bovenrand van het handvat valt in een van de inkepingen.
         for (s = [-1, 1], i = [0 : n - 1]) {
             h = pad_haak - (n - 1 - i) * pad_groei;   // naar boven steeds iets breder
             translate([s * hw, z0 + i * pad_stap]) mirror([s < 0 ? 1 : 0, 0])
-                polygon([[-0.01, 0], [h, 0], [h, 0.6], [-0.01, 0.6 + h]]);
+                polygon([[-0.01, -h], [h, 0], [-0.01, h]]);
         }
     }
 }
@@ -207,5 +214,5 @@ mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
 
 echo(str("Inleg ", frame_b / 10, " x ", frame_d / 10, " cm; tang ", L / 10, " x ", B / 10, " cm; klik-niveaus rond ", handvat_hoogte,
          " mm boven de vloer; paddenstoel ",
-         vloer_t + handvat_hoogte + 0.3 + (pad_niveaus - 1) / 2 * pad_stap + 0.6 + pad_haak + pad_boog,
+         vloer_t + handvat_hoogte + 0.3 + (pad_niveaus - 1) / 2 * pad_stap + pad_haak + pad_boog,
          " mm hoog (cassette binnen: 39,8 mm)"));

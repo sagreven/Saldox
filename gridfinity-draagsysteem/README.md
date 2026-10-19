@@ -122,12 +122,14 @@ materiaal, ca. 34 cm³). De tang wordt vastgehouden door:
   het einde van elk handvat, die de tang in de lengte op spanning houden;
 - **een "paddenstoel" in het midden**, tussen de handvatten: twee pootjes die
   bovenaan met een halve boog verbonden zijn (een veer als een omgekeerde U),
-  met aan de buitenkant een ratel van 3 haakjes, 1,5 mm boven elkaar en naar
-  boven steeds iets breder (1,5 / 2,0 / 2,5 mm), die over de binnenrand van de
-  handvatten vallen (van opzij een champignon). Druk de
+  met aan de buitenkant een kartelrand van 3 driehoekige haakjes, 2 mm boven
+  elkaar en naar boven steeds iets breder (1,5 / 2,0 / 2,5 mm), waarin de
+  binnenrand van de handvatten valt (van opzij een champignon). Druk de
   tang erin, de boog veert in en de tang klikt onder het haakje dat past: hij
-  kan niet meer omhoog en niet opzij. Door de meerdere niveaus maakt ±1,5 mm
-  verschil in de hoogte van de handvatten niet uit.
+  kan niet meer omhoog en niet opzij. Door de meerdere niveaus maakt ±2 mm
+  verschil in de hoogte van de handvatten niet uit. Alles heeft 45 graden of
+  steiler (haakjes driehoekig, boog van binnen een spits dak), dus de inleg
+  print zonder support.
 
 Leg de tang met de stelknop naar boven. De vorm komt van een foto op A4 (ca.
 18,1 × 7,3 cm). Meet je tang na en vul `tang_lengte`, `tang_breedte` en
