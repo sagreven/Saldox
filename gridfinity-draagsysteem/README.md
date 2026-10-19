@@ -115,11 +115,15 @@ met een ingebouwde bodem. In de generator: onderdeel *Losse Gridfinity-bodem*.
 
 **Tang op zijn plek:** [`krimptang_inleg.scad`](krimptang_inleg.scad) /
 `inleg-krimptang-5x2` is een frame van 21 × 8,4 × 1,2 cm voor de voorste twee
-rijen, met een uitsparing in de vorm van de tang (overgetrokken van een foto op
-A4, ca. 18,1 × 7,3 cm) en een greep aan beide uiteinden. De tang staat op de
-bodem van de cassette en kan niet meer schuiven. Meet je tang na en vul
-`tang_lengte` en `tang_breedte` in als ze afwijken; de vorm schaalt mee.
+rijen, met een ruime, gladde uitsparing (3 mm rondom) en vijf verende halve
+bogen die de tang op spanning houden: twee aan elke kant tegen de handvatten en
+één bij de kop, die de tang in de lengte tegen de andere kant drukt. De bogen
+drukken 1 mm in. Door de speling en de vering maakt een paar mm verschil in de
+maat van de tang niet uit. De vorm komt van een foto op A4 (ca. 18,1 × 7,3 cm);
+meet je tang na en vul `tang_lengte` en `tang_breedte` in als ze afwijken.
+Te stug of te los: pas `voorspanning` of `boog_t` aan.
 
+![inleg krimptang, bovenaanzicht (rood = tang)](img/inleg-krimptang-boven.png)
 ![inleg krimptang](img/inleg-krimptang.png)
 
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).

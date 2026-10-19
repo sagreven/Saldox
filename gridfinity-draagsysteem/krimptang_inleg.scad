@@ -1,10 +1,14 @@
 // Inleg voor de krimptang-cassette (5 x 4, voorste twee rijen)
 // ===============================================================
-// Een frame met een uitsparing in de vorm van de krimptang, zodat de tang
-// niet kan schuiven. De vorm is overgetrokken van een foto (op A4-papier,
-// gecorrigeerd voor perspectief en de hoogte van de tang boven het papier) en
-// wordt geschaald naar de lengte en breedte die je hieronder invult.
-// Meet je tang na (handvatten in rust) en pas tang_lengte en tang_breedte aan.
+// Een frame met een ruime, gladde uitsparing voor de krimptang en verende
+// halve bogen die de tang op spanning houden: twee aan elke kant tegen de
+// handvatten (houden hem in het midden) en een bij de kop (drukt hem in de
+// lengte tegen de andere kant). Door de ruime speling en de vering maakt een
+// paar mm verschil in de maat van de tang niet uit.
+//
+// De vorm is overgetrokken van een foto (op A4-papier, gecorrigeerd voor
+// perspectief en de hoogte van de tang boven het papier) en schaalt mee met
+// tang_lengte en tang_breedte. Meet je tang na (handvatten in rust).
 //
 // Het frame ligt op de vlakke bodem van de cassette, in de voorste twee rijen
 // (voor een losse Gridfinity-bodem in de achterste twee rijen). De tang staat
@@ -15,10 +19,20 @@
 tang_lengte = 181; // [150:1:205]
 // Grootste breedte van de tang in mm (handvatten in rust)
 tang_breedte = 73; // [50:1:79]
-// Speling rondom de tang in mm
-speling = 1.0; // [0.5:0.25:3]
 // Kop links of rechts in de cassette
 kop = "links"; // [links, rechts]
+
+/* [Uitsparing en bogen] */
+// Ruimte rondom de tang in mm (de bogen vullen dit op)
+ruim = 3; // [1:0.5:6]
+// Kleine inhammen in de omtrek dichtgooien tot deze straal, voor een gladde rand
+glad = 6; // [0:1:12]
+// Hoe ver de bogen in de tang drukken als hij erin ligt, in mm
+voorspanning = 1.0; // [0:0.25:3]
+// Dikte van de bogen in mm (dunner = slapper)
+boog_t = 1.2; // [0.8:0.1:2.4]
+// Lengte van de bogen (koorde) in mm
+boog_c = 26; // [14:1:40]
 
 /* [Frame] */
 // Hoogte van het frame in mm (de tang is ca. 30 mm dik)
@@ -27,11 +41,14 @@ hoogte = 12; // [6:1:30]
 frame_b = 210; // [100:0.5:340]
 // Diepte van het frame: tot aan de losse Gridfinity-bodem (2 vakken) min speling
 frame_d = 83.75; // [40:0.25:200]
-// Diameter van de grepen aan beide uiteinden, om de tang eruit te pakken
+// Diameter van de greep aan het einde van de handvatten, om de tang eruit te pakken
 greep_d = 24; // [0:2:40]
 
 /* [Hidden] */
-$fn = 48;
+$fn = 96;
+L = tang_lengte;
+B = tang_breedte;
+
 // Omtrek van de tang, genormaliseerd naar lengte 1 en breedte 1, kop bij x < 0
 tang_omtrek = [
     [-0.4998, 0.0286], [-0.4932, 0.0960], [-0.4805, 0.1576], [-0.4632, 0.2083],
@@ -69,23 +86,53 @@ tang_omtrek = [
     [-0.4730, -0.1934], [-0.4880, -0.1372], [-0.4991, -0.0529]
 ];
 
-module tang_2d() {
-    mirror([kop == "rechts" ? 1 : 0, 0, 0])
-        offset(r = speling) scale([tang_lengte, tang_breedte]) polygon(tang_omtrek);
+// Plekken van de bogen (genormaliseerd): [x, rand van de tang in y, kant]
+// kant +1 = boven (+y), -1 = onder; gemeten aan de omtrek hierboven.
+bogen_zij = [
+    [0.12,  0.430,  1], [0.38,  0.467,  1],
+    [0.12, -0.400, -1], [0.38, -0.460, -1]
+];
+kop_y = -0.007;   // midden van de kop in y
+
+module tang_2d() scale([L, B]) polygon(tang_omtrek);
+
+// ruime, gladde uitsparing
+module zak_2d() offset(r = ruim) offset(r = -glad) offset(r = glad) tang_2d();
+
+// Halve boog (verende strip) met de koorde op y = 0, bolling naar +y met de
+// top op y = ruim + voorspanning, plus ankers aan beide uiteinden in de wand.
+module boog_2d() {
+    b = ruim + voorspanning;
+    c = boog_c;
+    R = (c * c / 4 + b * b) / (2 * b);
+    intersection() {
+        translate([0, b - R]) difference() { circle(R); circle(R - boog_t); }
+        translate([-c, 0]) square([2 * c, b + 1]);
+    }
+    for (s = [-1, 1]) translate([s * c / 2 - 2, -4]) square([4, 4.5]);
 }
 
-difference() {
-    linear_extrude(hoogte)
-        offset(r = 4) square([frame_b - 8, frame_d - 8], center = true);
-    translate([0, 0, -1]) linear_extrude(hoogte + 2) {
-        tang_2d();
-        // grepen: halve cirkels aan kop- en handvateinde
-        if (greep_d > 0)
-            for (s = [-1, 1])
-                translate([s * (tang_lengte / 2 + speling), 0]) circle(d = greep_d);
+module frame_2d() {
+    buiten = [frame_b, frame_d];
+    module rechthoek() offset(r = 4) square(buiten - [8, 8], center = true);
+    difference() {
+        rechthoek();
+        zak_2d();
+        if (greep_d > 0) translate([L / 2 + ruim, 0]) circle(d = greep_d);
+    }
+    intersection() {
+        rechthoek();
+        union() {
+            for (p = bogen_zij)
+                translate([p[0] * L, p[1] * B + p[2] * ruim])
+                    rotate(p[2] > 0 ? 180 : 0) boog_2d();
+            translate([-L / 2 - ruim, kop_y * B]) rotate(-90) boog_2d();
+        }
     }
 }
 
+linear_extrude(hoogte) mirror([kop == "rechts" ? 1 : 0, 0]) frame_2d();
+
 echo(str("Frame ", frame_b / 10, " x ", frame_d / 10, " x ", hoogte / 10,
-         " cm; uitsparing ", (tang_lengte + 2 * speling) / 10, " x ",
-         (tang_breedte + 2 * speling) / 10, " cm"));
+         " cm; tang ", L / 10, " x ", B / 10, " cm, ", ruim, " mm ruimte, bogen drukken ",
+         voorspanning, " mm in"));
