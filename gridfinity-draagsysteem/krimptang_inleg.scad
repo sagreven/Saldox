@@ -1,13 +1,14 @@
 // Inleg voor de krimptang-cassette (5 x 4, voorste twee rijen)
 // ===============================================================
-// Een frame met een ruime, gladde uitsparing voor de krimptang. De tang wordt
-// vastgehouden door:
+// Een dunne vloer met daarop alleen wat de tang vasthoudt (geen rand eromheen,
+// dat scheelt materiaal):
 //  - verende halve bogen aan de kopse kanten: een tegen de kop en een tegen
 //    het einde van elk handvat (houden de tang in de lengte op spanning);
 //  - een "paddenstoel" in het midden, tussen de handvatten: twee pootjes die
 //    bovenaan met een halve boog verbonden zijn (een veer in de vorm van een
 //    omgekeerde U), met aan de buitenkant een ratel van haakjes die over de
-//    binnenrand van de handvatten vallen. Van opzij lijkt het een champignon.
+//    binnenrand van de handvatten vallen; elk hoger haakje steekt iets verder
+//    uit. Van opzij lijkt het een champignon.
 //    Bij het indrukken veert de boog in en klikt de tang onder het eerste
 //    haakje dat past; door de meerdere niveaus maakt een paar mm verschil in
 //    de hoogte van de handvatten niet uit. De tang kan dan niet meer omhoog
@@ -47,8 +48,10 @@ boog_t = 1.2; // [0.8:0.1:2.4]
 pad_x = 0.23; // [0.05:0.01:0.4]
 // Speling tussen pootje en binnenrand van het handvat in mm
 pad_speling = 1.0; // [0:0.25:2]
-// Hoe ver een haakje over het handvat grijpt in mm
+// Hoe ver het bovenste haakje over het handvat grijpt in mm
 pad_haak = 2.5; // [1:0.5:4]
+// Hoeveel elk lager haakje minder ver uitsteekt in mm
+pad_groei = 0.5; // [0:0.1:1]
 // Aantal klik-niveaus (haakjes onder elkaar)
 pad_niveaus = 3; // [1:1:5]
 // Afstand tussen de klik-niveaus in mm
@@ -60,14 +63,14 @@ pad_t = 2.0; // [1.2:0.2:4]
 // Lengte van de paddenstoel (langs de tang) in mm
 pad_l = 12; // [8:1:24]
 
-/* [Frame] */
-// Hoogte van het frame in mm
-hoogte = 12; // [6:1:30]
+/* [Inleg] */
+// Hoogte van de blokjes waar de bogen aan vastzitten in mm
+hoogte = 10; // [6:1:30]
 // Dikte van de vloer onder de tang in mm (houdt de paddenstoel op zijn plek)
 vloer_t = 1.2; // [0.8:0.2:3]
-// Breedte van het frame: binnenmaat van de cassette (5 vakken = 210,5 mm) min speling
+// Breedte van de inleg: binnenmaat van de cassette (5 vakken = 210,5 mm) min speling
 frame_b = 210; // [100:0.5:340]
-// Diepte van het frame: tot aan de losse Gridfinity-bodem (2 vakken) min speling
+// Diepte van de inleg: tot aan de losse Gridfinity-bodem (2 vakken) min speling
 frame_d = 83.75; // [40:0.25:200]
 
 /* [Hidden] */
@@ -138,15 +141,26 @@ module boog_2d(c) {
 
 module rechthoek() offset(r = 4) square([frame_b - 8, frame_d - 8], center = true);
 
-module frame_2d() {
-    difference() { rechthoek(); zak_2d(); }
+// Blokje achter een boog: van de koorde tot de rand van de inleg, iets breder
+// dan de boog, zonder de ruimte voor de tang.
+module blokje_2d(c) {
+    translate([-c / 2 - 6, -30]) square([c + 12, 30.01]);
+}
+
+module bogen_2d() {
     intersection() {
         rechthoek();
-        union() {
-            // tegen de kop
-            translate([-L / 2 - ruim, kop_y * B]) rotate(-90) boog_2d(26);
-            // tegen het einde van elk handvat
-            for (t = tips) translate([L / 2 + ruim, t[1] * B]) rotate(90) boog_2d(18);
+        difference() {
+            union() {
+                // tegen de kop
+                translate([-L / 2 - ruim, kop_y * B]) rotate(-90) { boog_2d(26); blokje_2d(26); }
+                // tegen het einde van elk handvat
+                for (t = tips) translate([L / 2 + ruim, t[1] * B]) rotate(90) { boog_2d(18); blokje_2d(18); }
+            }
+            difference() { zak_2d(); union() {
+                translate([-L / 2 - ruim, kop_y * B]) rotate(-90) boog_2d(26);
+                for (t = tips) translate([L / 2 + ruim, t[1] * B]) rotate(90) boog_2d(18);
+            } }
         }
     }
 }
@@ -177,20 +191,21 @@ module paddenstoel() {
             translate([-hw, 0]) square([2 * hw, pad_boog]);
         }
         // ratel: per niveau een haakje met vlakke onderkant en schuine bovenkant
-        for (s = [-1, 1], i = [0 : n - 1])
+        for (s = [-1, 1], i = [0 : n - 1]) {
+            h = pad_haak - (n - 1 - i) * pad_groei;   // naar boven steeds iets breder
             translate([s * hw, z0 + i * pad_stap]) mirror([s < 0 ? 1 : 0, 0])
-                polygon([[-0.01, 0], [pad_haak, 0], [pad_haak, 0.6], [-0.01, 0.6 + pad_haak]]);
+                polygon([[-0.01, 0], [h, 0], [h, 0.6], [-0.01, 0.6 + h]]);
+        }
     }
 }
 
 mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
     linear_extrude(vloer_t) rechthoek();
-    linear_extrude(hoogte) frame_2d();
+    linear_extrude(hoogte) bogen_2d();
     translate([0, 0, vloer_t - 0.01]) paddenstoel();
 }
 
-echo(str("Frame ", frame_b / 10, " x ", frame_d / 10, " x ", hoogte / 10,
-         " cm; tang ", L / 10, " x ", B / 10, " cm; klik-niveaus rond ", handvat_hoogte,
+echo(str("Inleg ", frame_b / 10, " x ", frame_d / 10, " cm; tang ", L / 10, " x ", B / 10, " cm; klik-niveaus rond ", handvat_hoogte,
          " mm boven de vloer; paddenstoel ",
          vloer_t + handvat_hoogte + 0.3 + (pad_niveaus - 1) / 2 * pad_stap + 0.6 + pad_haak + pad_boog,
          " mm hoog (cassette binnen: 39,8 mm)"));
