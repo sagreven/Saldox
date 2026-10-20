@@ -75,6 +75,10 @@ frame_b = 210; // [100:0.5:340]
 frame_d = 83.75; // [40:0.25:200]
 
 /* [Hidden] */
+// Voor de validatie (valideer.py): "tang" geeft een benadering van de tang
+// (omtrek met de opening tussen de handvatten, tang_h hoog) in plaats van de inleg.
+toon = "inleg";
+tang_h = 24;
 $fn = 96;
 L = tang_lengte;
 B = tang_breedte;
@@ -206,7 +210,19 @@ module paddenstoel() {
     }
 }
 
-mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
+// Benadering van de tang voor de validatie: omtrek min de opening tussen de
+// handvatten (rechte binnenranden door rand1 en rand2).
+module tang_benadering(h) {
+    function yr(k, x) = (rand1[k] + (rand2[k] - rand1[k]) * (x - rand1[0]) / (rand2[0] - rand1[0])) * B;
+    xa = -0.05; xb = 0.6;
+    translate([0, 0, vloer_t]) linear_extrude(h) difference() {
+        tang_2d();
+        polygon([[xa * L, yr(1, xa)], [xb * L, yr(1, xb)], [xb * L, yr(2, xb)], [xa * L, yr(2, xa)]]);
+    }
+}
+
+if (toon == "tang") mirror([kop == "rechts" ? 1 : 0, 0, 0]) tang_benadering(tang_h);
+else mirror([kop == "rechts" ? 1 : 0, 0, 0]) {
     linear_extrude(vloer_t) rechthoek();
     linear_extrude(hoogte) bogen_2d();
     translate([0, 0, vloer_t - 0.01]) paddenstoel();

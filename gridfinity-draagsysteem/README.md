@@ -302,6 +302,14 @@ houden. Voor de krimptang-cassette heb je twee mogelijkheden:
 | `cassette-5x4-4.5cm-krimptang-onderbak` | ingebouwd, met klik | `inleg-krimptang-5x2-ingebouwd` (2 mm korter) |
 | `cassette-5x4-4.5cm-krimptang-vlak-onderbak` | losse `baseplate-5x2` met klik | `inleg-krimptang-5x2` |
 
+## Validatie
+
+[`VALIDATIE.md`](VALIDATIE.md) beschrijft alle eisen en hoe ze getest worden.
+`python3 valideer.py` controleert automatisch of alle STL's dicht zijn, de
+maten kloppen, alles in elkaar past (bakjes, cassettes, klep, schuifdeksels,
+krimptang-inleg) en de klikken ingrijpen. Na het printen staan in
+VALIDATIE.md de metingen om te doen (P1–P12).
+
 ## Nog niet getest
 
 De modellen zijn gerenderd, gecontroleerd op geldige geometrie en in

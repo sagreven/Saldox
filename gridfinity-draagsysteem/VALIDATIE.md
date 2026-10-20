@@ -1,0 +1,93 @@
+# Validatie: Gridfinity-draagsysteem
+
+Dit document legt vast **waaraan elk onderdeel moet voldoen** en **hoe we dat
+testen**. Er zijn twee soorten tests:
+
+- **Automatisch (A–G):** `python3 valideer.py` controleert de STL-bestanden in
+  `stl/` en zet ze virtueel in elkaar. Draai dit na elke wijziging aan
+  `generator.scad` of `krimptang_inleg.scad`, vóór je iets print.
+- **Na het printen (P):** metingen en proeven op de echte onderdelen. Vul de
+  resultaten in de tabel onderaan in.
+
+Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
+
+## Referentiematen
+
+| Maat | Waarde | Waar het van afhangt |
+|---|---|---|
+| Gridfinity-vak | 42 mm, bakje 41,5 mm per vak | standaard |
+| Heel bakje, totale hoogte | 39,4 mm (stapelt per 35 mm) | `hu = 5` |
+| Half bakje, totale hoogte | 21,9 mm (stapelt per 17,5 mm) | `hu = 2.5` |
+| Bodem cassette met magneten 6 × 2 | 3,2 mm (gat 2,2 + 1,0 mm) | `magneet_h`, `c_skin` |
+| Gridfinity-bodem in cassette | vakken open tot 3,2 mm, randjes op 7,85 mm | `gf_base = 4,65` |
+| Cassette 4,5 cm: scheidingslijn onderbak/klep | 37,0 mm | `lagen = 2` |
+| Cassette 4,5 cm: bovenkant opstaande rand | 40,0 mm | `tongue_h = 3` |
+| Cassette 4,5 cm: plafond klep (binnen) | 44,0 mm | `deksel_extra = 1` |
+| Bovenkant heel bakje in cassette | 42,6 mm → 1,4 mm ruimte | |
+| Schuifdeksel bakje in cassette | 35,6 – 37,1 mm | |
+| Krimptang (uit foto) | ca. 181 × 73 mm, handvatten ca. 24 mm hoog | **nameten** |
+
+## Automatische tests (`valideer.py`)
+
+| Eis | Wat | Geslaagd als |
+|---|---|---|
+| **A1** | Elk STL-bestand is een dicht model uit één stuk | geen open randen, 1 deel |
+| **A2** | Bakjes hebben de juiste maat | 41,5 mm × vakken − 0,5; hoogte 39,4 / 21,9 mm (± 0,05) |
+| **C1** | De vloer in elk vak van een cassette ligt op de bodem | 3,2 mm (± 0,05) |
+| **C2** | Gridfinity-randjes in de cassette op de juiste hoogte | 7,85 mm, alleen in de Gridfinity-rijen |
+| **C3** | Klik-nokjes in de Gridfinity-vakken van de cassette | wand van het vak op < 18,8 mm van het midden |
+| **D1** | Klep sluit op de onderbak | overlap < 0,1 mm³ |
+| **D2** | Hele en halve bakjes (gestapeld) passen met de klep dicht | overlap 0 met onderbak en klep |
+| **D3** | Ruimte tussen bovenste bakje en klep | 0,4 – 3 mm |
+| **E1** | Bakje klikt in de ingebouwde Gridfinity-bodem | geplaatst geen overlap, 0,6 mm opgetild wel (klik) |
+| **E2** | Bakje klikt in de losse Gridfinity-bodem | idem |
+| **E3** | Bakje klikt op een ander bakje | idem |
+| **F1** | Schuifdeksel past dicht in de groef van het bakje | overlap 0 (zonder breekbare steuntjes) |
+| **F2** | Schuifdeksel schuift er helemaal uit | overlap 0 op elke positie |
+| **G1** | Krimptang-inleg past in de cassette (vlak + losse bodem, en ingebouwd) | overlap 0 met onderbak en bodem |
+| **G2** | Paddenstoel blijft onder de klep | bovenkant ≤ plafond − 1 mm |
+| **G3** | Boog bij de kop drukt op de tang | overlap met de tang > 0 (voorspanning) |
+| **G4** | Bogen bij de handvatten drukken op de tang | overlap > 0 |
+| **G5** | Pootjes van de paddenstoel raken de handvatten niet onder de klik-tanden | overlap 0 tot 20,5 mm hoogte |
+| **G6** | Klik-tanden van de paddenstoel grijpen over de handvatten | overlap > 0 boven de handvatten |
+
+Voor G3–G6 gebruikt het script een benadering van de tang (de omtrek uit de
+foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die
+tests zeggen dus: *als de tang deze maat heeft*, dan pakt de inleg hem. De
+echte maat moet uit P8 komen.
+
+Terugblik: test **C1** had de fout in de oudere cassettes gevonden (vloer op
+7,85 in plaats van 3,2 mm, zie README); op het oude bestand geeft C1 FOUT.
+
+### Draaien
+
+```sh
+pip install trimesh manifold3d rtree numpy
+./maak_stls.sh          # STL's opnieuw maken
+python3 valideer.py     # alle controles; stopt met code 1 bij een fout
+```
+
+## Tests na het printen
+
+Gebruik een schuifmaat. Noteer de waarde en of het binnen de grens valt.
+
+| Eis | Wat meten / doen | Verwacht | Grens |
+|---|---|---|---|
+| **P1** | Hoogte heel bakje (voeten tot bovenkant) | 39,4 mm | ± 0,3 |
+| **P2** | Hoogte half bakje | 21,9 mm | ± 0,3 |
+| **P3** | Diepte binnen de onderbak: vloer tot bovenkant opstaande rand (meten in het midden van een vak) | 36,8 mm | ± 0,3 |
+| **P4** | Binnendiepte klep: onderrand tot plafond | 7,0 mm | ± 0,3 |
+| **P5** | Lege cassette: klep gaat dicht en klikt | geen kier | 0 mm |
+| **P6** | Gevulde cassette (hele bakjes en twee halve gestapeld): klep gaat dicht | geen kier | 0 mm |
+| **P7** | Bakje in cassette / op bakje: voelbare klik, valt er bij omkeren niet uit | klikt, blijft zitten | — |
+| **P8** | Krimptang meten: totale lengte, grootste breedte (handvatten in rust), hoogte handvatten als hij plat ligt | 181 / 73 / 24 mm | wijkt het > 2 mm af: invullen in `krimptang_inleg.scad` en opnieuw valideren |
+| **P9** | Krimptang in de inleg: klikt onder de paddenstoel, zit klem tussen de bogen | klikt, beweegt < 1 mm | — |
+| **P10** | Cassette met tang dicht, schudden en ondersteboven houden | tang en bakjes rammelen niet hoorbaar, klep blijft dicht | — |
+| **P11** | Schuifdeksel bakje: schuift soepel, blijft dicht bij omkeren | soepel, blijft zitten | — |
+| **P12** | Magneten: twee cassettes naast elkaar en op elkaar | trekken elkaar aan (zijkanten en bovenop) | — |
+
+## Resultaten
+
+| Datum | Onderdeel / versie (commit) | Eis | Gemeten | OK? | Opmerking |
+|---|---|---|---|---|---|
+| | | | | | |
