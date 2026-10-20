@@ -28,6 +28,11 @@ De gebruiker staat vaak bij de klant en geeft een korte beschrijving. Zet die om
 | klant wil een specifieke batterij | `--batterij marstek` / `marstek2` / `sofar` (anders `auto`) |
 | zonder batterij, alleen panelen | `--batterij geen` (batterijpakketten komen ter vergelijking in de tabel) |
 | legplan, afmetingen ("2 rijen van 4, 4,5 × 3,5 m") | `--opstelling "2 rijen van 4, ca. 4,5 × 3,5 m"` |
+| panelen in het dak, tussen de pannen (indak) | `--dak indak` (indak-systeem en montage als stelposten) |
+| hybride omvormer, 15 kW (Sofar HYD 15KTL-3PH) | `--omvormer hyd15` (pakket zonder batterij) |
+| batterij als optie ("30 kWh optioneel") | `--optie-batterij 30` (sectie met 10 t/m 40 kWh, de gevraagde gemarkeerd) |
+| adres bekend: dak zelf opzoeken | 3D BAG (api.3dbag.nl) voor dakvlakken, PVGIS voor kWh/kWp → `--opbrengst 919 --opbrengst-bron "…"` |
+| verbruik met toelichting | `--verbruik 6100 --verbruik-bron "huis 5.000 kWh plus 1.100 kWh PHEV"` |
 | klantnaam en plaats | `--klant "…" --plaats "…"` |
 
 Ontbreekt iets, neem dan de standaard en noem die aanname kort in je antwoord; vraag alleen door als het

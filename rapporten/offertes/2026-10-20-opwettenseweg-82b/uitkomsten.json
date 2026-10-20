@@ -1,0 +1,38 @@
+{
+ "offerte": {
+  "inv": 8846.9,
+  "inv_ex": 8846.9,
+  "netto": [
+   585.0,
+   605.0,
+   635.0
+  ],
+  "jaren": [
+   "15,1",
+   "14,6",
+   "13,9"
+  ],
+  "keuze": "geen",
+  "pakket": "Zonnepanelen met hybride omvormer Sofar HYD 15KTL-3PH, zonder batterij",
+  "profiel": {
+   "klant": "Opwettenseweg 82b",
+   "plaats": "Nuenen",
+   "huishouden": "gemiddeld",
+   "verbruik": 6100,
+   "auto": "geen",
+   "auto_kwh": null,
+   "dak": "indak",
+   "omvormer": "hyd15",
+   "optie_batterij": 30,
+   "opbrengst": 919,
+   "opbrengst_bron": "PVGIS voor dit dak: oostzuidoost (117°), 45° helling; ±5% voor het weer",
+   "verbruik_bron": "opgegeven: huis ca. 5.000 kWh plus ca. 1.100 kWh voor een plug-in hybride",
+   "panelen": 15,
+   "aansluiting": "3-fase",
+   "batterij": "geen",
+   "opstelling": "oostzuidoostdak, 3 naast elkaar × 5 rijen liggend, ca. 6,2 × 6,7 m",
+   "datum": "2026-10-20"
+  },
+  "verbruik": 6100
+ }
+}

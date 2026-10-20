@@ -290,9 +290,10 @@ def reken(v):
                                 haalbaar=e_km <= PHEV["bereik"] * PHEV["ritdagen"]))
             matrix.append(rij)
         extra["phev"] = matrix
-    montage = next(r for r in regels if r[0].startswith("Montage zonnepanelen"))
-    extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2)
-    extra["montage_basis"] = montage[1]
+    montage = next((r for r in regels if r[0].startswith("Montage zonnepanelen")), None)
+    # optie plat dak alleen bij gewone montage (niet bij indak)
+    extra["inv_plat"] = round(inv - montage[4] + PLATDAK_MONTAGE, 2) if montage else None
+    extra["montage_basis"] = montage[1] if montage else PLATDAK_MONTAGE
     return dict(EV=EVd, A=A, P=P, regels=regels, inv_ex=inv_ex, inv=inv, inv_zon=inv_zon, inv_batt=inv_batt, inv_laad=inv_laad,
                 sc=sc, n=n, vast=vast, p27=p27, sal=sal, sal_vast=sal_vast, **extra)
 
@@ -415,7 +416,7 @@ Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten net
 - **Stroomcontract:** dynamisch voor afname en teruglevering; het EMS van Saldox stuurt batterij{' en laadpaal' if lp else ''} op de uurprijs.
 """) + (f"""- **Laadpaal:** Zaptec Go 2 voor eigen gebruik, slim laden op goedkope uren. Thuis laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh tegen ca. {eur(PUBLIEK[1], 2)} {EVd['basis_kort']}, plus ERE-vergoeding.
 """ if lp else "") + (f"""- **Zonnepanelen** zijn normaal in ca. {j_zon} jaar terugverdiend. Een batterij kan later worden toegevoegd.
-- **Btw:** 0% op zonnepanelen, micro-omvormers en montage{'; 21% op de laadpaal' if lp else ''}.
+- **Btw:** 0% op zonnepanelen, {P.get('omvormer_woord', 'micro-omvormers')} en montage{'; 21% op de laadpaal' if lp else ''}.
 """ if gb else f"""- **Zonnepanelen** verdienen zich het snelst terug (ca. {j_zon} jaar); de batterij vooral via de prijsverschillen op een dynamisch contract.
 - **Btw:** 0% op zonnepanelen, omvormer en montage; 21% op de batterij{' en de laadpaal' if lp else ''}.
 """))
@@ -460,7 +461,7 @@ Normaal levert het pakket {eur(N['bruto'])} per jaar op; {P['jaarkosten'][2]} bl
 
 **Hoe dit is berekend.** Saldox simuleert elk uur van een jaar met de echte uurprijzen van 2025 (EPEX day-ahead Nederland) en het echte zonneprofiel van Nederland.""" + ("" if gb else """ Het EMS zet de batterij in zoals in de praktijk: met de day-ahead prijzen, die een dag vooruit bekend zijn.""") + f"""
 
-- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp (PVGIS: oost-west, gemiddeld, zuid)""" + ("" if gb else """; batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""") + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
+- **Pessimistisch / normaal / optimistisch:** opbrengst {OPBRENGST[0]} / {OPBRENGST[1]} / {nl(OPBRENGST[2])} kWh per kWp ({v.get('opbrengst_bron') or 'PVGIS: oost-west, gemiddeld, zuid'})""" + ("" if gb else """; batterij ×0,7 / ×1 / ×1,3 (in 2026 waren de prijsverschillen binnen een dag ca. 33% groter dan in 2025)""") + (f"""; {EVd['basis_reeks']} {eur(PUBLIEK[0], 2)} / {eur(PUBLIEK[1], 2)} / {eur(PUBLIEK[2], 2)} per kWh; ERE {eur(ERE[0], 2)} / {eur(ERE[1], 3)} / {eur(ERE[2], 2)} per kWh.""" if lp else ".") + f"""
 - **Stroomprijs:** uurprijs plus opslag van de leverancier (ca. €0,02 per kWh incl. btw), plus btw en energiebelasting ({eur(A['eb_incl'], 4)} per kWh incl. btw in 2026). Teruglevering tegen de uurprijs, zonder terugleverkosten; bij een negatieve prijs zet het EMS de teruglevering stop.
 - **Verbruik:** {nl(A['verbruik_kwh'])} kWh per jaar ({v.get('verbruik_bron') or 'Milieu Centraal: gemiddeld 2.430 kWh, 2 personen ca. 2.550 kWh'}) met een standaard dagprofiel: ochtend- en avondpiek, in de winter hoger.""" + (f"""
 - **{EVd['naam'][0].upper() + EVd['naam'][1:]}:** {nl(EV_KWH)} kWh per jaar thuis geladen ({EVd['bron']}).""" if lp else "") + "\n")
@@ -595,10 +596,10 @@ Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afn
     # 8 Installatie en veiligheid
     t.append(f"""## Installatie en veiligheid
 
-{"De installatie is in één dag klaar; de micro-omvormers komen onder de panelen." if gb else "De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie."}
+{P.get("gb_install_lede", "De installatie is in één dag klaar; de micro-omvormers komen onder de panelen.") if gb else "De installatie is in één tot twee dagen klaar; de batterij hoort op een droge, vorstvrije plek met ruimte voor ventilatie."}
 
 {chr(10).join(P['installatie']).format(laad=' of een laadpaal' if not lp else '')}
-""" + ("""- **Veiligheid:** de installatie moet voldoen aan NEN 1010. Micro-omvormers zetten de stroom al onder de panelen om, dus er loopt geen hoge gelijkspanning door het huis. Meld de zonnepanelen bij de opstalverzekeraar.""" if gb else """- **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.""") + f"""
+""" + (P.get("gb_veiligheid", """- **Veiligheid:** de installatie moet voldoen aan NEN 1010. Micro-omvormers zetten de stroom al onder de panelen om, dus er loopt geen hoge gelijkspanning door het huis. Meld de zonnepanelen bij de opstalverzekeraar.""") if gb else """- **Veiligheid:** PGS 37-1 geldt niet voor thuisbatterijen; ook de nieuwe batterijregels van 2028 zonderen thuisbatterijen uit. De installatie moet voldoen aan NEN 1010. Laat een erkende installateur installeren en meld de batterij bij de opstalverzekeraar.""") + f"""
 - **Aanmelden:** meld de zonnepanelen{'' if gb else ' en de batterij'} bij de netbeheerder via energieleveren.nl.
 """)
 
