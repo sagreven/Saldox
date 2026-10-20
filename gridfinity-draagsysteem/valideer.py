@@ -128,6 +128,7 @@ cassettes = [
     ("cassette-5x2-4.5cm-schroevendraaiers", 5, 2, 0),
     ("cassette-5x4-4.5cm-krimptang", 5, 4, 2),
     ("cassette-5x4-4.5cm-krimptang-vlak", 5, 4, 0),
+    ("cassette-5x4-4.5cm", 5, 4, 4),
 ]
 for naam, gx, gy, rijen in cassettes:
     m = laad(naam + "-onderbak.stl")
@@ -204,11 +205,13 @@ for gx, gy, hu in [(1, 1, 5), (1, 2, 5), (2, 2, 2.5)]:
 # ---------- G: krimptang-inleg ----------
 
 ink = os.path.join(HIER, "krimptang_inleg.scad")
-for variant, onderbak, frame_d in [("vlak + losse bodem", "cassette-5x4-4.5cm-krimptang-vlak-onderbak.stl", 83.75),
-                                   ("ingebouwde bodem", "cassette-5x4-4.5cm-krimptang-onderbak.stl", 81.75)]:
+for variant, onderbak, frame_d, z_inleg in [
+        ("vlak + losse bodem", "cassette-5x4-4.5cm-krimptang-vlak-onderbak.stl", 83.75, C_FLOOR),
+        ("ingebouwde bodem achterin", "cassette-5x4-4.5cm-krimptang-onderbak.stl", 81.75, C_FLOOR),
+        ("bovenop volledige Gridfinity", "cassette-5x4-4.5cm-onderbak.stl", 83.75, C_FLOOR + BP)]:
     inleg_f = "inleg-krimptang-5x2.stl" if frame_d == 83.75 else "inleg-krimptang-5x2-ingebouwd.stl"
     yc = -84.0 + frame_d / 2
-    inleg = verplaatst(laad(inleg_f), 0, yc, C_FLOOR)
+    inleg = verplaatst(laad(inleg_f), 0, yc, z_inleg)
     ond = laad(onderbak)
     h_body = ond.bounds[1][2] - KR
     _, plafond = klep_dicht(laad("cassette-5x4-4.5cm-krimptang-deksel.stl"), h_body)

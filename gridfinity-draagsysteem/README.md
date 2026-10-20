@@ -301,6 +301,7 @@ houden. Voor de krimptang-cassette heb je twee mogelijkheden:
 |---|---|---|
 | `cassette-5x4-4.5cm-krimptang-onderbak` | ingebouwd, met klik | `inleg-krimptang-5x2-ingebouwd` (2 mm korter) |
 | `cassette-5x4-4.5cm-krimptang-vlak-onderbak` | losse `baseplate-5x2` met klik | `inleg-krimptang-5x2` |
+| `cassette-5x4-4.5cm-onderbak` (+ `-deksel`) | overal ingebouwd, met klik | `inleg-krimptang-5x2` ligt voorin bovenop de Gridfinity (nieuwe klep nodig: 1,2 mm ruimte boven de paddenstoel, met de oude klep maar 0,2 mm) |
 
 ## Validatie
 
