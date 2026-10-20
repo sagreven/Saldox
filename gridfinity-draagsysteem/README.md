@@ -61,6 +61,7 @@ Alle maten zijn buitenmaten. Een bakje is per vak 4,2 cm (precies 4,15 cm).
 | `bakje-2x2-2vakjes-heel` | 2 (elk 1 × 2 vakken) | 8,4 × 8,4 × 3,9 cm |
 | `bakje-1x1-2vakjes-heel` | 2 (elk 1,8 × 3,9 cm, 2,6 cm diep) | 4,2 × 4,2 × 3,9 cm |
 | `bakje-1x2-vakjes-heel-voor` | 2, deksel schuift naar voren (past `schuifdeksel-2x1`) | 4,2 × 8,4 × 3,9 cm |
+| `bakje-1x2-open-heel-voor` | 1, zonder tussenschot, deksel schuift naar voren (past `schuifdeksel-2x1`) | 4,2 × 8,4 × 3,9 cm |
 | `bakje-2x2-open-half` | 1 | 8,4 × 8,4 × 2,2 cm |
 | `bakje-4x1-open-half` | 1 | 16,8 × 4,2 × 2,2 cm |
 
