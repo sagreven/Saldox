@@ -140,6 +140,13 @@
    "prijs": 30.0,
    "datum": "2026-10-07",
    "btw_consument": 0.0
+  },
+  {
+   "artikel": "Uurtarief bedrading AC- en DC-groep (trekken van kabels, op uurbasis)",
+   "prijs": 55.0,
+   "eenheid": "uur",
+   "datum": "2026-10-20",
+   "btw_consument": 0.0
   }
  ]
 }

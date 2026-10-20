@@ -39,6 +39,7 @@
     "streetview=../offertes/2026-10-20-opwettenseweg-82b/bronnen/streetview-2025-07.jpg|Straatbeeld|De straatkant: dakkapel en schoorsteen|Google Street View, juli 2025",
     "luchtfoto=../offertes/2026-10-20-opwettenseweg-82b/bronnen/luchtfoto-pdok.jpg|Luchtfoto|Opwettenseweg 82b van boven (noord boven, 45 × 45 m)|PDOK Luchtfoto RGB, actueel"
    ],
+   "bedrading_uurbasis": true,
    "kop": [
     "Dak en legplan=Elf panelen in het dak aan de straatkant.",
     "Bronnen en foto's=Waar de cijfers vandaan komen."

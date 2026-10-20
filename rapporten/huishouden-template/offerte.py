@@ -46,7 +46,7 @@ def zonnedeel(n, dak, micro):
               ("Montage indak: pannen wegnemen, systeem en panelen plaatsen, aansluiten op de pannen", 150.0 * n, 0.0, "Stelpost", "zon"),
               ("Afvoer overtollige dakpannen", 100.0, 0.0, "Stelpost", "zon")]
         if not micro:
-            p.append(("DC-bekabeling, MC4-connectoren en dakdoorvoer", 250.0, 0.0, "Stelpost", "zon"))
+            p.append(("DC-kabel, MC4-connectoren en dakdoorvoer (materiaal)", 250.0, 0.0, "Stelpost", "zon"))
     elif dak == "plat":
         p += [("Montage zonnepanelen op plat dak (vast)", B.PLATDAK_MONTAGE, 0.0, "Tarief", "zon"),
               ("Plat-dak-opstelling met ballast en bekabeling", 55.0 * n, 0.0, "Stelpost", "zon")]
@@ -96,7 +96,7 @@ def pakket(soort, n, dak, omvormer="micro"):
         P = {k: w for k, w in B.PAKKETTEN["sofar"].items() if k != "modules"}  # geen ESI-batterijtabel
         P["prijzen"] = zonnedeel(n, dak, False) + [
             (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW, klaar voor een batterij", H["prijs"], 0.0, H["status"], "zon"),
-            ("Installatie omvormer, groep en overspanningsbeveiliging", 350.00, 0.0, "Stelpost", "zon")]
+            ("Omvormer plaatsen en aansluiten in de meterkast, groep en overspanningsbeveiliging", 350.00, 0.0, "Stelpost", "zon")]
         P["model"] = dict(P["model"], panelen=n, wp=460, batt_kwh=0)
         P["hyd"] = H
         P["naam"] = f"Zonnepanelen met hybride omvormer {H['naam']}, zonder batterij"
@@ -246,6 +246,8 @@ def main():
     ap.add_argument("--sectie-na-samenvatting", help="markdown met een eigen sectie (bijv. Dak en legplan), na de samenvatting")
     ap.add_argument("--sectie-eind", help="markdown met een eigen sectie aan het eind (bijv. Bronnen en foto's)")
     ap.add_argument("--figuur", action="append", default=[], help='naam=pad|eyebrow|titel|onderschrift (svg of jpg/png); marker <!-- FIG:naam -->')
+    ap.add_argument("--bedrading-uurbasis", action="store_true",
+                    help="trekken van de AC- en DC-bedrading niet in de prijs, maar op uurbasis (tarief uit de prijslijst)")
     ap.add_argument("--kop", action="append", default=[], help='"Sectienaam=Kop" voor eigen secties')
     a = ap.parse_args()
 
@@ -278,6 +280,14 @@ def main():
                  model=dict(verbruik_kwh=verbruik), meta=meta, opstelling=a.opstelling,
                  opbrengst_bron=a.opbrengst_bron, verbruik_bron=a.verbruik_bron,
                  chip="Energieplan · " + profiel_tekst)
+        if a.bedrading_uurbasis:
+            uur = B.eur2(B.UURTARIEF_BEDRADING)
+            v["prijs_noot"] = ", exclusief het trekken van de bedrading (op uurbasis)"
+            P["aansluiting"] = P["aansluiting"] + (
+                f"\n- **Bedrading op uurbasis:** het trekken van de AC-kabel (omvormer naar de meterkast) en de DC-kabels (dak naar de omvormer) "
+                f"zit niet in de prijs. Hoe makkelijk die kabels getrokken kunnen worden, blijkt pas bij de installatie; Saldox rekent dit werk "
+                f"daarom op uurbasis af, à {uur} per uur excl. btw (0% btw, onderdeel van de zonne-installatie). Het materiaal staat wel in de begroting.")
+            P["checklist_aansluiting"] = P["checklist_aansluiting"] + "\n- [ ] Kabelroute dak–omvormer–meterkast bekijken (bedrading op uurbasis)"
         R = B.reken(v)
         N = R["sc"][1]
         winst = JAREN_HORIZON * N["netto"] - R["inv"]
@@ -342,7 +352,7 @@ def main():
     if a.sectie_eind:
         src = src.rstrip() + "\n\n" + Path(a.sectie_eind).read_text(encoding="utf-8").strip() + "\n"
     (map_ / "energieplan-huishouden-offerte.md").write_text(src, encoding="utf-8")
-    kpis = [(B.eur2(R["inv"]), "investering incl. btw", False),
+    kpis = [(B.eur2(R["inv"]), "investering incl. btw" + (", excl. bedrading op uurbasis" if a.bedrading_uurbasis else ""), False),
             (f"ca. {N['jaren']} jaar", "terugverdientijd, normaal scenario", True),
             (B.eur(N["netto"]), "netto per jaar (normaal)", False),
             (f"{B.nl(round(R['n']['met_pv']['pv_kwh'], -1))} kWh", "zonnestroom per jaar", False)]

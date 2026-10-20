@@ -34,6 +34,7 @@ def bedrag(aantal, zoek):
 KLANT = dict(naam="Standaard huishouden", datum="7 oktober 2026", adviseur="Saldox")
 
 PLATDAK_MONTAGE = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if "plat dak" in t["artikel"])
+UURTARIEF_BEDRADING = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Uurtarief bedrading"))
 TRANSPORT = next(t["prijs"] for t in _PRIJSLIJST["tarieven"] if t["artikel"].startswith("Transport"))
 PANEEL_450 = next(t["prijs"] for t in _PRIJSLIJST["losse_prijzen"] if t["artikel"].startswith("Zonnepaneel 450 Wp (huishouden"))
 
@@ -405,7 +406,7 @@ def markdown_tekst(v, R):
     # 1 Samenvatting
     t.append(f"""## Samenvatting
 
-Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
+Het pakket kost {eur2(R['inv'])} incl. btw{v.get('prijs_noot', '') + (',' if v.get('prijs_noot') else '')} en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
 
 - **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. """ + (
         f"""U gebruikt daarvan ca. {pct(zv_pv)} direct zelf.
@@ -425,7 +426,7 @@ Het pakket kost {eur2(R['inv'])} incl. btw en levert na de jaarlijkse kosten net
     rows = "\n".join(f"| {p} | {eur2(ex)} | {int(b * 100)}% | {eur2(inc)} | {st} |" for p, ex, b, st, inc, _ in R["regels"])
     t.append(f"""## Begroting
 
-Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw. Op zonnepanelen geldt het nultarief{'; de laadpaal valt onder 21%' if gb and lp else '' if gb else '; de batterijset valt onder 21%'}.
+Het pakket kost {eur2(R['inv_ex'])} excl. btw en {eur2(R['inv'])} incl. btw{v.get('prijs_noot', '')}. Op zonnepanelen geldt het nultarief{'; de laadpaal valt onder 21%' if gb and lp else '' if gb else '; de batterijset valt onder 21%'}.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |

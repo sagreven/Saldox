@@ -4,7 +4,7 @@
 
 ## Samenvatting
 
-Het pakket kost €5.264,06 incl. btw en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 10,9 jaar terugverdiend (10,4 tot 11,3 jaar).
+Het pakket kost €5.264,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 10,9 jaar terugverdiend (10,4 tot 11,3 jaar).
 
 - **Zonnestroom:** 11 panelen van 460 Wp (5,1 kWp), ca. 4.650 kWh per jaar. U gebruikt daarvan ca. 46% direct zelf.
 - **Omvormers:** hybride omvormer Sofar HYD 10KTL-3PH (10 kW, 3-fase), klaar voor een batterij.
@@ -32,7 +32,7 @@ De panelen komen in het dakvlak aan de straatkant, op het oostzuidoosten, tussen
 
 ## Begroting
 
-Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw. Op zonnepanelen geldt het nultarief.
+Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis). Op zonnepanelen geldt het nultarief.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
@@ -41,9 +41,9 @@ Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw. Op zonnepanelen 
 | Indak-montagesysteem met gootstukken en loodslabben (bijv. GSE In-Roof) | €825,00 | 0% | €825,00 | Stelpost |
 | Montage indak: pannen wegnemen, systeem en panelen plaatsen, aansluiten op de pannen | €1.650,00 | 0% | €1.650,00 | Stelpost |
 | Afvoer overtollige dakpannen | €100,00 | 0% | €100,00 | Stelpost |
-| DC-bekabeling, MC4-connectoren en dakdoorvoer | €250,00 | 0% | €250,00 | Stelpost |
+| DC-kabel, MC4-connectoren en dakdoorvoer (materiaal) | €250,00 | 0% | €250,00 | Stelpost |
 | Hybride omvormer Sofar HYD 10KTL-3PH, 3-fase, 10 kW, klaar voor een batterij | €1.295,00 | 0% | €1.295,00 | Marktprijs |
-| Installatie omvormer, groep en overspanningsbeveiliging | €350,00 | 0% | €350,00 | Stelpost |
+| Omvormer plaatsen en aansluiten in de meterkast, groep en overspanningsbeveiliging | €350,00 | 0% | €350,00 | Stelpost |
 | **Totaal** | **€5.264,06** | | **€5.264,06** | |
 
 <!-- FIG:begroting -->
@@ -53,6 +53,7 @@ Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw. Op zonnepanelen 
 
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
 - **Aansluiting:** de Sofar HYD 10KTL-3PH is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A). De panelen komen in het dak, tussen de pannen: een indak-systeem vervangt de pannen onder de panelen en sluit waterdicht aan op de rest van het dak.
+- **Bedrading op uurbasis:** het trekken van de AC-kabel (omvormer naar de meterkast) en de DC-kabels (dak naar de omvormer) zit niet in de prijs. Hoe makkelijk die kabels getrokken kunnen worden, blijkt pas bij de installatie; Saldox rekent dit werk daarom op uurbasis af, à €55,00 per uur excl. btw (0% btw, onderdeel van de zonne-installatie). Het materiaal staat wel in de begroting.
 
 ## Wat het per jaar oplevert
 
@@ -183,6 +184,7 @@ De cijfers gelden voor een standaard huishouden; vervang de aannames door de geg
 - [ ] Jaarverbruik en verbruiksprofiel (slimme meter)
 - [ ] Dak: plat of schuin (plat dak: montage vast €250), oriëntatie, hellingshoek, schaduw en ruimte voor 11 panelen (oostzuidoostdak aan de straatkant, links van de dakkapel, 11 liggend in één veld)
 - [ ] 3-fase aansluiting (3x25 A) en ruimte in de meterkast
+- [ ] Kabelroute dak–omvormer–meterkast bekijken (bedrading op uurbasis)
 - [ ] Stroomcontract: dynamisch of vast
 - [ ] Offerte installateur voor de stelposten
 

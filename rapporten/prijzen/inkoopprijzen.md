@@ -48,6 +48,7 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | --- | --- |
 | Montage zonnepanelen op plat dak (vast bedrag, optie) | €250,00 |
 | Transport naar de klant (vast bedrag) | €30,00 |
+| Uurtarief bedrading AC- en DC-groep (trekken van kabels, op uurbasis), per uur | €55,00 |
 
 ## Afgeleid per eenheid
 
