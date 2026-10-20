@@ -83,7 +83,7 @@ uitsparing van 0,4 mm diep voor een sticker:
 
 | Bestand | Binnen | Breed × diep × hoog (dicht) |
 |---|---|---|
-| `cassette-2x2-4.5cm-schroeven` | 2 × 2 vakken, 2 halve bakjes hoog | 9,1 × 10,4 × 4,5 cm |
+| `cassette-2x2-4.5cm-schroeven` | 2 × 2 vakken, 2 halve bakjes hoog | 9,1 × 10,4 × 4,6 cm |
 | `cassette-5x2-4.5cm-schroevendraaiers` | vlakke bodem voor een inleg, binnen 21,1 × 8,5 × 4,0 cm | 21,7 × 10,4 × 4,5 cm |
 | `cassette-4x2-4.5cm` | 4 × 2 vakken, 2 halve bakjes (= 1 heel) hoog | 17,5 × 10,4 × 4,5 cm |
 | `cassette-4x2-8.0cm` | 4 × 2 vakken, 4 halve bakjes (= 2 hele) hoog | 17,5 × 10,4 × 8,0 cm |
@@ -266,6 +266,7 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `gridfinity_rijen` | aantal rijen Gridfinity vanaf de achterkant; de rijen ervoor krijgen een vlakke, 0,5 cm diepere vloer voor gereedschap (0 = overal) |
 | | `cassette_klik` | hoe ver de klik-nokjes in de Gridfinity-bodem van de cassette ingrijpen (0,15 mm; 0 = geen klik) |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
+| | `deksel_extra` | extra ruimte boven de bakjes in de deksel (1 mm; alleen de deksel wordt hoger) |
 | | `cassette_sticker` | diepte van het stickervlak bovenop de deksel (0,3 mm; 0 = geen) |
 | Cassette - magneten | `magneten` | magneetgaten en staalbaan aan; uit = dunnere bodem |
 | | `magneet_d`, `magneet_h` | maat van je magneten (de wand wordt zo nodig dikker) |

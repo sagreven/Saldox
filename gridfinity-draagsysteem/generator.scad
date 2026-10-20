@@ -63,7 +63,7 @@ stapel_klik = 0.2; // [0:0.05:0.4]
 
 /* [Cassette] */
 // Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.2 cm lager)
-lagen = 2; // [1:1 half bakje - 2.7 cm, 2:2 halve - 4.5 cm, 3:3 halve - 6.3 cm, 4:4 halve - 8.0 cm, 5:5 halve - 9.8 cm, 6:6 halve - 11.5 cm]
+lagen = 2; // [1:1 half bakje - 2.8 cm, 2:2 halve - 4.6 cm, 3:3 halve - 6.4 cm, 4:4 halve - 8.1 cm, 5:5 halve - 9.9 cm, 6:6 halve - 11.6 cm]
 // Gridfinity-bodem binnenin (uit = helemaal vlakke bodem voor schuim/TPU-inleg)
 baseplate = true;
 // Aantal rijen Gridfinity, gerekend vanaf de achterkant (scharnier); de rijen ervoor krijgen een vlakke, 0.5 cm diepere vloer voor gereedschap (0 = overal Gridfinity)
@@ -72,6 +72,8 @@ gridfinity_rijen = 0; // [0:1:8]
 cassette_klik = 0.15; // [0:0.05:0.3]
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
+// Extra ruimte boven de bakjes in mm; alleen de deksel wordt hoger, de onderbak blijft gelijk
+deksel_extra = 1.0; // [0:0.5:3]
 // Diepte van de stickeruitsparing bovenop de deksel van de cassette in mm (0 = geen); de staalband ligt er nog dieper in, de sticker gaat eroverheen
 cassette_sticker = 0.3; // [0:0.1:1]
 
@@ -117,9 +119,10 @@ c_skin   = 1.0;   // materiaal achter een magneet, aan de binnenkant
 c_wall   = max(3.2, magneet_h + 0.2 + c_skin); // wanddikte (3,2 mm past bij magneten van 2 mm)
 c_floor  = magneten ? max(1.2, magneet_h + 0.2 + c_skin) : 1.2; // bodem (dikker voor magneten)
 top_t    = 2.0;   // dikte bovenkant deksel
-c_lid_h  = 8;     // totale hoogte deksel
+c_lid_h  = 8;     // hoogte deksel zonder extra ruimte (bepaalt de hoogte van de onderbak)
+d_lid_h  = c_lid_h + deksel_extra; // werkelijke hoogte deksel
 tongue_h = 3;     // hoogte van de sluitrand (tong-en-groef)
-c_fit    = 0.2;   // passpeling tong/groef
+c_fit    = 0.3;   // passpeling tong/groef, per kant
 kr       = 3.5;   // straal scharnierknokkel
 pin_d    = 2.0;   // gat voor 1,75 mm filament
 k_gap    = 0.4;   // speling tussen knokkels
@@ -469,14 +472,14 @@ module bottom_magnets() {
 // baan voor staalband bovenop de deksel, per rij vakken over de hele breedte
 module steel_strips() {
     for (j = [0 : gy - 1])
-        translate([0, (j - (gy - 1) / 2) * G, H_body + c_lid_h - cassette_sticker - staalband_t])
+        translate([0, (j - (gy - 1) / 2) * G, H_body + d_lid_h - cassette_sticker - staalband_t])
             rsq(out_w - 4, staalband_b + 0.4, 0.5, staalband_t + cassette_sticker + 1);
 }
 
 // Stickervlak bovenop de deksel: bijna de hele bovenkant, 5 mm van de rand.
 sticker_c = [out_w - 10, out_d - 10];
 module cassette_sticker_cut() {
-    translate([0, 0, H_body + c_lid_h - cassette_sticker])
+    translate([0, 0, H_body + d_lid_h - cassette_sticker])
         rsq(sticker_c[0], sticker_c[1], 3, cassette_sticker + 1);
 }
 
@@ -534,11 +537,11 @@ module latch_ridge(x) {
 module cassette_deksel() {
     difference() {
         union() {
-            translate([0, 0, H_body]) rsq(out_w, out_d, out_r, c_lid_h);
+            translate([0, 0, H_body]) rsq(out_w, out_d, out_r, d_lid_h);
             knuckles(true);
         }
         // binnenruimte deksel
-        translate([0, 0, H_body - 1]) rsq(cav_w, cav_d, cav_r, c_lid_h - top_t + 1);
+        translate([0, 0, H_body - 1]) rsq(cav_w, cav_d, cav_r, d_lid_h - top_t + 1);
         // groef voor de tong
         translate([0, 0, H_body - 1]) tongue_ring(tongue_h + c_fit + 1, c_fit);
         pin_hole();
@@ -554,9 +557,9 @@ module latch_arm(x) {
     y_in = -out_d / 2 - off;             // binnenkant van de veer
     translate([x - latch_w / 2, 0, 0]) {
         // bevestigingsblok op het deksel
-        translate([0, y_in - latch_t, H_body + 1]) cube([latch_w, off + latch_t + 0.5, c_lid_h - 1]);
+        translate([0, y_in - latch_t, H_body + 1]) cube([latch_w, off + latch_t + 0.5, d_lid_h - 1]);
         // veer
-        translate([0, y_in - latch_t, H_body - latch_len]) cube([latch_w, latch_t, latch_len + c_lid_h]);
+        translate([0, y_in - latch_t, H_body - latch_len]) cube([latch_w, latch_t, latch_len + d_lid_h]);
         // haak: vlakke bovenkant, schuine onderkant
         translate([0, y_in, H_body - latch_len])
             rotate([90, 0, 90]) linear_extrude(latch_w)
@@ -569,7 +572,7 @@ module latch_arm(x) {
 // ==== Uitvoer ====
 
 module cassette_deksel_print() {
-    translate([0, 0, H_body + c_lid_h]) rotate([180, 0, 0]) cassette_deksel();
+    translate([0, 0, H_body + d_lid_h]) rotate([180, 0, 0]) cassette_deksel();
 }
 
 if (onderdeel == "bakje") bakje();
@@ -611,7 +614,7 @@ assert(footprint[0] <= bed && footprint[1] <= bed,
 
 if (is_cassette) {
     echo(str("Cassette ", gx, "x", gy, ": ", cm(out_w), " x ", cm(c_ext_d), " x ",
-             cm(H_body + c_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
+             cm(H_body + d_lid_h), " cm (b x d x h, dicht, incl. scharnier en klikbeugels)"));
     if (cassette_sticker > 0)
         echo(str("Stickervlak op de deksel: ", cm(sticker_c[0]), " x ", cm(sticker_c[1]), " cm"));
 } else if (onderdeel == "baseplate") {
