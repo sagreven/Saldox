@@ -149,10 +149,13 @@ Hoe meer kilometers u elektrisch rijdt, hoe meer u bespaart. Voor een plug-in hy
 
 Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €1.265 per jaar (7,5 jaar).
 
-| | Dynamisch (advies) | Vast |
+| Contract | Afname | Teruglevering |
 | --- | --- | --- |
-| Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
-| Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+| Dynamisch | Uurprijs plus opslag, btw en energiebelasting | Uurprijs, bij veel leveranciers zonder terugleverkosten |
+| Vast | Vaste prijs, ca. €0,28 per kWh incl. btw | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+
+| Per jaar, normaal scenario | Dynamisch (advies) | Vast |
+| --- | --- | --- |
 | Zon per jaar | €480 | €620 |
 | Batterij per jaar | €470 | €260 |
 | Netto per jaar (normaal) | €1.475 | €1.265 |

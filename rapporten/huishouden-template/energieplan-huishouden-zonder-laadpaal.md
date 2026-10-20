@@ -109,10 +109,13 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto €535 per jaar (12,2 jaar).
 
-| | Dynamisch (advies) | Vast |
+| Contract | Afname | Teruglevering |
 | --- | --- | --- |
-| Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
-| Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+| Dynamisch | Uurprijs plus opslag, btw en energiebelasting | Uurprijs, bij veel leveranciers zonder terugleverkosten |
+| Vast | Vaste prijs, ca. €0,28 per kWh incl. btw | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+
+| Per jaar, normaal scenario | Dynamisch (advies) | Vast |
+| --- | --- | --- |
 | Zon per jaar | €380 | €450 |
 | Batterij per jaar | €300 | €160 |
 | Netto per jaar (normaal) | €605 | €535 |

@@ -148,10 +148,13 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 Met een dynamisch contract levert het pakket normaal €485 per jaar op, met een vast contract €645 (8,7 jaar). Zonder batterij is een vast contract hier gunstiger: teruggeleverde stroom krijgt dan een vaste vergoeding in plaats van de lage uurprijs op zonnige uren.
 
-| | Dynamisch (advies) | Vast |
+| Contract | Afname | Teruglevering |
 | --- | --- | --- |
-| Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
-| Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+| Dynamisch | Uurprijs plus opslag, btw en energiebelasting | Uurprijs, bij veel leveranciers zonder terugleverkosten |
+| Vast | Vaste prijs, ca. €0,28 per kWh incl. btw | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+
+| Per jaar, normaal scenario | Dynamisch | Vast (advies) |
+| --- | --- | --- |
 | Zon per jaar | €560 | €720 |
 | Netto per jaar (normaal) | €485 | €645 |
 | Terugverdientijd (normaal) | 11,6 jaar | 8,7 jaar |

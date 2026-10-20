@@ -556,10 +556,13 @@ Thuis slim laden kost ca. {eur(n['ev_prijs_thuis'], 2)} per kWh, tegen ca. {eur(
 """ + (f"""Met een dynamisch contract levert het pakket normaal {eur(N['netto'])} per jaar op, met een vast contract {eur(vast_netto)} ({jr(R['inv'], vast_netto)} jaar).""" + (
         " Zonder batterij is een vast contract hier gunstiger: teruggeleverde stroom krijgt dan een vaste vergoeding in plaats van de lage uurprijs op zonnige uren." if vast_netto > N['netto'] else "") if gb else f"""Het pakket werkt het best met een dynamisch contract: alleen dan kan de batterij goedkoop laden en duur leveren. Met een vast contract wordt het normale netto {eur(vast_netto)} per jaar ({jr(R['inv'], vast_netto)} jaar).""") + f"""
 
-| | Dynamisch (advies) | Vast |
+| Contract | Afname | Teruglevering |
 | --- | --- | --- |
-| Afname | Uurprijs plus opslag, btw en energiebelasting | Vaste prijs, ca. €0,28 per kWh incl. btw |
-| Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+| Dynamisch | Uurprijs plus opslag, btw en energiebelasting | Uurprijs, bij veel leveranciers zonder terugleverkosten |
+| Vast | Vaste prijs, ca. €0,28 per kWh incl. btw | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
+
+| Per jaar, normaal scenario | Dynamisch{' (advies)' if N['netto'] >= vast_netto else ''} | Vast{' (advies)' if vast_netto > N['netto'] else ''} |
+| --- | --- | --- |
 | Zon per jaar | {eur(round(n['zon'], -1))} | {eur(round(R['vast']['zon'], -1))} |
 """ + ("" if gb else f"""| Batterij per jaar | {eur(round(n['batterij'], -1))} | {eur(round(R['vast']['batterij'], -1))} |
 """) + f"""| Netto per jaar (normaal) | {eur(N['netto'])} | {eur(vast_netto)} |
