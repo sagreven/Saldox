@@ -4,12 +4,12 @@
 
 ## Samenvatting
 
-Het pakket kost €5.264,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 10,9 jaar terugverdiend (10,4 tot 11,3 jaar).
+Het pakket kost €5.614,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 11,6 jaar terugverdiend (11,1 tot 12,1 jaar).
 
 - **Zonnestroom:** 11 panelen van 460 Wp (5,1 kWp), ca. 4.650 kWh per jaar. U gebruikt daarvan ca. 46% direct zelf.
 - **Omvormers:** hybride omvormer Sofar HYD 10KTL-3PH (10 kW, 3-fase), klaar voor een batterij.
 - **Stroomcontract:** dynamisch of vast; zie *Stroomcontract en prijzen*.
-- **Zonnepanelen** zijn normaal in ca. 10,9 jaar terugverdiend. Een batterij kan later worden toegevoegd.
+- **Zonnepanelen** zijn normaal in ca. 11,6 jaar terugverdiend. Een batterij kan later worden toegevoegd.
 - **Btw:** 0% op zonnepanelen, de omvormer en montage.
 
 ## Dak en legplan
@@ -32,7 +32,7 @@ De panelen komen in het dakvlak aan de straatkant, op het oostzuidoosten, tussen
 
 ## Begroting
 
-Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis). Op zonnepanelen geldt het nultarief.
+Het pakket kost €5.614,06 excl. btw en €5.614,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis). Op zonnepanelen geldt het nultarief.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
@@ -43,9 +43,11 @@ Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw, exclusief het tr
 | Afvoer overtollige dakpannen | €100,00 | 0% | €100,00 | Stelpost |
 | DC-kabel, MC4-connectoren en dakdoorvoer (materiaal) | €250,00 | 0% | €250,00 | Stelpost |
 | Hybride omvormer Sofar HYD 10KTL-3PH, 3-fase, 10 kW, klaar voor een batterij | €1.295,00 | 0% | €1.295,00 | Marktprijs |
-| Omvormer plaatsen en aansluiten | €200,00 | 0% | €200,00 | Stelpost |
-| Groep in de meterkast: 3-fase aardlekautomaat (zekering) en overspanningsbeveiliging | €150,00 | 0% | €150,00 | Stelpost |
-| **Totaal** | **€5.264,06** | | **€5.264,06** | |
+| Omvormer plaatsen en aansluiten (werk) | €200,00 | 0% | €200,00 | Stelpost |
+| Groep in de meterkast aanleggen en aansluiten (werk) | €150,00 | 0% | €150,00 | Stelpost |
+| Installatieautomaat 3-fase met aardlek, groep omvormer (materiaal) | €200,00 | 0% | €200,00 | Opgegeven |
+| Overspanningsbeveiliging AC en DC (materiaal) | €150,00 | 0% | €150,00 | Stelpost |
+| **Totaal** | **€5.614,06** | | **€5.614,06** | |
 
 <!-- FIG:begroting -->
 
@@ -78,14 +80,14 @@ Normaal levert het pakket €560 per jaar op; na de reservering voor vervanging 
 
 ## Terugverdientijd
 
-Het pakket van €5.264,06 is normaal in ca. 10,9 jaar terugverdiend; pessimistisch in 11,3 jaar en optimistisch in 10,4 jaar.
+Het pakket van €5.614,06 is normaal in ca. 11,6 jaar terugverdiend; pessimistisch in 12,1 jaar en optimistisch in 11,1 jaar.
 
 <!-- FIG:kasstroom -->
 
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
-| Zonnepanelen (panelen, omvormer, montage) | €5.264,06 | €485 | 10,9 jaar |
-| **Totaal** | **€5.264,06** | **€485** | **10,9 jaar** |
+| Zonnepanelen (panelen, omvormer, montage) | €5.614,06 | €485 | 11,6 jaar |
+| **Totaal** | **€5.614,06** | **€485** | **11,6 jaar** |
 
 <!-- FIG:payback -->
 
@@ -94,19 +96,37 @@ Het pakket van €5.264,06 is normaal in ca. 10,9 jaar terugverdiend; pessimisti
 
 ## Optie: thuisbatterij
 
-Een batterij van 30 kWh kost €6.352,50 extra incl. btw en levert ca. €580 per jaar extra op; de batterij alleen is dan in ca. 11,0 jaar terugverdiend. Het hele pakket met batterij kost €11.616,56 en is in ca. 10,9 jaar terugverdiend.
+U kunt de installatie aanvullen met een thuisbatterij, nu of later. Een batterij van 30 kWh kost €6.195,20 incl. btw en bespaart ca. €580 per jaar extra; hij is dan in ca. 10,7 jaar terugverdiend.
 
-| Batterij | Meerprijs incl. btw | Extra per jaar (normaal) | Terugverdientijd batterij | Pakket met batterij incl. btw | Terugverdientijd pakket |
+**Per batterijgrootte**
+
+| | Zonder batterij | 10 kWh | 20 kWh | **30 kWh (gevraagd)** | 40 kWh |
 | --- | --- | --- | --- | --- | --- |
-| 10 kWh | €3.085,50 | €410 | 7,5 jaar | €8.349,56 | 9,3 jaar |
-| 20 kWh | €4.537,50 | €530 | 8,6 jaar | €9.801,56 | 9,7 jaar |
-| **30 kWh (gevraagd)** | €6.352,50 | €580 | 11,0 jaar | €11.616,56 | 10,9 jaar |
-| 40 kWh | €7.804,50 | €610 | 12,8 jaar | €13.068,56 | 11,9 jaar |
+| Opbouw | — | 2 modules, 1 toren | 4 modules, 1 toren | 6 modules, 2 torens | 8 modules, 2 torens |
+| Prijs batterij incl. btw | — | €2.928,20 | €4.380,20 | €6.195,20 | €7.647,20 |
+| Prijs hele pakket incl. btw | €5.614,06 | €8.542,26 | €9.994,26 | €11.809,26 | €13.261,26 |
+| Besparing per jaar, hele pakket | €485 | €895 | €1.015 | €1.065 | €1.095 |
+| waarvan door de batterij | — | €410 | €530 | €580 | €610 |
+| Batterij terugverdiend in | — | 7,1 jaar | 8,3 jaar | 10,7 jaar | 12,5 jaar |
+| Hele pakket terugverdiend in | 11,6 jaar | 9,5 jaar | 9,8 jaar | 11,1 jaar | 12,1 jaar |
+| Opbrengst na 15 jaar, hele pakket | €1.661 | €4.883 | €5.231 | €4.166 | €3.164 |
 
-- **Advies:** de 20 kWh levert over 15 jaar het meeste op; een kleinere batterij is sneller terugverdiend. De batterij kan ook later worden toegevoegd: de omvormer is er al klaar voor.
-- **Techniek:** de Sofar HYD 10KTL-3PH heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. 10 kW.
-- **Prijzen:** modules à €600,00 excl. btw (inkoopprijs); BDU €300,00 per toren, installatie €450 en EMS-koppeling €150 zijn stelposten. Een batterij valt onder 21% btw.
-- **Noodstroom:** bij elke batterijgrootte zit een ATS-omschakelaar (stelpost €450). Valt het net uit, dan schakelt die de woning, of een deel ervan, om naar de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Zonder batterij is er geen noodstroom.
+**Wat zit er in de batterij van 30 kWh**
+
+| Post | Excl. btw | Btw | Incl. btw | Status |
+| --- | --- | --- | --- | --- |
+| 6 batterijmodules Sofar BTS 5K, samen 30,72 kWh (6 × €600) | €3.600,00 | 21% | €4.356,00 | Inkoopprijs |
+| 2 BDU-besturingsunits (2 torens) | €600,00 | 21% | €726,00 | Stelpost |
+| Installatie batterij en DC-bekabeling | €450,00 | 21% | €544,50 | Stelpost |
+| EMS-koppeling Saldox (P1-meter en gateway) | €150,00 | 21% | €181,50 | Stelpost |
+| Handmatige omschakelaar voor noodstroom (ATS), 3-fase (materiaal) | €170,00 | 21% | €205,70 | Opgegeven |
+| Omschakelaar aansluiten in de meterkast (werk) | €150,00 | 21% | €181,50 | Stelpost |
+| **Totaal batterij** | **€5.120,00** | | **€6.195,20** | |
+
+- **Advies:** de 20 kWh levert over 15 jaar het meeste op; een kleinere batterij is sneller terugverdiend. De omvormer is al klaar voor een batterij.
+- **Techniek:** de Sofar HYD 10KTL-3PH heeft twee batterij-ingangen. Een Sofar BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit, met maximaal 4 modules per toren. Laden en ontladen tot ca. 10 kW.
+- **Noodstroom:** valt het net uit, dan zet u de handmatige omschakelaar in de meterkast om. De woning, of de groepen die op de noodstroom zijn aangesloten, draait dan op de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Is het net terug, dan zet u hem terug. Zonder batterij is er geen noodstroom.
+- **Prijzen:** modules à €600,00 excl. btw (inkoopprijs); handmatige omschakelaar €170,00 (opgegeven); BDU, installatie, EMS-koppeling en het aansluiten van de omschakelaar zijn stelposten. Een batterij valt onder 21% btw.
 - **Werking:** het EMS van Saldox laadt de batterij met zonnestroom en op goedkope uren van het net, en ontlaadt op dure uren (dynamisch contract).
 
 ## Zonnestroom zelf gebruiken
@@ -126,7 +146,7 @@ Overdag is er weinig verbruik in huis, dus een groot deel van de zonnestroom gaa
 
 ## Stroomcontract en prijzen
 
-Met een dynamisch contract levert het pakket normaal €485 per jaar op, met een vast contract €645 (8,2 jaar). Zonder batterij is een vast contract hier gunstiger: teruggeleverde stroom krijgt dan een vaste vergoeding in plaats van de lage uurprijs op zonnige uren.
+Met een dynamisch contract levert het pakket normaal €485 per jaar op, met een vast contract €645 (8,7 jaar). Zonder batterij is een vast contract hier gunstiger: teruggeleverde stroom krijgt dan een vaste vergoeding in plaats van de lage uurprijs op zonnige uren.
 
 | | Dynamisch (advies) | Vast |
 | --- | --- | --- |
@@ -134,10 +154,10 @@ Met een dynamisch contract levert het pakket normaal €485 per jaar op, met een
 | Teruglevering | Uurprijs, bij veel leveranciers zonder terugleverkosten | Vergoeding ca. €0,10 min terugleverkosten €0,045 tot 0,065 |
 | Zon per jaar | €560 | €720 |
 | Netto per jaar (normaal) | €485 | €645 |
-| Terugverdientijd (normaal) | 10,9 jaar | 8,2 jaar |
+| Terugverdientijd (normaal) | 11,6 jaar | 8,7 jaar |
 
 - **Einde saldering per 1 januari 2027:** al verwerkt; dit plan rekent zonder saldering (zie *Met en zonder saldering*). Bij een vast contract moet de leverancier tot 2030 ten minste 50% van de kale leveringsprijs vergoeden; terugleverkosten mogen alleen de werkelijke kosten dekken en staan vanaf 2027 per kWh op de factuur.
-- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €525 per jaar (10,0 jaar).
+- **Prijzen 2027:** door de oorlog met Iran ligt de groothandelsprijs voor stroom in 2027 op de termijnmarkt ca. 15% hoger dan in 2026. Dan wordt het normale netto ca. €525 per jaar (10,7 jaar).
 - **Energiebelasting 2027:** stroom daalt naar €0,1065 per kWh incl. btw.
 
 ## Met en zonder saldering
@@ -149,13 +169,13 @@ Tot 1 januari 2027 mag u teruggeleverde stroom wegstrepen tegen stroom die u afn
 | Zon per jaar | €840 | €560 |
 | Jaarlijkse kosten | −€75 | −€75 |
 | **Netto per jaar** | **€765** | **€485** |
-| Terugverdientijd | 6,9 jaar | 10,9 jaar |
+| Terugverdientijd | 7,3 jaar | 11,6 jaar |
 | Netto per jaar bij een vast contract | €1.225 | €645 |
 
 - **Wat saldering doet:** met saldering levert elke teruggeleverde kWh, tot uw jaarverbruik, ook de energiebelasting van €0,1108 per kWh op (bij een vast contract de volle kWh-prijs). Hier gaat het om ca. 2.500 kWh per jaar.
 - **Zonnepanelen leveren minder op:** zonder saldering ca. €280 per jaar minder. Daarom telt zelf gebruiken vanaf 2027 zwaarder.
 - **Een batterij wordt interessanter:** zonder saldering levert teruggeleverde zonnestroom bijna niets op; een batterij vangt die op en kan later worden toegevoegd.
-- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 10,9 jaar geldt voor de regels vanaf 2027.
+- **Dit plan is niet afhankelijk van saldering:** de terugverdientijd van 11,6 jaar geldt voor de regels vanaf 2027.
 
 ## Installatie en veiligheid
 
@@ -254,7 +274,8 @@ Deze offerte is opgesteld zonder bezoek aan de woning: de dakmaten, de opbrengst
 | Omvormer zonder batterij | pvundso.de, productpagina Sofar HYD-3PH | Werkt als gewone zonne-omvormer; batterij later toe te voegen; noodstroom alleen met batterij |
 | Prijs omvormer | Wattuneed, Sofar HYD 10KTL-3PH: €1.566,95 incl. btw (oktober 2026) | Marktprijs €1.295,00 excl. btw |
 | Prijzen panelen, batterij | Saldox-prijslijst: inkoopprijzen A Solar 460 Wp en Sofar BTS 5K (oktober 2026) | Begroting en optie thuisbatterij |
-| Indak-montage, groep en ATS | Saldox, stelposten op basis van marktprijzen | Indak-systeem en montage per paneel; aardlekautomaat en overspanningsbeveiliging; ATS-omschakelaar voor noodstroom |
+| Indak-montage en meterkast | Saldox, stelposten op basis van marktprijzen; installatieautomaat 3-fase met aardlek €200,00 (Saldox-prijslijst) | Indak-systeem en montage per paneel; groep, installatieautomaat en overspanningsbeveiliging |
+| Omschakelaar noodstroom | Saldox-prijslijst: handmatige omschakelaar (ATS) 3-fase €170,00 excl. btw; aansluiten €150 (stelpost) | Noodstroom bij de batterijoptie |
 | Bedrading | Saldox-prijslijst: uurtarief €55,00 excl. btw | Trekken van de AC- en DC-bedrading op uurbasis |
 | Laadpaal en ERE | Saldox-prijslijst: Zaptec Go 2 €825,62 incl. btw; ERE-vergoeding ca. €0,13 per kWh netto (Saldox, oktober 2026) | Hoofdstuk *Wist u dat? Laden met de Zaptec Go 2* |
 

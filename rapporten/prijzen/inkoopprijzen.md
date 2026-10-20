@@ -30,6 +30,8 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | 7 oktober 2026 | Zonnepaneel 450 Wp (huishouden-templates, Sofar-pakket), per stuk | €70,00 | 0% |
 | 7 oktober 2026 | Zaptec Go 2 laadpaal (22 kW, MID-meter), per stuk; €825,62 incl. btw | €682,33 | 21% |
 | 7 oktober 2026 | Sofar BTS 5K batterijmodule 5,12 kWh (uitbreiding), per stuk | €600,00 | 21% |
+| 20 oktober 2026 | Installatieautomaat 3-fase met aardlek (groep omvormer in de meterkast), per stuk | €200,00 | 0% |
+| 20 oktober 2026 | Handmatige omschakelaar noodstroom (ATS), 3-fase, per stuk | €170,00 | 21% |
 
 ## Eerder opgegeven (energieplan Run 4258)
 

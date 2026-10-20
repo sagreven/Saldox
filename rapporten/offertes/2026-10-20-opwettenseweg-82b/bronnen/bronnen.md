@@ -17,7 +17,8 @@ Deze offerte is opgesteld zonder bezoek aan de woning: de dakmaten, de opbrengst
 | Omvormer zonder batterij | pvundso.de, productpagina Sofar HYD-3PH | Werkt als gewone zonne-omvormer; batterij later toe te voegen; noodstroom alleen met batterij |
 | Prijs omvormer | Wattuneed, Sofar HYD 10KTL-3PH: €1.566,95 incl. btw (oktober 2026) | Marktprijs €1.295,00 excl. btw |
 | Prijzen panelen, batterij | Saldox-prijslijst: inkoopprijzen A Solar 460 Wp en Sofar BTS 5K (oktober 2026) | Begroting en optie thuisbatterij |
-| Indak-montage, groep en ATS | Saldox, stelposten op basis van marktprijzen | Indak-systeem en montage per paneel; aardlekautomaat en overspanningsbeveiliging; ATS-omschakelaar voor noodstroom |
+| Indak-montage en meterkast | Saldox, stelposten op basis van marktprijzen; installatieautomaat 3-fase met aardlek €200,00 (Saldox-prijslijst) | Indak-systeem en montage per paneel; groep, installatieautomaat en overspanningsbeveiliging |
+| Omschakelaar noodstroom | Saldox-prijslijst: handmatige omschakelaar (ATS) 3-fase €170,00 excl. btw; aansluiten €150 (stelpost) | Noodstroom bij de batterijoptie |
 | Bedrading | Saldox-prijslijst: uurtarief €55,00 excl. btw | Trekken van de AC- en DC-bedrading op uurbasis |
 | Laadpaal en ERE | Saldox-prijslijst: Zaptec Go 2 €825,62 incl. btw; ERE-vergoeding ca. €0,13 per kWh netto (Saldox, oktober 2026) | Hoofdstuk *Wist u dat? Laden met de Zaptec Go 2* |
 

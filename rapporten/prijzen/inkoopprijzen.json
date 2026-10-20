@@ -100,6 +100,20 @@
    "eenheid": "stuk",
    "datum": "2026-10-07",
    "btw_consument": 0.21
+  },
+  {
+   "artikel": "Installatieautomaat 3-fase met aardlek (groep omvormer in de meterkast)",
+   "prijs": 200.0,
+   "eenheid": "stuk",
+   "datum": "2026-10-20",
+   "btw_consument": 0.0
+  },
+  {
+   "artikel": "Handmatige omschakelaar noodstroom (ATS), 3-fase",
+   "prijs": 170.0,
+   "eenheid": "stuk",
+   "datum": "2026-10-20",
+   "btw_consument": 0.21
   }
  ],
  "eerder_opgegeven": [

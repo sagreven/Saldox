@@ -74,6 +74,9 @@ def opgegeven(zoek):
 HYD = {"hyd15": dict(naam="Sofar HYD 15KTL-3PH", kw=15, prijs=opgegeven("Omvormer Sofar 15 kW"), status="Opgegeven"),
        # marktprijs: Wattuneed €1.566,95 incl. btw (okt. 2026), tot er een inkoopprijs is
        "hyd10": dict(naam="Sofar HYD 10KTL-3PH", kw=10, prijs=1295.00, status="Marktprijs")}
+AUTOMAAT = next(r["prijs"] for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Installatieautomaat 3-fase"))
+ATS_MATERIAAL = next(r["prijs"] for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Handmatige omschakelaar"))
+ATS_WERK = 150.00  # stelpost: omschakelaar aansluiten in de meterkast
 BDU = 300.00  # stelpost: BDU-besturingsunit per batterijtoren (marktprijs ca. €284)
 
 
@@ -88,7 +91,8 @@ def hyd_batterij(modules, kwmax=15):
              torens * BDU, 0.21, "Stelpost", "batt"),
             ("Installatie batterij en DC-bekabeling", 450.00, 0.21, "Stelpost", "batt"),
             ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost", "batt"),
-            ("ATS-omschakelaar voor noodstroom (3-fase), incl. aansluiten in de meterkast", 450.00, 0.21, "Stelpost", "batt")], torens, kw
+            ("Handmatige omschakelaar voor noodstroom (ATS), 3-fase (materiaal)", ATS_MATERIAAL, 0.21, "Opgegeven", "batt"),
+            ("Omschakelaar aansluiten in de meterkast (werk)", ATS_WERK, 0.21, "Stelpost", "batt")], torens, kw
 
 
 def pakket(soort, n, dak, omvormer="micro"):
@@ -97,8 +101,10 @@ def pakket(soort, n, dak, omvormer="micro"):
         P = {k: w for k, w in B.PAKKETTEN["sofar"].items() if k != "modules"}  # geen ESI-batterijtabel
         P["prijzen"] = zonnedeel(n, dak, False) + [
             (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW, klaar voor een batterij", H["prijs"], 0.0, H["status"], "zon"),
-            ("Omvormer plaatsen en aansluiten", 200.00, 0.0, "Stelpost", "zon"),
-            ("Groep in de meterkast: 3-fase aardlekautomaat (zekering) en overspanningsbeveiliging", 150.00, 0.0, "Stelpost", "zon")]
+            ("Omvormer plaatsen en aansluiten (werk)", 200.00, 0.0, "Stelpost", "zon"),
+            ("Groep in de meterkast aanleggen en aansluiten (werk)", 150.00, 0.0, "Stelpost", "zon"),
+            ("Installatieautomaat 3-fase met aardlek, groep omvormer (materiaal)", AUTOMAAT, 0.0, "Opgegeven", "zon"),
+            ("Overspanningsbeveiliging AC en DC (materiaal)", 150.00, 0.0, "Stelpost", "zon")]
         P["model"] = dict(P["model"], panelen=n, wp=460, batt_kwh=0)
         P["hyd"] = H
         P["naam"] = f"Zonnepanelen met hybride omvormer {H['naam']}, zonder batterij"
@@ -229,22 +235,50 @@ def optie_batterij(v, R, n, dak, maten, gevraagd=None):
                    winst=15 * extra - meer)
         rijen.append(rij)
     kern = next((r for r in rijen if r["modules"] == gevraagd), rijen[-1])
-    tabel = "\n".join(
-        f"| {'**' if r is kern else ''}{round(r['kwh'] / 10) * 10} kWh{' (gevraagd)**' if r is kern else ''} | "
-        f"{B.eur2(r['meer'])} | {B.eur(r['extra'])} | {r['j_batt']} jaar | {B.eur2(r['inv'])} | {r['jaren']} jaar |" for r in rijen)
     beste = max(rijen, key=lambda r: r["winst"])
+
+    def kop(r):
+        t = f"{round(r['kwh'] / 10) * 10} kWh"
+        return f"**{t} (gevraagd)**" if r is kern else t
+
+    def rij(label, basis, f):
+        return f"| {label} | {basis} | " + " | ".join(f(r) for r in rijen) + " |"
+    overzicht = "\n".join([
+        "| | Zonder batterij | " + " | ".join(kop(r) for r in rijen) + " |",
+        "| --- | --- | " + " | ".join("---" for _ in rijen) + " |",
+        rij("Opbouw", "—", lambda r: f"{r['modules']} modules, {r['torens']} {'torens' if r['torens'] > 1 else 'toren'}"),
+        rij("Prijs batterij incl. btw", "—", lambda r: B.eur2(r["meer"])),
+        rij("Prijs hele pakket incl. btw", B.eur2(R["inv"]), lambda r: B.eur2(r["inv"])),
+        rij("Besparing per jaar, hele pakket", B.eur(N["netto"]), lambda r: B.eur(r["netto"])),
+        rij("waarvan door de batterij", "—", lambda r: B.eur(r["extra"])),
+        rij("Batterij terugverdiend in", "—", lambda r: f"{r['j_batt']} jaar"),
+        rij("Hele pakket terugverdiend in", f"{N['jaren']} jaar", lambda r: f"{r['jaren']} jaar"),
+        rij("Opbrengst na 15 jaar, hele pakket", B.eur(15 * N["netto"] - R["inv"]), lambda r: B.eur(15 * r["netto"] - r["inv"])),
+    ])
+    posten, _, _ = hyd_batterij(kern["modules"], v["P"]["hyd"]["kw"])
+    inhoud = "\n".join(f"| {p_} | {B.eur2(ex)} | {int(b * 100)}% | {B.eur2(round(ex * (1 + b), 2))} | {st} |" for p_, ex, b, st, _ in posten)
+    tot_ex = sum(p_[1] for p_ in posten)
+    tot_in = sum(round(p_[1] * (1 + p_[2]), 2) for p_ in posten)
+    k = round(kern['kwh'] / 10) * 10
     return f"""## Optie: thuisbatterij
 
-Een batterij van {round(kern['kwh'] / 10) * 10} kWh kost {B.eur2(kern['meer'])} extra incl. btw en levert ca. {B.eur(kern['extra'])} per jaar extra op; de batterij alleen is dan in ca. {kern['j_batt']} jaar terugverdiend. Het hele pakket met batterij kost {B.eur2(kern['inv'])} en is in ca. {kern['jaren']} jaar terugverdiend.
+U kunt de installatie aanvullen met een thuisbatterij, nu of later. Een batterij van {k} kWh kost {B.eur2(kern['meer'])} incl. btw en bespaart ca. {B.eur(kern['extra'])} per jaar extra; hij is dan in ca. {kern['j_batt']} jaar terugverdiend.
 
-| Batterij | Meerprijs incl. btw | Extra per jaar (normaal) | Terugverdientijd batterij | Pakket met batterij incl. btw | Terugverdientijd pakket |
-| --- | --- | --- | --- | --- | --- |
-{tabel}
+**Per batterijgrootte**
 
-- **Advies:** {'de ' + str(round(beste['kwh'] / 10) * 10) + ' kWh levert over 15 jaar het meeste op' if beste['winst'] > 0 else 'bij dit verbruik verdient een batterij zich binnen 15 jaar niet terug'}; een kleinere batterij is sneller terugverdiend. De batterij kan ook later worden toegevoegd: de omvormer is er al klaar voor.
-- **Techniek:** de {v['P']['hyd']['naam']} heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. {B.nl(kern['kw'], 0)} kW.
-- **Prijzen:** modules à {B.eur2(B.BTS5K)} excl. btw (inkoopprijs); BDU {B.eur2(BDU)} per toren, installatie €450 en EMS-koppeling €150 zijn stelposten. Een batterij valt onder 21% btw.
-- **Noodstroom:** bij elke batterijgrootte zit een ATS-omschakelaar (stelpost €450). Valt het net uit, dan schakelt die de woning, of een deel ervan, om naar de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Zonder batterij is er geen noodstroom.
+{overzicht}
+
+**Wat zit er in de batterij van {k} kWh**
+
+| Post | Excl. btw | Btw | Incl. btw | Status |
+| --- | --- | --- | --- | --- |
+{inhoud}
+| **Totaal batterij** | **{B.eur2(tot_ex)}** | | **{B.eur2(tot_in)}** | |
+
+- **Advies:** {'de ' + str(round(beste['kwh'] / 10) * 10) + ' kWh levert over 15 jaar het meeste op' if beste['winst'] > 0 else 'bij dit verbruik verdient een batterij zich binnen 15 jaar niet terug'}; een kleinere batterij is sneller terugverdiend. De omvormer is al klaar voor een batterij.
+- **Techniek:** de {v['P']['hyd']['naam']} heeft twee batterij-ingangen. Een Sofar BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit, met maximaal 4 modules per toren. Laden en ontladen tot ca. {B.nl(kern['kw'], 0)} kW.
+- **Noodstroom:** valt het net uit, dan zet u de handmatige omschakelaar in de meterkast om. De woning, of de groepen die op de noodstroom zijn aangesloten, draait dan op de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Is het net terug, dan zet u hem terug. Zonder batterij is er geen noodstroom.
+- **Prijzen:** modules à {B.eur2(B.BTS5K)} excl. btw (inkoopprijs); handmatige omschakelaar {B.eur2(ATS_MATERIAAL)} (opgegeven); BDU, installatie, EMS-koppeling en het aansluiten van de omschakelaar zijn stelposten. Een batterij valt onder 21% btw.
 - **Werking:** het EMS van Saldox laadt de batterij met zonnestroom en op goedkope uren van het net, en ontlaadt op dure uren (dynamisch contract).
 """
 
