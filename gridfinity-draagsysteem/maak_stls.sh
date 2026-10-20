@@ -56,3 +56,5 @@ gen cassette-5x4-4.5cm-krimptang-vlak-onderbak -D 'onderdeel="cassette_onderbak"
 # inleg met de vorm van de krimptang (eigen bestand)
 echo "stl/inleg-krimptang-5x2.stl"
 openscad -q -o stl/inleg-krimptang-5x2.stl krimptang_inleg.scad
+echo "stl/inleg-krimptang-5x2-ingebouwd.stl"
+openscad -q -D frame_d=81.75 -o stl/inleg-krimptang-5x2-ingebouwd.stl krimptang_inleg.scad

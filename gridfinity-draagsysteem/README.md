@@ -295,8 +295,12 @@ Cassettes met een Gridfinity-bodem die gemaakt zijn vóór de versie met
 helemaal dichtgegroeid tot een vlakke, massieve vloer op 7,85 mm in plaats van
 3,2 mm. De bakjes staan daardoor 4,65 mm te hoog en de klep sluit niet (ca. 4 mm
 kier). Print in dat geval de onderbak opnieuw; de klep en de bakjes kun je
-houden. Voor de krimptang-cassette: `cassette-5x4-4.5cm-krimptang-vlak-onderbak`
-met `baseplate-5x2` en `inleg-krimptang-5x2`.
+houden. Voor de krimptang-cassette heb je twee mogelijkheden:
+
+| Onderbak | Gridfinity achterin | Inleg voorin |
+|---|---|---|
+| `cassette-5x4-4.5cm-krimptang-onderbak` | ingebouwd, met klik | `inleg-krimptang-5x2-ingebouwd` (2 mm korter) |
+| `cassette-5x4-4.5cm-krimptang-vlak-onderbak` | losse `baseplate-5x2` met klik | `inleg-krimptang-5x2` |
 
 ## Nog niet getest
 
