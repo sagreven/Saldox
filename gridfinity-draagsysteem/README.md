@@ -288,6 +288,16 @@ openscad -D 'onderdeel="cassette_onderbak"' -D gx=3 -D gy=2 -D lagen=4 -o onderb
 
 [`maak_stls.sh`](maak_stls.sh) maakt de complete standaardset in `stl/` opnieuw.
 
+## Bekende fout in oudere cassettes
+
+Cassettes met een Gridfinity-bodem die gemaakt zijn vóór de versie met
+`gridfinity_rijen` (commit 7ddb18a) hebben een fout: de Gridfinity-vakjes zijn
+helemaal dichtgegroeid tot een vlakke, massieve vloer op 7,85 mm in plaats van
+3,2 mm. De bakjes staan daardoor 4,65 mm te hoog en de klep sluit niet (ca. 4 mm
+kier). Print in dat geval de onderbak opnieuw; de klep en de bakjes kun je
+houden. Voor de krimptang-cassette: `cassette-5x4-4.5cm-krimptang-vlak-onderbak`
+met `baseplate-5x2` en `inleg-krimptang-5x2`.
+
 ## Nog niet getest
 
 De modellen zijn gerenderd, gecontroleerd op geldige geometrie en in

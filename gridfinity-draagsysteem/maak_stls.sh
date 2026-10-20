@@ -50,6 +50,9 @@ for c in "2 2 2 true 2x2-4.5cm-schroeven" "5 2 2 false 5x2-4.5cm-schroevendraaie
     gen "cassette-$naam-deksel"   -D 'onderdeel="cassette_deksel"'   -D gx=$gx -D gy=$gy -D lagen=$lagen -D baseplate=$bp "$@"
 done
 
+# krimptang-cassette met vlakke bodem (voor de losse Gridfinity-bodem en de inleg)
+gen cassette-5x4-4.5cm-krimptang-vlak-onderbak -D 'onderdeel="cassette_onderbak"' -D gx=5 -D gy=4 -D lagen=2 -D baseplate=false
+
 # inleg met de vorm van de krimptang (eigen bestand)
 echo "stl/inleg-krimptang-5x2.stl"
 openscad -q -o stl/inleg-krimptang-5x2.stl krimptang_inleg.scad
