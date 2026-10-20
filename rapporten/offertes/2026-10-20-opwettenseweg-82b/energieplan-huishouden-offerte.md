@@ -43,7 +43,8 @@ Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw, exclusief het tr
 | Afvoer overtollige dakpannen | €100,00 | 0% | €100,00 | Stelpost |
 | DC-kabel, MC4-connectoren en dakdoorvoer (materiaal) | €250,00 | 0% | €250,00 | Stelpost |
 | Hybride omvormer Sofar HYD 10KTL-3PH, 3-fase, 10 kW, klaar voor een batterij | €1.295,00 | 0% | €1.295,00 | Marktprijs |
-| Omvormer plaatsen en aansluiten in de meterkast, groep en overspanningsbeveiliging | €350,00 | 0% | €350,00 | Stelpost |
+| Omvormer plaatsen en aansluiten | €200,00 | 0% | €200,00 | Stelpost |
+| Groep in de meterkast: 3-fase aardlekautomaat (zekering) en overspanningsbeveiliging | €150,00 | 0% | €150,00 | Stelpost |
 | **Totaal** | **€5.264,06** | | **€5.264,06** | |
 
 <!-- FIG:begroting -->
@@ -52,7 +53,8 @@ Het pakket kost €5.264,06 excl. btw en €5.264,06 incl. btw, exclusief het tr
 - **Alles 0%:** panelen, omvormer, bekabeling en montage vallen onder het nultarief. Een batterij die later wordt toegevoegd, valt onder 21%.
 
 - **Stelposten** zijn inschattingen voor een standaard woning. Vervang ze door de offerte van de installateur.
-- **Aansluiting:** de Sofar HYD 10KTL-3PH is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A). De panelen komen in het dak, tussen de pannen: een indak-systeem vervangt de pannen onder de panelen en sluit waterdicht aan op de rest van het dak.
+- **Aansluiting:** de Sofar HYD 10KTL-3PH is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A).
+- **Zekering en groep:** de omvormer krijgt een eigen groep in de meterkast met een 3-fase aardlekautomaat en overspanningsbeveiliging (in de begroting). De hoofdzekering van 3x25 A volstaat; is de meterkast vol, dan is een uitbreiding van de groepenkast nodig (niet in de prijs, bij de schouw te beoordelen). De panelen komen in het dak, tussen de pannen: een indak-systeem vervangt de pannen onder de panelen en sluit waterdicht aan op de rest van het dak.
 - **Bedrading op uurbasis:** het trekken van de AC-kabel (omvormer naar de meterkast) en de DC-kabels (dak naar de omvormer) zit niet in de prijs. Hoe makkelijk die kabels getrokken kunnen worden, blijkt pas bij de installatie; Saldox rekent dit werk daarom op uurbasis af, à €55,00 per uur excl. btw (0% btw, onderdeel van de zonne-installatie). Het materiaal staat wel in de begroting.
 
 ## Wat het per jaar oplevert
@@ -92,18 +94,19 @@ Het pakket van €5.264,06 is normaal in ca. 10,9 jaar terugverdiend; pessimisti
 
 ## Optie: thuisbatterij
 
-Een batterij van 30 kWh kost €5.808,00 extra incl. btw en levert ca. €580 per jaar extra op; de batterij alleen is dan in ca. 10,0 jaar terugverdiend. Het hele pakket met batterij kost €11.072,06 en is in ca. 10,4 jaar terugverdiend.
+Een batterij van 30 kWh kost €6.352,50 extra incl. btw en levert ca. €580 per jaar extra op; de batterij alleen is dan in ca. 11,0 jaar terugverdiend. Het hele pakket met batterij kost €11.616,56 en is in ca. 10,9 jaar terugverdiend.
 
 | Batterij | Meerprijs incl. btw | Extra per jaar (normaal) | Terugverdientijd batterij | Pakket met batterij incl. btw | Terugverdientijd pakket |
 | --- | --- | --- | --- | --- | --- |
-| 10 kWh | €2.541,00 | €410 | 6,2 jaar | €7.805,06 | 8,7 jaar |
-| 20 kWh | €3.993,00 | €530 | 7,5 jaar | €9.257,06 | 9,1 jaar |
-| **30 kWh (gevraagd)** | €5.808,00 | €580 | 10,0 jaar | €11.072,06 | 10,4 jaar |
-| 40 kWh | €7.260,00 | €610 | 11,9 jaar | €12.524,06 | 11,4 jaar |
+| 10 kWh | €3.085,50 | €410 | 7,5 jaar | €8.349,56 | 9,3 jaar |
+| 20 kWh | €4.537,50 | €530 | 8,6 jaar | €9.801,56 | 9,7 jaar |
+| **30 kWh (gevraagd)** | €6.352,50 | €580 | 11,0 jaar | €11.616,56 | 10,9 jaar |
+| 40 kWh | €7.804,50 | €610 | 12,8 jaar | €13.068,56 | 11,9 jaar |
 
 - **Advies:** de 20 kWh levert over 15 jaar het meeste op; een kleinere batterij is sneller terugverdiend. De batterij kan ook later worden toegevoegd: de omvormer is er al klaar voor.
 - **Techniek:** de Sofar HYD 10KTL-3PH heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. 10 kW.
 - **Prijzen:** modules à €600,00 excl. btw (inkoopprijs); BDU €300,00 per toren, installatie €450 en EMS-koppeling €150 zijn stelposten. Een batterij valt onder 21% btw.
+- **Noodstroom:** bij elke batterijgrootte zit een ATS-omschakelaar (stelpost €450). Valt het net uit, dan schakelt die de woning, of een deel ervan, om naar de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Zonder batterij is er geen noodstroom.
 - **Werking:** het EMS van Saldox laadt de batterij met zonnestroom en op goedkope uren van het net, en ontlaadt op dure uren (dynamisch contract).
 
 ## Zonnestroom zelf gebruiken
@@ -208,6 +211,30 @@ De technische termen in dit advies, in gewone taal.
 | Stelpost | Geschat bedrag voor een post waarvan de exacte prijs nog niet bekend is. |
 | Zelfverbruik | Het deel van de zonnestroom dat u zelf gebruikt in plaats van terug te leveren. |
 
+## Wist u dat? Laden met de Zaptec Go 2
+
+Laadt u de auto thuis met een laadpaal met MID-meter, dan levert elke geladen kWh een ERE-vergoeding op: ca. €0,13 per kWh. Bij ca. 1.100 kWh per jaar is dat ca. €140 per jaar; met slim laden komt daar ca. €90 bij. Een Zaptec Go 2 is dan in ca. 6,6 jaar terugverdiend. Dit hoofdstuk is informatie en zit niet in de offerte.
+
+| Laadpaal (informatie) | Excl. btw | Btw | Incl. btw |
+| --- | --- | --- | --- |
+| Zaptec Go 2 laadpaal (22 kW, MID-meter) | €682,33 | 21% | €825,62 |
+| Installatie laadpaal incl. groep en bekabeling | €580,00 | 21% | €701,80 |
+| **Totaal** | **€1.262,33** | | **€1.527,42** |
+
+| Per jaar, bij 1.100 kWh thuis laden | Bedrag |
+| --- | --- |
+| Thuis laden, direct vanaf 18:00 | €296 (€0,27 per kWh) |
+| Thuis laden, slim op goedkope uren en met zonnestroom | €208 (€0,19 per kWh) |
+| Besparing slim laden | €90 |
+| ERE-vergoeding (€0,13 per kWh) | €140 |
+| **Opbrengst laadpaal per jaar** | **€230** |
+
+- **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto of plug-in hybride wordt geladen emissiereductie-eenheden (ERE's) op. Voorwaarden: een geijkte MID-meter in de laadpaal, gekoppeld aan uw aansluiting, en een inboekdienstverlener die de ERE's voor u verkoopt. De opbrengst schommelt met de markt; Saldox rekent met ca. €0,13 per kWh netto.
+- **Zaptec Go 2:** tot 22 kW (3-fase) of 7,4 kW (1-fase), ingebouwde MID-meter, 4G, OCPP en dynamische load balancing via de P1-meter, zodat de hoofdzekering niet wordt overbelast. Bidirectioneel voorbereid (V2G).
+- **Slim laden:** het EMS van Saldox laadt de auto op de goedkoopste uren dat hij thuis is, en zoveel mogelijk met zonnestroom. Een plug-in hybride laadt meestal met 3,7 tot 7,4 kW; ook dan werkt de MID-meter voor de ERE.
+- **Meer elektrisch rijden:** 1.100 kWh is ca. 5.500 km elektrisch. Wie dagelijks laadt en meer elektrisch rijdt, verdient de laadpaal sneller terug.
+- **Btw:** een laadpaal en de installatie ervan vallen onder 21%.
+
 ## Bronnen en foto's
 
 Deze offerte is opgesteld zonder bezoek aan de woning: de dakmaten, de opbrengst en de prijzen komen uit de bronnen hieronder.
@@ -227,7 +254,9 @@ Deze offerte is opgesteld zonder bezoek aan de woning: de dakmaten, de opbrengst
 | Omvormer zonder batterij | pvundso.de, productpagina Sofar HYD-3PH | Werkt als gewone zonne-omvormer; batterij later toe te voegen; noodstroom alleen met batterij |
 | Prijs omvormer | Wattuneed, Sofar HYD 10KTL-3PH: €1.566,95 incl. btw (oktober 2026) | Marktprijs €1.295,00 excl. btw |
 | Prijzen panelen, batterij | Saldox-prijslijst: inkoopprijzen A Solar 460 Wp en Sofar BTS 5K (oktober 2026) | Begroting en optie thuisbatterij |
-| Indak-montage | Saldox, stelposten op basis van marktprijzen | Indak-systeem en montage per paneel |
+| Indak-montage, groep en ATS | Saldox, stelposten op basis van marktprijzen | Indak-systeem en montage per paneel; aardlekautomaat en overspanningsbeveiliging; ATS-omschakelaar voor noodstroom |
+| Bedrading | Saldox-prijslijst: uurtarief €55,00 excl. btw | Trekken van de AC- en DC-bedrading op uurbasis |
+| Laadpaal en ERE | Saldox-prijslijst: Zaptec Go 2 €825,62 incl. btw; ERE-vergoeding ca. €0,13 per kWh netto (Saldox, oktober 2026) | Hoofdstuk *Wist u dat? Laden met de Zaptec Go 2* |
 
 - **Links:** bag.basisregistraties.overheid.nl · 3dbag.nl · pdok.nl · re.jrc.ec.europa.eu/pvg_tools · energy-charts.info · pvundso.de · wattuneed.com
 - **Datum:** de bronnen zijn geraadpleegd op 20 oktober 2026.

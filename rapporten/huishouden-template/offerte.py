@@ -87,7 +87,8 @@ def hyd_batterij(modules, kwmax=15):
             (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})",
              torens * BDU, 0.21, "Stelpost", "batt"),
             ("Installatie batterij en DC-bekabeling", 450.00, 0.21, "Stelpost", "batt"),
-            ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost", "batt")], torens, kw
+            ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost", "batt"),
+            ("ATS-omschakelaar voor noodstroom (3-fase), incl. aansluiten in de meterkast", 450.00, 0.21, "Stelpost", "batt")], torens, kw
 
 
 def pakket(soort, n, dak, omvormer="micro"):
@@ -96,14 +97,18 @@ def pakket(soort, n, dak, omvormer="micro"):
         P = {k: w for k, w in B.PAKKETTEN["sofar"].items() if k != "modules"}  # geen ESI-batterijtabel
         P["prijzen"] = zonnedeel(n, dak, False) + [
             (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW, klaar voor een batterij", H["prijs"], 0.0, H["status"], "zon"),
-            ("Omvormer plaatsen en aansluiten in de meterkast, groep en overspanningsbeveiliging", 350.00, 0.0, "Stelpost", "zon")]
+            ("Omvormer plaatsen en aansluiten", 200.00, 0.0, "Stelpost", "zon"),
+            ("Groep in de meterkast: 3-fase aardlekautomaat (zekering) en overspanningsbeveiliging", 150.00, 0.0, "Stelpost", "zon")]
         P["model"] = dict(P["model"], panelen=n, wp=460, batt_kwh=0)
         P["hyd"] = H
         P["naam"] = f"Zonnepanelen met hybride omvormer {H['naam']}, zonder batterij"
         P["batterij_kort"] = f"hybride omvormer {H['naam']} ({H['kw']} kW, 3-fase), klaar voor een batterij"
         P["omvormer_woord"] = "de omvormer"
         P["btw_bullet"] = "- **Alles 0%:** panelen, omvormer, bekabeling en montage vallen onder het nultarief. Een batterij die later wordt toegevoegd, valt onder 21%."
-        P["aansluiting"] = f"- **Aansluiting:** de {H['naam']} is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A)."
+        P["aansluiting"] = (f"- **Aansluiting:** de {H['naam']} is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A).\n"
+                            "- **Zekering en groep:** de omvormer krijgt een eigen groep in de meterkast met een 3-fase aardlekautomaat en "
+                            "overspanningsbeveiliging (in de begroting). De hoofdzekering van 3x25 A volstaat; is de meterkast vol, dan is een "
+                            "uitbreiding van de groepenkast nodig (niet in de prijs, bij de schouw te beoordelen).")
         P["uitbreiding"] = (f"- **Later een batterij:** de {H['naam']} heeft twee batterij-ingangen voor Sofar BTS 5K-modules. "
                             "Een batterij kan erbij zonder nieuwe omvormer (zie *Optie: thuisbatterij*).")
         P["installatie"] = [
@@ -170,6 +175,44 @@ def pakket(soort, n, dak, omvormer="micro"):
     return P
 
 
+def info_laadpaal(R, kwh, ere, kw=7.4):
+    """Informatiehoofdstuk 'Wist u dat?': Zaptec Go 2 met MID-meter, slim laden en ERE.
+    Het verbruik in R bevat het laden al; hier wordt het laden apart gesimuleerd (zonder batterij)."""
+    import model_huis as m
+    A = R["A"]
+    a = dict(A, verbruik_kwh=A["verbruik_kwh"] - kwh, ev_kwh=kwh, ev_kw=kw, opbrengst_kwh_per_kwp=B.OPBRENGST[1])
+    zonder = m.simuleer(dict(a, ev_kwh=0), batterij=bool(A["batt_kwh"]))["netto"]
+    dom = m.simuleer(a, batterij=bool(A["batt_kwh"]), ev_slim=False)["netto"] - zonder
+    slim = m.simuleer(a, batterij=bool(A["batt_kwh"]), ev_slim=True)["netto"] - zonder
+    besparing, ere_jaar = round(dom - slim, -1), round(kwh * ere, -1)
+    laad = [(p, ex, b) for p, ex, b, st in B.PRIJZEN_LAADPAAL]
+    inv = round(sum(round(ex * (1 + b), 2) for _, ex, b in laad), 2)
+    rijen = "\n".join(f"| {p} | {B.eur2(ex)} | {int(b * 100)}% | {B.eur2(round(ex * (1 + b), 2))} |" for p, ex, b in laad)
+    return f"""## Wist u dat? Laden met de Zaptec Go 2
+
+Laadt u de auto thuis met een laadpaal met MID-meter, dan levert elke geladen kWh een ERE-vergoeding op: ca. {B.eur(ere, 2)} per kWh. Bij ca. {B.nl(kwh)} kWh per jaar is dat ca. {B.eur(ere_jaar)} per jaar; met slim laden komt daar ca. {B.eur(besparing)} bij. Een Zaptec Go 2 is dan in ca. {B.jr(inv, besparing + ere_jaar)} jaar terugverdiend. Dit hoofdstuk is informatie en zit niet in de offerte.
+
+| Laadpaal (informatie) | Excl. btw | Btw | Incl. btw |
+| --- | --- | --- | --- |
+{rijen}
+| **Totaal** | **{B.eur2(sum(ex for _, ex, _ in laad))}** | | **{B.eur2(inv)}** |
+
+| Per jaar, bij {B.nl(kwh)} kWh thuis laden | Bedrag |
+| --- | --- |
+| Thuis laden, direct vanaf 18:00 | {B.eur(dom)} ({B.eur(dom / kwh, 2)} per kWh) |
+| Thuis laden, slim op goedkope uren en met zonnestroom | {B.eur(slim)} ({B.eur(slim / kwh, 2)} per kWh) |
+| Besparing slim laden | {B.eur(besparing)} |
+| ERE-vergoeding ({B.eur(ere, 2)} per kWh) | {B.eur(ere_jaar)} |
+| **Opbrengst laadpaal per jaar** | **{B.eur(besparing + ere_jaar)}** |
+
+- **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto of plug-in hybride wordt geladen emissiereductie-eenheden (ERE's) op. Voorwaarden: een geijkte MID-meter in de laadpaal, gekoppeld aan uw aansluiting, en een inboekdienstverlener die de ERE's voor u verkoopt. De opbrengst schommelt met de markt; Saldox rekent met ca. {B.eur(ere, 2)} per kWh netto.
+- **Zaptec Go 2:** tot 22 kW (3-fase) of 7,4 kW (1-fase), ingebouwde MID-meter, 4G, OCPP en dynamische load balancing via de P1-meter, zodat de hoofdzekering niet wordt overbelast. Bidirectioneel voorbereid (V2G).
+- **Slim laden:** het EMS van Saldox laadt de auto op de goedkoopste uren dat hij thuis is, en zoveel mogelijk met zonnestroom. Een plug-in hybride laadt meestal met 3,7 tot 7,4 kW; ook dan werkt de MID-meter voor de ERE.
+- **Meer elektrisch rijden:** {B.nl(kwh)} kWh is ca. {B.nl(round(kwh / 0.20, -2))} km elektrisch. Wie dagelijks laadt en meer elektrisch rijdt, verdient de laadpaal sneller terug.
+- **Btw:** een laadpaal en de installatie ervan vallen onder 21%.
+"""
+
+
 def optie_batterij(v, R, n, dak, maten, gevraagd=None):
     """Sectie 'Optie: thuisbatterij' voor een pakket met hybride omvormer zonder batterij."""
     N = R["sc"][1]
@@ -201,6 +244,7 @@ Een batterij van {round(kern['kwh'] / 10) * 10} kWh kost {B.eur2(kern['meer'])} 
 - **Advies:** {'de ' + str(round(beste['kwh'] / 10) * 10) + ' kWh levert over 15 jaar het meeste op' if beste['winst'] > 0 else 'bij dit verbruik verdient een batterij zich binnen 15 jaar niet terug'}; een kleinere batterij is sneller terugverdiend. De batterij kan ook later worden toegevoegd: de omvormer is er al klaar voor.
 - **Techniek:** de {v['P']['hyd']['naam']} heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. {B.nl(kern['kw'], 0)} kW.
 - **Prijzen:** modules à {B.eur2(B.BTS5K)} excl. btw (inkoopprijs); BDU {B.eur2(BDU)} per toren, installatie €450 en EMS-koppeling €150 zijn stelposten. Een batterij valt onder 21% btw.
+- **Noodstroom:** bij elke batterijgrootte zit een ATS-omschakelaar (stelpost €450). Valt het net uit, dan schakelt die de woning, of een deel ervan, om naar de noodstroomuitgang (EPS) van de omvormer, gevoed door de batterij en de panelen. Zonder batterij is er geen noodstroom.
 - **Werking:** het EMS van Saldox laadt de batterij met zonnestroom en op goedkope uren van het net, en ontlaadt op dure uren (dynamisch contract).
 """
 
@@ -248,6 +292,8 @@ def main():
     ap.add_argument("--figuur", action="append", default=[], help='naam=pad|eyebrow|titel|onderschrift (svg of jpg/png); marker <!-- FIG:naam -->')
     ap.add_argument("--bedrading-uurbasis", action="store_true",
                     help="trekken van de AC- en DC-bedrading niet in de prijs, maar op uurbasis (tarief uit de prijslijst)")
+    ap.add_argument("--info-laadpaal", type=int, default=0, help="informatiehoofdstuk Zaptec Go 2 en ERE, bij KWH thuis laden per jaar")
+    ap.add_argument("--ere", type=float, default=0.13, help="ERE-vergoeding per kWh (netto) voor --info-laadpaal")
     ap.add_argument("--kop", action="append", default=[], help='"Sectienaam=Kop" voor eigen secties')
     a = ap.parse_args()
 
@@ -349,6 +395,8 @@ def main():
         extra = Path(a.sectie_na_samenvatting).read_text(encoding="utf-8").strip()
         i = src.index("\n## Begroting")
         src = src[:i] + "\n" + extra + "\n" + src[i:]
+    if a.info_laadpaal:
+        src = src.rstrip() + "\n\n" + info_laadpaal(R, a.info_laadpaal, a.ere)
     if a.sectie_eind:
         src = src.rstrip() + "\n\n" + Path(a.sectie_eind).read_text(encoding="utf-8").strip() + "\n"
     (map_ / "energieplan-huishouden-offerte.md").write_text(src, encoding="utf-8")
@@ -359,7 +407,8 @@ def main():
     html = map_ / "offerte.html"
     koppen = dict(B.HEADLINES, **(B.HEADLINES_ZONDER_BATTERIJ if keuze == "geen" else {}),
                   **({"Waarom dit pakket": "Zonder batterij, met ruimte voor later."} if keuze == "geen" else {}),
-                  **{"Optie: thuisbatterij": "Een batterij kan erbij, nu of later."})
+                  **{"Optie: thuisbatterij": "Een batterij kan erbij, nu of later.",
+                     "Wist u dat? Laden met de Zaptec Go 2": "Thuis laden levert ERE-vergoeding op."})
     koppen.update(dict(k.split("=", 1) for k in a.kop))
     figs = B.figuren(v, R)
     for f in a.figuur:

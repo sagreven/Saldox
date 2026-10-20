@@ -34,6 +34,7 @@ De gebruiker staat vaak bij de klant en geeft een korte beschrijving. Zet die om
 | adres bekend: dak zelf opzoeken | 3D BAG (api.3dbag.nl) voor dakvlakken, PVGIS voor kWh/kWp → `--opbrengst 919 --opbrengst-bron "…"` |
 | verbruik met toelichting | `--verbruik 6100 --verbruik-bron "huis 5.000 kWh plus 1.100 kWh PHEV"` |
 | bedrading AC/DC lastig in te schatten | `--bedrading-uurbasis` (trekken van kabels apart, uurtarief uit de prijslijst; materiaal blijft in de begroting) |
+| informatie over laadpaal en ERE ("wist u dat") | `--info-laadpaal 1100 --ere 0.13` (Zaptec Go 2 met MID-meter; niet in de offerteprijs) |
 | legplan rond dakkapel/schoorsteen | `python3 legplan.py dak.json legplan.svg` (dakvlak uit 3D BAG, obstakels als rechthoeken) → aantal panelen en figuur |
 | eigen secties en foto's in de offerte | `--sectie-na-samenvatting dak.md --sectie-eind bronnen.md --figuur "naam=pad|eyebrow|titel|onderschrift" --kop "Sectie=Kop"` |
 

@@ -40,6 +40,8 @@
     "luchtfoto=../offertes/2026-10-20-opwettenseweg-82b/bronnen/luchtfoto-pdok.jpg|Luchtfoto|Opwettenseweg 82b van boven (noord boven, 45 × 45 m)|PDOK Luchtfoto RGB, actueel"
    ],
    "bedrading_uurbasis": true,
+   "info_laadpaal": 1100,
+   "ere": 0.13,
    "kop": [
     "Dak en legplan=Elf panelen in het dak aan de straatkant.",
     "Bronnen en foto's=Waar de cijfers vandaan komen."
