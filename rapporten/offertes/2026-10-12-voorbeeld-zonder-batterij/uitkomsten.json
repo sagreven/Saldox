@@ -22,11 +22,23 @@
    "auto": "geen",
    "auto_kwh": null,
    "dak": "schuin",
+   "omvormer": "micro",
+   "optie_batterij": 0,
+   "opbrengst": null,
+   "opbrengst_bron": "",
+   "verbruik_bron": "",
    "panelen": 8,
    "aansluiting": "onbekend",
    "batterij": "geen",
    "opstelling": "2 rijen van 4, ca. 4,5 × 3,5 m",
-   "datum": "2026-10-12"
+   "datum": "2026-10-12",
+   "sectie_na_samenvatting": null,
+   "sectie_eind": null,
+   "figuur": [],
+   "bedrading_uurbasis": false,
+   "info_laadpaal": 0,
+   "ere": 0.13,
+   "kop": []
   },
   "verbruik": 2500
  }

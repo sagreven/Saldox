@@ -31,8 +31,8 @@ def style_tables(h: str) -> str:
             tds = []
             for ci, (kind, v) in enumerate(r):
                 if ri > 0 and head[ci] == "Status" and v.strip():
-                    key = "stelpost" if "Stelpost" in v else "offerte" if ("Offerte" in v or "Opgegeven" in v) else "vast"
-                    v = f'<span class="pill {key}">{v}</span>'
+                    # alleen stelposten markeren; vaste prijzen (inkoop, opgegeven, offerte, tarief) blijven leeg
+                    v = '<span class="pill stelpost">Stelpost</span>' if "Stelpost" in v else ""
                 c = ' class="num"' if numeric[ci] else ""
                 tds.append(f"<t{kind}{c}>{v}</t{kind}>")
             rc = ' class="total"' if total else ""
