@@ -242,6 +242,63 @@ tang_hoog = scad("krimptang_inleg.scad", "tang_hoog.stl", toon="tang", tang_h=24
 v = overlap(trimesh.boolean.intersection([inleg, pad], engine="manifold"), tang_hoog)
 check("G6", "haakjes paddenstoel grijpen over de handvatten", v > 1, f"{v:.1f} mm3")
 
+# ---------- H: bakjes 2x2 ----------
+
+gen = os.path.join(HIER, "generator.scad")
+onder = laad("cassette-5x4-4.5cm-onderbak.stl")
+h_body = onder.bounds[1][2] - KR
+klep, plafond = klep_dicht(laad("cassette-5x4-4.5cm-deksel.stl"), h_body)
+xc, yc = (vak(0, 2, 5, 4)[0] + vak(1, 2, 5, 4)[0]) / 2, (vak(0, 2, 5, 4)[1] + vak(0, 3, 5, 4)[1]) / 2
+for f, vakken, hu, vx, vy in [("bakje-2x2-vakjes-heel.stl", "per_vak", 5, 2, 2),
+                              ("bakje-2x2-2vakjes-heel.stl", "eigen", 5, 2, 1),
+                              ("bakje-2x2-vakjes-half.stl", "per_vak", 2.5, 2, 2),
+                              ("bakje-2x2-open-half.stl", "open", 2.5, 1, 1)]:
+    b = laad(f)
+    Hb = hu * 7
+    hoog = 39.4 if hu == 5 else 21.9
+    e = b.extents
+    check("H1", f"{f}: dicht, 83,5 x 83,5 x {hoog} mm",
+          b.is_watertight and abs(e[0] - 83.5) < 0.05 and abs(e[1] - 83.5) < 0.05 and abs(e[2] - hoog) < 0.05,
+          f"{e[0]:.2f} x {e[1]:.2f} x {e[2]:.2f} mm")
+    stapel = [verplaatst(b, xc, yc, C_FLOOR)]
+    if hu == 2.5:
+        stapel.append(verplaatst(b, xc, yc, C_FLOOR + Hb))
+    bots = sum(overlap(m, onder) + overlap(m, klep) for m in stapel)
+    top = max(m.bounds[1][2] for m in stapel)
+    check("H2", f"{f}: past in cassette 5x4{' (2 gestapeld)' if hu == 2.5 else ''}, klep dicht",
+          bots < 0.1 and plafond - top >= 0.4, f"overlap {bots:.2f} mm3, ruimte {plafond - top:.2f} mm")
+    zit = overlap(onder, verplaatst(b, xc, yc, C_FLOOR))
+    til = overlap(onder, verplaatst(b, xc, yc, C_FLOOR + LIFT))
+    check("H3", f"{f}: klikt in de cassette", zit < 0.1 and til > 0.5, f"geplaatst {zit:.2f}, opgetild {til:.2f} mm3")
+    zit = overlap(b, verplaatst(b, 0, 0, Hb))
+    til = overlap(b, verplaatst(b, 0, 0, Hb + LIFT))
+    check("H4", f"{f}: klikt op een gelijk bakje", zit < 0.1 and til > 0.5, f"geplaatst {zit:.2f}, opgetild {til:.2f} mm3")
+    # schuifdeksel: dezelfde instellingen als het bakje, zonder breekbare steuntjes
+    params = (f'onderdeel="geen"; gx=2; gy=2; hu={hu}; vakken="{vakken}"; '
+              f"vakjes_x={vx}; vakjes_y={vy}; steunen=0;\n")
+    kop = f"include <{gen}>\n"
+    bak = scad_code(kop + params + "bakje();\n", f"h_bak_{f}")
+    dek = scad_code(kop + params + "schuifdeksel_dicht();\n", f"h_dek_{f}")
+    check("H5", f"{f}: schuifdeksel past dicht", overlap(bak, dek) < 0.05)
+    stappen = [overlap(bak, verplaatst(dek, s_)) for s_ in np.arange(2, 2 * G + 2, 4)]
+    check("H6", f"{f}: schuifdeksel schuift er helemaal uit", max(stappen) < 0.05, f"grootste overlap {max(stappen):.2f} mm3")
+    gelijk = abs(dek.extents[0] - laad("schuifdeksel-2x2.stl").extents[0]) < 0.05 and \
+        abs(dek.extents[1] - laad("schuifdeksel-2x2.stl").extents[1]) < 0.05
+    check("H7", f"{f}: schuifdeksel-2x2.stl is de juiste deksel", gelijk,
+          f"{dek.extents[0]:.2f} x {dek.extents[1]:.2f} mm")
+    z_g0 = Hb - 1.0 - 1.5 - 0.1        # onderkant groef = onderkant deksel (ceil_t, lid_t, lid_fit)
+    if vakken != "open":
+        # tussenschot onder de deksel: eerste materiaal van boven op het schot
+        loc, _, _ = b.ray.intersects_location([[0, 10, Hb - 0.5]], [[0, 0, -1]]) if vx == 2 else \
+            b.ray.intersects_location([[10, 0, Hb - 0.5]], [[0, 0, -1]])
+        schot = max(loc[:, 2])
+        check("H8", f"{f}: deksel rust op de tussenschotten (vakjes apart dicht)", abs(schot - z_g0) < 0.05,
+              f"bovenkant schot {schot:.2f}, onderkant deksel {z_g0:.2f} mm")
+    # steuntjes in de sleuf (deksel schuift naar rechts, +x)
+    loc, _, _ = b.ray.intersects_location([[83.5 / 2 - 0.8, -60, z_g0 + 0.8]], [[0, 1, 0]])
+    n = len(loc) // 2 - 2              # min de wandhoekjes aan beide uiteinden van de sleuf
+    check("H9", f"{f}: breekbare steuntjes in de sleuf (2 per vak)", n == 4, f"{n} steuntjes")
+
 # ---------- rapport ----------
 
 breed = max(len(r[1]) for r in resultaten)

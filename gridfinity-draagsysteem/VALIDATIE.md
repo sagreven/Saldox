@@ -51,6 +51,16 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **G5** | Pootjes van de paddenstoel raken de handvatten niet onder de klik-tanden | overlap 0 tot 20,5 mm hoogte |
 | **G6** | Klik-tanden van de paddenstoel grijpen over de handvatten | overlap > 0 boven de handvatten |
 
+| **H1** | Bakjes 2×2 (alle varianten): dicht model, juiste maat | 83,5 × 83,5 × 39,4 / 21,9 mm |
+| **H2** | Bakje 2×2 past in de cassette 5×4 (halve: 2 gestapeld), klep dicht | overlap 0, ruimte ≥ 0,4 mm |
+| **H3** | Bakje 2×2 klikt in de Gridfinity-bodem van de cassette | geplaatst geen overlap, opgetild wel |
+| **H4** | Bakje 2×2 klikt op een gelijk bakje | idem |
+| **H5** | Schuifdeksel past dicht op het bakje 2×2 | overlap 0 (zonder steuntjes) |
+| **H6** | Schuifdeksel schuift er helemaal uit | overlap 0 op elke positie |
+| **H7** | `schuifdeksel-2x2.stl` heeft dezelfde maat als de deksel van het bakje | ± 0,05 mm |
+| **H8** | Deksel rust op de tussenschotten (elk vakje apart dicht) | bovenkant schot = onderkant deksel (± 0,05) |
+| **H9** | Breekbare steuntjes in de sleuf | 2 per vak langs de sleuf = 4 |
+
 Voor G3–G6 gebruikt het script een benadering van de tang (de omtrek uit de
 foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die
 tests zeggen dus: *als de tang deze maat heeft*, dan pakt de inleg hem. De
