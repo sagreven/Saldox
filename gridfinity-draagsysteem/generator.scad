@@ -491,7 +491,8 @@ module baseplate_insert() {
     translate([0, 0, c_floor]) {
         difference() {
             intersection() {
-                rsq(cav_w + 0.01, cav_d + 0.01, cav_r, gf_base);
+                // 0,01 mm in vloer en wanden, zodat het één dicht geheel wordt
+                translate([0, 0, -0.01]) rsq(cav_w + 0.02, cav_d + 0.02, cav_r, gf_base + 0.01);
                 translate([-cav_w, bp_y0, -1]) cube([2 * cav_w, 2 * cav_d, gf_base + 2]);
             }
             for (i = [0 : gx - 1], j = [gy - bp_rijen : gy - 1])
@@ -513,9 +514,11 @@ module baseplate_insert() {
 module socket_nok() {
     a_tip = 18.6 - cassette_klik;
     p = 18.85 - a_tip;
-    translate([0, 0, 0]) rotate([90, 0, 0]) linear_extrude(8, center = true)
-        polygon([[19.2, klik_z - p - 0.3], [18.85, klik_z - p], [a_tip, klik_z],
-                 [18.85, klik_z + p], [19.2, klik_z + p + 0.3]]);
+    // driehoek met de achterkant ruim in de wand (20 mm), zodat het nokje de
+    // schuine wand van de uitsparing niet net raakt maar er echt in zit
+    rotate([90, 0, 0]) linear_extrude(8, center = true)
+        polygon([[20, klik_z - p - (20 - 18.85)], [a_tip, klik_z],
+                 [20, klik_z + p + (20 - 18.85)]]);
 }
 
 // nok met schuine bovenkant (invoer) en vlakke onderkant (vanghaak)
