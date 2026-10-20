@@ -1,10 +1,10 @@
 # Energieplan Opwettenseweg 82b
 
-20 oktober 2026 · Saldox · offerte voor Opwettenseweg 82b, Nuenen · verbruik 6.100 kWh, indak, tussen de pannen, 11 panelen (oostzuidoostdak aan de straatkant, links van de dakkapel, 11 liggend in één veld), zonder batterij
+20 oktober 2026 · Saldox · offerte voor Opwettenseweg 82b, Nuenen · verbruik 6.100 kWh, indak, tussen de pannen, 11 panelen (oostzuidoostdak aan de straatkant, links van de dakkapel, 11 liggend in één veld)
 
 ## Samenvatting
 
-Het pakket kost €5.614,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 11,6 jaar terugverdiend (11,1 tot 12,1 jaar). Dat is met een dynamisch contract; zonder batterij levert een vast contract meer op: ca. €645 per jaar, terugverdiend in ca. 8,7 jaar.
+Saldox adviseert pakket C, compleet, met zonnepanelen, batterij 30 kWh en laadpaal: €13.336,68 incl. btw, ca. €1.295 besparing per jaar, terugverdiend in ca. 10,3 jaar (zie *Pakketten op een rij*). Het basispakket (alleen zonnepanelen) kost €5.614,06 incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert na de jaarlijkse kosten netto €465 tot €505 per jaar op; normaal is het in ca. 11,6 jaar terugverdiend (11,1 tot 12,1 jaar). Dat is met een dynamisch contract; zonder batterij levert een vast contract meer op: ca. €645 per jaar, terugverdiend in ca. 8,7 jaar.
 
 - **Zonnestroom:** 11 panelen van 460 Wp (5,1 kWp), ca. 4.650 kWh per jaar. U gebruikt daarvan ca. 46% direct zelf.
 - **Omvormers:** hybride omvormer Sofar HYD 10KTL-3PH (10 kW, 3-fase), klaar voor een batterij.
@@ -14,40 +14,40 @@ Het pakket kost €5.614,06 incl. btw, exclusief het trekken van de bedrading (o
 
 ## Pakketten op een rij
 
-De complete pakketten naast elkaar. Na 15 jaar levert pakket B (met batterij 20 kWh) het meeste op; pakket A is de kleinste investering en het snelst terugverdiend.
+Saldox adviseert pakket C, compleet, met zonnepanelen, batterij 30 kWh en laadpaal. Dat kost €13.336,68 incl. btw en bespaart ca. €1.295 per jaar; het is in ca. 10,3 jaar terugverdiend. U gebruikt zo de meeste zonnestroom zelf, heeft noodstroom en laadt de auto slim met ERE-vergoeding.
 
-| | **A: Zonnepanelen** | **B: Met batterij 20 kWh** (beste na 15 jaar) | **C: Met batterij 30 kWh** (gevraagd) |
+| | **A: Zonnepanelen** | **B: Zonnepanelen en batterij 30 kWh** | **C: Compleet** (advies) |
 | --- | --- | --- | --- |
 | Zonnepanelen | 11 panelen indak (5,1 kWp) | 11 panelen indak (5,1 kWp) | 11 panelen indak (5,1 kWp) |
 | Omvormer | Sofar HYD 10KTL-3PH | Sofar HYD 10KTL-3PH | Sofar HYD 10KTL-3PH |
-| Thuisbatterij | — | 20 kWh (4× BTS 5K) | 30 kWh (6× BTS 5K) |
+| Thuisbatterij | — | 30 kWh (6× BTS 5K) | 30 kWh (6× BTS 5K) |
 | Noodstroom | nee | ja, handmatige omschakelaar | ja, handmatige omschakelaar |
-| Prijs incl. btw | €5.614,06 | €9.994,26 | €11.809,26 |
-| Beste contract | vast | dynamisch | dynamisch |
-| Besparing per jaar | €645 | €1.015 | €1.065 |
-| Terugverdiend in | 8,7 jaar | 9,8 jaar | 11,1 jaar |
-| Opbrengst na 15 jaar | €4.061 | €5.231 | €4.166 |
-| Zonnestroom zelf gebruikt | 46% | 68% | 67% |
-
+| Laadpaal | — | — | Zaptec Go 2 met MID-meter |
+| Prijs incl. btw | €5.614,06 | €11.809,26 | €13.336,68 |
+| Contract | vast | dynamisch | dynamisch |
+| Besparing per jaar | €645 | €1.065 | €1.295 |
+| Terugverdiend in | 8,7 jaar | 11,1 jaar | 10,3 jaar |
+| Opbrengst na 15 jaar | €4.061 | €4.166 | €6.088 |
+| Zonnestroom zelf gebruikt | 46% | 67% | 67% |
 
 **A: Zonnepanelen**
 
 - **Voordelen:** laagste investering: €5.614,06, alles 0% btw; terugverdiend in ca. 8,7 jaar met een vast contract; de omvormer is klaar voor een batterij: die kan later zonder nieuwe omvormer.
-- **Nadelen:** u gebruikt maar 46% van de zonnestroom zelf; de rest gaat tegen een lage vergoeding terug; geen noodstroom bij stroomuitval; zonder batterij profiteert u niet van goedkope uren op een dynamisch contract.
+- **Nadelen:** u gebruikt maar 46% van de zonnestroom zelf; de rest gaat tegen een lage vergoeding terug; geen noodstroom bij stroomuitval; geen voordeel van goedkope uren op een dynamisch contract.
 
-**B: Met batterij 20 kWh**
+**B: Zonnepanelen en batterij 30 kWh**
 
-- **Voordelen:** €370 per jaar meer besparing dan pakket A; u gebruikt 68% van de zonnestroom zelf; noodstroom bij stroomuitval met de handmatige omschakelaar; na 15 jaar €1.170 meer over dan pakket A.
-- **Nadelen:** €4.380,20 meer investering; een batterij valt onder 21% btw; werkt het best met een dynamisch contract; batterijen verouderen: ca. 70% capaciteit na 10 jaar (garantie).
+- **Voordelen:** €420 per jaar meer besparing dan pakket A; u gebruikt 67% van de zonnestroom zelf; noodstroom bij stroomuitval met de handmatige omschakelaar; ruimte voor een groter verbruik later, zoals een warmtepomp of een elektrische auto.
+- **Nadelen:** €6.195,20 meer investering; een batterij valt onder 21% btw; werkt het best met een dynamisch contract; batterijen verouderen: ca. 70% capaciteit na 10 jaar (garantie).
 
-**C: Met batterij 30 kWh**
+**C: Compleet, met zonnepanelen, batterij 30 kWh en laadpaal** (advies)
 
-- **Voordelen:** €420 per jaar meer besparing dan pakket A; u gebruikt 67% van de zonnestroom zelf; noodstroom bij stroomuitval met de handmatige omschakelaar; na 15 jaar €105 meer over dan pakket A.
-- **Nadelen:** €6.195,20 meer investering; een batterij valt onder 21% btw; werkt het best met een dynamisch contract; batterijen verouderen: ca. 70% capaciteit na 10 jaar (garantie); de laatste 10 kWh leveren maar ca. €50 per jaar extra op.
+- **Voordelen:** alles in één installatie: panelen, batterij, noodstroom en laadpaal, één keer aanleggen en één EMS dat alles stuurt; de hoogste besparing per jaar: ca. €1.295; de auto laadt slim op goedkope uren en met zonnestroom, en elke geladen kWh levert ERE-vergoeding op (ca. €140 per jaar); u gebruikt 67% van de zonnestroom zelf en bent klaar voor meer elektrisch rijden.
+- **Nadelen:** de hoogste investering: €13.336,68; batterij en laadpaal vallen onder 21% btw; werkt het best met een dynamisch contract.
 
-**Aanvulling bij elk pakket: laadpaal Zaptec Go 2.** €1.527,42 incl. btw; slim laden en ERE-vergoeding leveren samen ca. €230 per jaar op bij 1.100 kWh, terugverdiend in ca. 6,6 jaar (zie *Wist u dat?*).
-
-- **Contract:** zonder batterij levert een vast contract het meeste op, met batterij een dynamisch contract. De bedragen hierboven gaan uit van het beste contract per pakket.
+- **Contract:** zonder batterij levert een vast contract het meeste op, met batterij een dynamisch contract. De bedragen gaan uit van het beste contract per pakket.
+- **Laadpaal:** de besparing van de Zaptec Go 2 is slim laden ten opzichte van direct laden, plus de ERE-vergoeding, bij ca. 1.100 kWh per jaar (zie *Wist u dat?*).
+- **Andere batterijgrootte:** 10 tot 40 kWh staat in *Optie: thuisbatterij*.
 - **Niet in de prijzen:** het trekken van de bedrading (op uurbasis à €55,00 per uur) en een eventuele uitbreiding van de groepenkast.
 
 ## Dak en legplan

@@ -298,78 +298,86 @@ def contract_netto(Rx):
 
 
 def pakketten_tekst(v, R):
-    """Samenvatting 'Pakketten op een rij': de complete pakketten naast elkaar, met voor- en nadelen."""
+    """Samenvatting 'Pakketten op een rij': A zonnepanelen, B met de gevraagde batterij,
+    C compleet (gevraagde batterij en Zaptec Go 2, het advies), met voor- en nadelen."""
     H = v["P"]["hyd"]
-    rijen, kern, beste = v["batterij_rijen"], v["batterij_kern"], v["batterij_beste"]
-    pak = [dict(code="A", naam="Zonnepanelen", R=R, kwh=0, extra=0)]
-    for r in ([beste] if beste is not kern else []) + [kern]:
-        k = round(r["kwh"] / 10) * 10
-        pak.append(dict(code="", naam=f"Met batterij {k} kWh", R=r["R"], kwh=k, extra=r["meer"], rij=r,
-                        label=" (gevraagd)" if r is kern else " (beste na 15 jaar)"))
-    for i, x in enumerate(pak[1:], 1):
-        x["code"] = "ABC"[i]
+    kern, L = v["batterij_kern"], LAADPAAL_INFO
+    k = round(kern["kwh"] / 10) * 10
+    n_pan = v["P"]["model"]["panelen"]
+    kwp = n_pan * v["P"]["model"]["wp"] / 1000
+    A = dict(code="A", naam="Zonnepanelen", R=R, kwh=0, lp=False)
+    Bp = dict(code="B", naam=f"Zonnepanelen en batterij {k} kWh", R=kern["R"], kwh=k, lp=False)
+    pak = [A, Bp]
+    if L:
+        pak.append(dict(code="C", naam=f"Compleet, met zonnepanelen, batterij {k} kWh en laadpaal", kort="Compleet", R=kern["R"], kwh=k, lp=True))
     for x in pak:
         x["netto"], x["contract"] = contract_netto(x["R"])
         x["inv"] = x["R"]["inv"]
+        if x["lp"]:
+            x["inv"] = round(x["inv"] + L["inv"], 2)
+            x["netto"] += L["besparing"] + L["ere"]
         x["jaren"] = B.jr(x["inv"], x["netto"])
         x["winst"] = 15 * x["netto"] - x["inv"]
         x["zv"] = x["R"]["n"]["met_beide"]["zelfverbruik"]
-    kop = " | ".join(f"**{x['code']}: {x['naam']}**{x.get('label', '')}" for x in pak)
+    adv = pak[-1]
+    v["pakket_advies"] = adv
+
+    def kop(x):
+        return f"**{x['code']}: {x.get('kort', x['naam'])}**" + (" (advies)" if x is adv else "")
 
     def rij(label, f):
         return f"| {label} | " + " | ".join(f(x) for x in pak) + " |"
-    n_pan, kwp = v["P"]["model"]["panelen"], v["P"]["model"]["panelen"] * 0.46
     tabel = "\n".join([
-        f"| | {kop} |", "| --- | " + " | ".join("---" for _ in pak) + " |",
+        "| | " + " | ".join(kop(x) for x in pak) + " |", "| --- | " + " | ".join("---" for _ in pak) + " |",
         rij("Zonnepanelen", lambda x: f"{n_pan} panelen indak ({B.nl(kwp, 1)} kWp)"),
         rij("Omvormer", lambda x: H["naam"]),
-        rij("Thuisbatterij", lambda x: "—" if not x["kwh"] else f"{x['kwh']} kWh ({x['rij']['modules']}× BTS 5K)"),
+        rij("Thuisbatterij", lambda x: "—" if not x["kwh"] else f"{x['kwh']} kWh ({kern['modules']}× BTS 5K)"),
         rij("Noodstroom", lambda x: "nee" if not x["kwh"] else "ja, handmatige omschakelaar"),
+        rij("Laadpaal", lambda x: "Zaptec Go 2 met MID-meter" if x["lp"] else "—"),
         rij("Prijs incl. btw", lambda x: B.eur2(x["inv"])),
-        rij("Beste contract", lambda x: x["contract"]),
+        rij("Contract", lambda x: x["contract"]),
         rij("Besparing per jaar", lambda x: B.eur(x["netto"])),
         rij("Terugverdiend in", lambda x: f"{x['jaren']} jaar"),
         rij("Opbrengst na 15 jaar", lambda x: B.eur(x["winst"])),
         rij("Zonnestroom zelf gebruikt", lambda x: B.pct(x["zv"])),
     ])
-    A = pak[0]
-    pc = []
-    for x in pak:
-        if not x["kwh"]:
-            pro = [f"laagste investering: {B.eur2(x['inv'])}, alles 0% btw",
-                   f"terugverdiend in ca. {x['jaren']} jaar met een {x['contract']} contract",
-                   "de omvormer is klaar voor een batterij: die kan later zonder nieuwe omvormer"]
-            con = [f"u gebruikt maar {B.pct(x['zv'])} van de zonnestroom zelf; de rest gaat tegen een lage vergoeding terug",
-                   "geen noodstroom bij stroomuitval",
-                   "zonder batterij profiteert u niet van goedkope uren op een dynamisch contract"]
-        else:
-            meer15 = x["winst"] - A["winst"]
-            pro = [f"{B.eur(x['netto'] - A['netto'])} per jaar meer besparing dan pakket A",
-                   f"u gebruikt {B.pct(x['zv'])} van de zonnestroom zelf",
-                   "noodstroom bij stroomuitval met de handmatige omschakelaar",
-                   f"na 15 jaar {B.eur(abs(meer15))} {'meer' if meer15 >= 0 else 'minder'} over dan pakket A"]
-            con = [f"{B.eur2(x['extra'])} meer investering; een batterij valt onder 21% btw",
-                   "werkt het best met een dynamisch contract",
-                   "batterijen verouderen: ca. 70% capaciteit na 10 jaar (garantie)"]
-            if x["rij"] is kern and kern is not beste:
-                con.append(f"de laatste {x['kwh'] - pak[1]['kwh']} kWh leveren maar ca. {B.eur(x['netto'] - pak[1]['netto'])} per jaar extra op")
-        pc.append(f"**{x['code']}: {x['naam']}**\n\n- **Voordelen:** " + "; ".join(pro) + ".\n- **Nadelen:** " + "; ".join(con) + ".")
-    lp = ""
-    if LAADPAAL_INFO:
-        L = LAADPAAL_INFO
-        lp = (f"\n\n**Aanvulling bij elk pakket: laadpaal Zaptec Go 2.** {B.eur2(L['inv'])} incl. btw; slim laden en ERE-vergoeding "
-              f"leveren samen ca. {B.eur(L['besparing'] + L['ere'])} per jaar op bij {B.nl(L['kwh'])} kWh, terugverdiend in ca. "
-              f"{B.jr(L['inv'], L['besparing'] + L['ere'])} jaar (zie *Wist u dat?*).")
-    adv = max(pak, key=lambda x: x["winst"])
+    pc = {}
+    pc["A"] = ([f"laagste investering: {B.eur2(A['inv'])}, alles 0% btw",
+                f"terugverdiend in ca. {A['jaren']} jaar met een {A['contract']} contract",
+                "de omvormer is klaar voor een batterij: die kan later zonder nieuwe omvormer"],
+               [f"u gebruikt maar {B.pct(A['zv'])} van de zonnestroom zelf; de rest gaat tegen een lage vergoeding terug",
+                "geen noodstroom bij stroomuitval",
+                "geen voordeel van goedkope uren op een dynamisch contract"])
+    pc["B"] = ([f"{B.eur(Bp['netto'] - A['netto'])} per jaar meer besparing dan pakket A",
+                f"u gebruikt {B.pct(Bp['zv'])} van de zonnestroom zelf",
+                "noodstroom bij stroomuitval met de handmatige omschakelaar",
+                "ruimte voor een groter verbruik later, zoals een warmtepomp of een elektrische auto"],
+               [f"{B.eur2(Bp['inv'] - A['inv'])} meer investering; een batterij valt onder 21% btw",
+                "werkt het best met een dynamisch contract",
+                "batterijen verouderen: ca. 70% capaciteit na 10 jaar (garantie)"])
+    if L:
+        C = pak[2]
+        pc["C"] = (["alles in één installatie: panelen, batterij, noodstroom en laadpaal, één keer aanleggen en één EMS dat alles stuurt",
+                    f"de hoogste besparing per jaar: ca. {B.eur(C['netto'])}",
+                    f"de auto laadt slim op goedkope uren en met zonnestroom, en elke geladen kWh levert ERE-vergoeding op (ca. {B.eur(L['ere'])} per jaar)",
+                    f"u gebruikt {B.pct(C['zv'])} van de zonnestroom zelf en bent klaar voor meer elektrisch rijden"],
+                   [f"de hoogste investering: {B.eur2(C['inv'])}",
+                    "batterij en laadpaal vallen onder 21% btw",
+                    "werkt het best met een dynamisch contract"])
+    blokken = "\n\n".join(
+        f"**{x['code']}: {x['naam']}**" + (" (advies)" if x is adv else "") + "\n\n- **Voordelen:** " + "; ".join(pc[x["code"]][0])
+        + ".\n- **Nadelen:** " + "; ".join(pc[x["code"]][1]) + "." for x in pak)
     return f"""## Pakketten op een rij
 
-De complete pakketten naast elkaar. Na 15 jaar levert pakket {adv['code']} ({adv['naam'][0].lower() + adv['naam'][1:]}) het meeste op; pakket A is de kleinste investering en het snelst terugverdiend.
+Saldox adviseert pakket {adv['code']}, {adv['naam'][0].lower() + adv['naam'][1:]}. Dat kost {B.eur2(adv['inv'])} incl. btw en bespaart ca. {B.eur(adv['netto'])} per jaar; het is in ca. {adv['jaren']} jaar terugverdiend. U gebruikt zo de meeste zonnestroom zelf, heeft noodstroom en laadt de auto slim met ERE-vergoeding.
 
 {tabel}
 
-{chr(10).join(chr(10) + x for x in pc)}{lp}
+{blokken}
 
-- **Contract:** zonder batterij levert een vast contract het meeste op, met batterij een dynamisch contract. De bedragen hierboven gaan uit van het beste contract per pakket.
+- **Contract:** zonder batterij levert een vast contract het meeste op, met batterij een dynamisch contract. De bedragen gaan uit van het beste contract per pakket.
+- **Laadpaal:** de besparing van de Zaptec Go 2 is slim laden ten opzichte van direct laden, plus de ERE-vergoeding, bij ca. {B.nl(L.get('kwh', 0))} kWh per jaar (zie *Wist u dat?*).
+- **Andere batterijgrootte:** 10 tot 40 kWh staat in *Optie: thuisbatterij*.
 - **Niet in de prijzen:** het trekken van de bedrading (op uurbasis à {B.eur2(B.UURTARIEF_BEDRADING)} per uur) en een eventuele uitbreiding van de groepenkast.
 """
 
@@ -441,7 +449,7 @@ def main():
         HUISHOUDEN_TEKST[a.huishouden] if not a.verbruik else f"verbruik {B.nl(verbruik)} kWh",
         {"phev": "plug-in hybride, dagelijks geladen", "ev": "elektrische auto"}.get(a.auto, "" if a.verbruik_bron else "geen auto"),
         {"plat": "plat dak", "schuin": "schuin dak", "indak": "indak, tussen de pannen"}[a.dak], f"{a.panelen} panelen" + (f" ({a.opstelling})" if a.opstelling else ""),
-        "zonder batterij" if a.batterij == "geen" else ""]))
+        "zonder batterij" if a.batterij == "geen" and not a.optie_batterij else ""]))
     meta = f"offerte voor {a.klant}" + (f", {a.plaats}" if a.plaats else "") + f" · {profiel_tekst}"
 
     print(f"Profiel: {profiel_tekst}; verbruik {verbruik} kWh; kandidaten: {', '.join(kandidaten)}")
@@ -526,10 +534,23 @@ def main():
     if a.pakketten and v.get("batterij_rijen"):
         i = src.index("\n## ", src.index("## Samenvatting") + 5)
         src = src[:i] + "\n" + pakketten_tekst(v, R) + src[i:]
+        adv = v["pakket_advies"]
+        src = src.replace("## Samenvatting\n\nHet pakket kost", (
+            f"## Samenvatting\n\nSaldox adviseert pakket {adv['code']}, {adv['naam'][0].lower() + adv['naam'][1:]}: {B.eur2(adv['inv'])} incl. btw, "
+            f"ca. {B.eur(adv['netto'])} besparing per jaar, terugverdiend in ca. {adv['jaren']} jaar (zie *Pakketten op een rij*). "
+            "Het basispakket (alleen zonnepanelen) kost"), 1)
     if a.sectie_eind:
         src = src.rstrip() + "\n\n" + Path(a.sectie_eind).read_text(encoding="utf-8").strip() + "\n"
     (map_ / "energieplan-huishouden-offerte.md").write_text(src, encoding="utf-8")
-    kpis = [(B.eur2(R["inv"]), "investering incl. btw" + (", excl. bedrading op uurbasis" if a.bedrading_uurbasis else ""), False),
+    adv = v.get("pakket_advies")
+    if adv:  # KPI's van het geadviseerde pakket
+        kpis = [(B.eur2(adv["inv"]), f"advies: pakket {adv['code']} ({adv.get('kort', adv['naam']).lower()}), incl. btw", False),
+                (f"ca. {adv['jaren']} jaar", "terugverdientijd, normaal scenario", True),
+                (B.eur(adv["netto"]), "besparing per jaar (normaal)", False),
+                (B.pct(adv["zv"]), "zonnestroom zelf gebruikt", False)]
+    else:
+        kpis = None
+    kpis = kpis or [(B.eur2(R["inv"]), "investering incl. btw" + (", excl. bedrading op uurbasis" if a.bedrading_uurbasis else ""), False),
             (f"ca. {N['jaren']} jaar", "terugverdientijd, normaal scenario", True),
             (B.eur(N["netto"]), "netto per jaar (normaal)", False),
             (f"{B.nl(round(R['n']['met_pv']['pv_kwh'], -1))} kWh", "zonnestroom per jaar", False)]
