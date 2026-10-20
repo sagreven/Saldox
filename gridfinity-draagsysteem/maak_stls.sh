@@ -24,8 +24,8 @@ done
 
 gen bakje-1x1-2vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=1 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
-gen bakje-1x2-vakjes-heel-voor -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'schuif="voor"'
-gen bakje-1x2-open-heel-voor -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakken="open"' -D 'schuif="voor"'
+gen bakje-1x2-vakjes-heel-achter -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'schuif="achter"'
+gen bakje-1x2-open-heel-achter -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakken="open"' -D 'schuif="achter"'
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
