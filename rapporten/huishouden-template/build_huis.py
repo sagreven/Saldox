@@ -406,7 +406,9 @@ def markdown_tekst(v, R):
     # 1 Samenvatting
     t.append(f"""## Samenvatting
 
-Het pakket kost {eur2(R['inv'])} incl. btw{v.get('prijs_noot', '') + (',' if v.get('prijs_noot') else '')} en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
+Het pakket kost {eur2(R['inv'])} incl. btw{v.get('prijs_noot', '') + (',' if v.get('prijs_noot') else '')} en levert na de jaarlijkse kosten netto {eur(sc[0]['netto'])} tot {eur(sc[2]['netto'])} per jaar op; normaal is het in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).""" + (
+        f" Dat is met een dynamisch contract; zonder batterij levert een vast contract meer op: ca. {eur(vast_netto)} per jaar, terugverdiend in ca. {jr(R['inv'], vast_netto)} jaar."
+        if gb and vast_netto > N['netto'] else "") + f"""
 
 - **Zonnestroom:** {A['panelen']} panelen van {A['wp']} Wp ({nl(kwp, 1)} kWp), ca. {nl(round(n['met_pv']['pv_kwh'], -1))} kWh per jaar. """ + (
         f"""U gebruikt daarvan ca. {pct(zv_pv)} direct zelf.

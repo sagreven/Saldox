@@ -42,6 +42,7 @@
    "bedrading_uurbasis": true,
    "info_laadpaal": 1100,
    "ere": 0.13,
+   "pakketten": true,
    "kop": [
     "Dak en legplan=Elf panelen in het dak aan de straatkant.",
     "Bronnen en foto's=Waar de cijfers vandaan komen."
