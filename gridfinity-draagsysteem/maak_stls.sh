@@ -24,8 +24,9 @@ done
 
 gen bakje-1x1-2vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=1 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
-gen bakje-1x2-vakjes-heel-achter -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'schuif="achter"'
-gen bakje-1x2-open-heel-achter -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakken="open"' -D 'schuif="achter"'
+# 1x2 met de deksel dwars (opzij), zodat beide vakjes tegelijk opengaan
+gen bakje-1x2-vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5
+gen bakje-1x2-open-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakken="open"'
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
@@ -33,7 +34,7 @@ gen baseplate-5x2 -D 'onderdeel="baseplate"' -D gx=5 -D gy=2
 gen inlegplaat-5x2 -D 'onderdeel="inlegplaat"' -D gx=5 -D gy=2
 
 # schuifdeksels: passen op half en heel
-for maat in "1 1" "2 1" "2 2" "4 1"; do
+for maat in "1 1" "2 1" "1 2" "2 2" "4 1"; do
     set -- $maat
     gen "schuifdeksel-${1}x${2}" -D 'onderdeel="schuifdeksel"' -D gx=$1 -D gy=$2
 done

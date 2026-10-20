@@ -60,8 +60,8 @@ Alle maten zijn buitenmaten. Een bakje is per vak 4,2 cm (precies 4,15 cm).
 | `bakje-2x2-vakjes-half` / `-heel` | 4 | 8,4 × 8,4 × 2,2 / 3,9 cm |
 | `bakje-2x2-2vakjes-heel` | 2 (elk 1 × 2 vakken) | 8,4 × 8,4 × 3,9 cm |
 | `bakje-1x1-2vakjes-heel` | 2 (elk 1,8 × 3,9 cm, 2,6 cm diep) | 4,2 × 4,2 × 3,9 cm |
-| `bakje-1x2-vakjes-heel-achter` | 2, deksel schuift naar achteren (past `schuifdeksel-2x1`) | 4,2 × 8,4 × 3,9 cm |
-| `bakje-1x2-open-heel-achter` | 1, zonder tussenschot, deksel schuift naar achteren (past `schuifdeksel-2x1`) | 4,2 × 8,4 × 3,9 cm |
+| `bakje-1x2-vakjes-heel` | 2, deksel schuift opzij zodat beide vakjes tegelijk opengaan (`schuifdeksel-1x2`) | 4,2 × 8,4 × 3,9 cm |
+| `bakje-1x2-open-heel` | 1, zonder tussenschot (`schuifdeksel-1x2`) | 4,2 × 8,4 × 3,9 cm |
 | `bakje-2x2-open-half` | 1 | 8,4 × 8,4 × 2,2 cm |
 | `bakje-4x1-open-half` | 1 | 16,8 × 4,2 × 2,2 cm |
 
@@ -77,6 +77,7 @@ uitsparing van 0,4 mm diep voor een sticker:
 | 2×1 | 6,7 × 3,4 cm |
 | 2×2 | 6,7 × 7,6 cm |
 | 4×1 | 15,1 × 3,4 cm |
+| 1×2 | 2,5 × 7,6 cm |
 
 **Cassettes** (diepte inclusief scharnier en klikbeugels; met magneten)
 
@@ -100,11 +101,12 @@ van een cassette erboven pakken gewoon door een papieren sticker heen.
 één heel bakje hoog) voor een zelfinstellende krimptang van ca. 19,5 × 8 × 3 cm.
 De tang ligt voorin op een vlakke vloer (geen Gridfinity, `gridfinity_rijen = 2`).
 In de achterste twee rijen zit een Gridfinity-bodem met klik, met daarin vijf
-`bakje-1x2-vakjes-heel-achter`, één per kabeldikte (bijvoorbeeld 0,5 / 0,75 / 1 /
+`bakje-1x2-vakjes-heel`, één per kabeldikte (bijvoorbeeld 0,5 / 0,75 / 1 /
 1,5 / 2,5 mm²): in het ene vakje de adereindhulzen voor één ader, in het andere
 die voor twee aders. Samen 10 vakjes van 3,4 × 3,4 cm, 2,6 cm diep. De
-schuifdeksel (`schuifdeksel-2x1`) gaat er aan de achterkant uit. Andere kant
-nodig: in de generator `schuif` op voor, achter, links of rechts.
+schuifdeksel (`schuifdeksel-1x2`) schuift opzij, zodat beide vakjes tegelijk
+opengaan. Andere kant nodig: in de generator `schuif` op voor, achter, links of
+rechts.
 
 ![krimptang-cassette](img/krimptang.png)
 
