@@ -1,19 +1,19 @@
 {
  "offerte": {
-  "inv": 8846.9,
-  "inv_ex": 8846.9,
+  "inv": 5264.06,
+  "inv_ex": 5264.06,
   "netto": [
-   585.0,
-   605.0,
-   635.0
+   465.0,
+   485.0,
+   505.0
   ],
   "jaren": [
-   "15,1",
-   "14,6",
-   "13,9"
+   "11,3",
+   "10,9",
+   "10,4"
   ],
   "keuze": "geen",
-  "pakket": "Zonnepanelen met hybride omvormer Sofar HYD 15KTL-3PH, zonder batterij",
+  "pakket": "Zonnepanelen met hybride omvormer Sofar HYD 10KTL-3PH, zonder batterij",
   "profiel": {
    "klant": "Opwettenseweg 82b",
    "plaats": "Nuenen",
@@ -22,16 +22,27 @@
    "auto": "geen",
    "auto_kwh": null,
    "dak": "indak",
-   "omvormer": "hyd15",
+   "omvormer": "hyd10",
    "optie_batterij": 30,
    "opbrengst": 919,
    "opbrengst_bron": "PVGIS voor dit dak: oostzuidoost (117°), 45° helling; ±5% voor het weer",
    "verbruik_bron": "opgegeven: huis ca. 5.000 kWh plus ca. 1.100 kWh voor een plug-in hybride",
-   "panelen": 15,
+   "panelen": 11,
    "aansluiting": "3-fase",
    "batterij": "geen",
-   "opstelling": "oostzuidoostdak, 3 naast elkaar × 5 rijen liggend, ca. 6,2 × 6,7 m",
-   "datum": "2026-10-20"
+   "opstelling": "oostzuidoostdak aan de straatkant, links van de dakkapel, 11 liggend in één veld",
+   "datum": "2026-10-20",
+   "sectie_na_samenvatting": "../offertes/2026-10-20-opwettenseweg-82b/bronnen/dak-en-legplan.md",
+   "sectie_eind": "../offertes/2026-10-20-opwettenseweg-82b/bronnen/bronnen.md",
+   "figuur": [
+    "legplan=../offertes/2026-10-20-opwettenseweg-82b/bronnen/legplan.svg|Legplan hoofddak|11 panelen in één veld, links van de dakkapel|Dakvlak uit 3D BAG; dakkapel en schoorsteen geschat uit het straatbeeld",
+    "streetview=../offertes/2026-10-20-opwettenseweg-82b/bronnen/streetview-2025-07.jpg|Straatbeeld|De straatkant: dakkapel en schoorsteen|Google Street View, juli 2025",
+    "luchtfoto=../offertes/2026-10-20-opwettenseweg-82b/bronnen/luchtfoto-pdok.jpg|Luchtfoto|Opwettenseweg 82b van boven (noord boven, 45 × 45 m)|PDOK Luchtfoto RGB, actueel"
+   ],
+   "kop": [
+    "Dak en legplan=Elf panelen in het dak aan de straatkant.",
+    "Bronnen en foto's=Waar de cijfers vandaan komen."
+   ]
   },
   "verbruik": 6100
  }

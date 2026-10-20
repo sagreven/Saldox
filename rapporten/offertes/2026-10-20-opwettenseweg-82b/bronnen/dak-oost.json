@@ -1,0 +1,8 @@
+{
+ "bron": "3D BAG LoD 2.2, pand NL.IMBAG.Pand.0820100000017027, dakvlak oostzuidoost (azimut 117°, helling 45°), vlakcoördinaten in m; dakkapel en schoorsteen geschat uit Google Street View (juli 2025)",
+ "vlak": [[0.61, 5.69], [0.00, 4.99], [0.02, 1.49], [7.73, 1.57], [7.74, 0.00], [11.02, 0.04], [11.02, 0.31], [9.40, 4.43], [7.89, 8.29], [7.84, 8.29], [1.57, 8.26]],
+ "obstakels": [{"naam": "dakkapel", "rect": [6.3, 3.0, 8.0, 5.6]}, {"naam": "schoorsteen", "rect": [4.25, 7.7, 5.15, 8.3]}],
+ "paneel": [1.762, 1.134],
+ "marge": 0.30,
+ "marge_obstakel": 0.30
+}

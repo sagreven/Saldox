@@ -71,15 +71,17 @@ def opgegeven(zoek):
     return hits[0]
 
 
-HYD15 = dict(naam="Sofar HYD 15KTL-3PH", prijs=opgegeven("Omvormer Sofar 15 kW"))
+HYD = {"hyd15": dict(naam="Sofar HYD 15KTL-3PH", kw=15, prijs=opgegeven("Omvormer Sofar 15 kW"), status="Opgegeven"),
+       # marktprijs: Wattuneed €1.566,95 incl. btw (okt. 2026), tot er een inkoopprijs is
+       "hyd10": dict(naam="Sofar HYD 10KTL-3PH", kw=10, prijs=1295.00, status="Marktprijs")}
 BDU = 300.00  # stelpost: BDU-besturingsunit per batterijtoren (marktprijs ca. €284)
 
 
-def hyd_batterij(modules):
+def hyd_batterij(modules, kwmax=15):
     """Batterijposten voor de HYD 15KTL-3PH: twee batterij-ingangen, per toren een BDU.
     Laadstroom 25 A per ingang: per toren ca. 2,6 kW per module, samen max. 15 kW."""
     torens = 1 if modules <= 4 else 2
-    kw = min(15.0, torens * 25 * 102.4 * (modules / torens) / 1000)
+    kw = min(float(kwmax), torens * 25 * 102.4 * (modules / torens) / 1000)
     return [(f"{modules} batterijmodules Sofar BTS 5K, samen {B.nl(modules * 5.12, 2)} kWh ({modules} × €{B.BTS5K:.0f})",
              round(modules * B.BTS5K, 2), 0.21, "Inkoopprijs", "batt"),
             (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})",
@@ -89,22 +91,24 @@ def hyd_batterij(modules):
 
 
 def pakket(soort, n, dak, omvormer="micro"):
-    if soort == "geen" and omvormer == "hyd15":
+    if soort == "geen" and omvormer in HYD:
+        H = HYD[omvormer]
         P = {k: w for k, w in B.PAKKETTEN["sofar"].items() if k != "modules"}  # geen ESI-batterijtabel
         P["prijzen"] = zonnedeel(n, dak, False) + [
-            (f"Hybride omvormer {HYD15['naam']}, 3-fase, 15 kW, klaar voor een batterij", HYD15["prijs"], 0.0, "Opgegeven", "zon"),
+            (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW, klaar voor een batterij", H["prijs"], 0.0, H["status"], "zon"),
             ("Installatie omvormer, groep en overspanningsbeveiliging", 350.00, 0.0, "Stelpost", "zon")]
         P["model"] = dict(P["model"], panelen=n, wp=460, batt_kwh=0)
-        P["naam"] = f"Zonnepanelen met hybride omvormer {HYD15['naam']}, zonder batterij"
-        P["batterij_kort"] = f"hybride omvormer {HYD15['naam']} (15 kW, 3-fase), klaar voor een batterij"
+        P["hyd"] = H
+        P["naam"] = f"Zonnepanelen met hybride omvormer {H['naam']}, zonder batterij"
+        P["batterij_kort"] = f"hybride omvormer {H['naam']} ({H['kw']} kW, 3-fase), klaar voor een batterij"
         P["omvormer_woord"] = "de omvormer"
         P["btw_bullet"] = "- **Alles 0%:** panelen, omvormer, bekabeling en montage vallen onder het nultarief. Een batterij die later wordt toegevoegd, valt onder 21%."
-        P["aansluiting"] = "- **Aansluiting:** de HYD 15KTL-3PH is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A)."
-        P["uitbreiding"] = ("- **Later een batterij:** de HYD 15KTL-3PH heeft twee batterij-ingangen voor Sofar BTS 5K-modules. "
+        P["aansluiting"] = f"- **Aansluiting:** de {H['naam']} is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A)."
+        P["uitbreiding"] = (f"- **Later een batterij:** de {H['naam']} heeft twee batterij-ingangen voor Sofar BTS 5K-modules. "
                             "Een batterij kan erbij zonder nieuwe omvormer (zie *Optie: thuisbatterij*).")
         P["installatie"] = [
             f"- **A Solar 460 Wp ({n}×):** N-type, glas-glas, zwart; 1.762 × 1.134 mm per paneel, samen ca. {B.nl(n * 1.762 * 1.134)} m² dak.",
-            f"- **{HYD15['naam']}:** 3-fase hybride omvormer, 15 kW, twee MPPT's, twee batterij-ingangen voor hoogspanningsbatterijen (Sofar BTS 5K). "
+            f"- **{H['naam']}:** 3-fase hybride omvormer, {H['kw']} kW, twee MPPT's, twee batterij-ingangen voor hoogspanningsbatterijen (Sofar BTS 5K). "
             "Werkt zonder batterij; opslag kan later worden toegevoegd. Het EMS van Saldox leest en stuurt hem uit.",
             "- **Uitbreidbaar:** de omvormer heeft ruimte voor meer panelen{laad} en voor een batterij."]
         P["installatie_omvormer"] = "hybride omvormer"
@@ -171,7 +175,7 @@ def optie_batterij(v, R, n, dak, maten, gevraagd=None):
     N = R["sc"][1]
     rijen, kern = [], None
     for modules in maten:
-        posten, torens, kw = hyd_batterij(modules)
+        posten, torens, kw = hyd_batterij(modules, v["P"]["hyd"]["kw"])
         P = dict(v["P"], prijzen=v["P"]["prijzen"] + posten,
                  model=dict(v["P"]["model"], batt_kwh=modules * 5.12, batt_bruikbaar=0.90, batt_kw=kw, rendement=0.90))
         Ro = B.reken(dict(v, P=P))
@@ -195,10 +199,24 @@ Een batterij van {round(kern['kwh'] / 10) * 10} kWh kost {B.eur2(kern['meer'])} 
 {tabel}
 
 - **Advies:** {'de ' + str(round(beste['kwh'] / 10) * 10) + ' kWh levert over 15 jaar het meeste op' if beste['winst'] > 0 else 'bij dit verbruik verdient een batterij zich binnen 15 jaar niet terug'}; een kleinere batterij is sneller terugverdiend. De batterij kan ook later worden toegevoegd: de omvormer is er al klaar voor.
-- **Techniek:** de {HYD15['naam']} heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. {B.nl(kern['kw'], 0)} kW.
+- **Techniek:** de {v['P']['hyd']['naam']} heeft twee batterij-ingangen. Een BTS 5K-module is 5,12 kWh; per toren hoort één BDU-besturingsunit. 10 kWh is één toren van 2 modules, 20 kWh één toren van 4, 30 kWh twee torens van 3 modules, 40 kWh twee torens van 4 (het maximum). Laden en ontladen tot ca. {B.nl(kern['kw'], 0)} kW.
 - **Prijzen:** modules à {B.eur2(B.BTS5K)} excl. btw (inkoopprijs); BDU {B.eur2(BDU)} per toren, installatie €450 en EMS-koppeling €150 zijn stelposten. Een batterij valt onder 21% btw.
 - **Werking:** het EMS van Saldox laadt de batterij met zonnestroom en op goedkope uren van het net, en ontlaadt op dure uren (dynamisch contract).
 """
+
+
+def eigen_figuur(pad, eyebrow, titel, sub):
+    """Figuur in Saldox-stijl van een SVG (inline) of foto (ingesloten, zodat de HTML op zichzelf staat)."""
+    import base64
+    import html as h
+    if pad.suffix == ".svg":
+        inhoud = pad.read_text(encoding="utf-8")
+    else:
+        mime = "image/png" if pad.suffix == ".png" else "image/jpeg"
+        inhoud = (f'<img src="data:{mime};base64,{base64.b64encode(pad.read_bytes()).decode()}" alt="{h.escape(titel)}" '
+                  'style="display:block;width:100%;height:auto;border-radius:10px">')
+    return (f'<figure class="figure"><figcaption><span class="fig-eyebrow">{h.escape(eyebrow)}</span>'
+            f'<strong>{h.escape(titel)}</strong><span class="fig-sub">{h.escape(sub)}</span></figcaption>{inhoud}</figure>')
 
 
 # ───────────────────────────────────────────── profiel → offerte
@@ -215,8 +233,8 @@ def main():
     ap.add_argument("--auto", choices=["geen", "phev", "ev"], default="geen")
     ap.add_argument("--auto-kwh", type=int, help="thuis geladen kWh per jaar (overschrijft het autoprofiel)")
     ap.add_argument("--dak", choices=["plat", "schuin", "indak"], default="schuin")
-    ap.add_argument("--omvormer", choices=["micro", "hyd15"], default="micro", help="bij --batterij geen")
-    ap.add_argument("--optie-batterij", type=int, default=0, help="optie: batterij in kWh (10, 20 of 30), alleen met --omvormer hyd15")
+    ap.add_argument("--omvormer", choices=["micro", "hyd10", "hyd15"], default="micro", help="bij --batterij geen")
+    ap.add_argument("--optie-batterij", type=int, default=0, help="optie: batterij in kWh (10, 20 of 30), alleen met --omvormer hyd10/hyd15")
     ap.add_argument("--opbrengst", type=int, help="kWh per kWp voor dit dak (normaal); pessimistisch/optimistisch ±5%%")
     ap.add_argument("--opbrengst-bron", default="", help="toelichting bij --opbrengst")
     ap.add_argument("--verbruik-bron", default="", help="toelichting bij het verbruik")
@@ -225,6 +243,10 @@ def main():
     ap.add_argument("--batterij", choices=["auto", "geen", "marstek", "marstek2", "sofar"], default="auto")
     ap.add_argument("--opstelling", default="", help='legplan, bijvoorbeeld "2 rijen van 5, ca. 5,7 × 3,5 m"')
     ap.add_argument("--datum", default=dt.date.today().isoformat())
+    ap.add_argument("--sectie-na-samenvatting", help="markdown met een eigen sectie (bijv. Dak en legplan), na de samenvatting")
+    ap.add_argument("--sectie-eind", help="markdown met een eigen sectie aan het eind (bijv. Bronnen en foto's)")
+    ap.add_argument("--figuur", action="append", default=[], help='naam=pad|eyebrow|titel|onderschrift (svg of jpg/png); marker <!-- FIG:naam -->')
+    ap.add_argument("--kop", action="append", default=[], help='"Sectienaam=Kop" voor eigen secties')
     a = ap.parse_args()
 
     verbruik = a.verbruik or HUISHOUDEN[a.huishouden]
@@ -238,7 +260,7 @@ def main():
     met_batt = ["marstek", "marstek2"] + ([] if a.aansluiting == "1-fase" else ["sofar"])
     # "geen": zonder batterij, met de batterijpakketten ter vergelijking
     kandidaten = met_batt if a.batterij == "auto" else (["geen"] + met_batt if a.batterij == "geen" else [a.batterij])
-    if a.omvormer == "hyd15":
+    if a.omvormer in HYD:
         a.batterij, kandidaten = "geen", ["geen"]  # batterij als optie in een eigen sectie
 
     profiel_tekst = ", ".join(filter(None, [
@@ -306,13 +328,19 @@ def main():
 {batt_bullet}""" + (
         "\n- **Sofar 10 kWh** is niet meegenomen: die vraagt een 3-fase aansluiting." if a.aansluiting == "1-fase" and a.batterij == "auto" else "") + "\n"
 
-    if a.omvormer == "hyd15" and a.optie_batterij:
+    if a.omvormer in HYD and a.optie_batterij:
         # 10 t/m 40 kWh (max. 2 torens van 4 modules); de gevraagde grootte gemarkeerd
         v["waarom"] = optie_batterij(v, R, a.panelen, a.dak, (2, 4, 6, 8), gevraagd=round(a.optie_batterij / 5.12))
 
     map_ = UIT / f"{a.datum}-{slug(a.klant)}"
     map_.mkdir(parents=True, exist_ok=True)
     src = B.markdown_tekst(v, R)
+    if a.sectie_na_samenvatting:
+        extra = Path(a.sectie_na_samenvatting).read_text(encoding="utf-8").strip()
+        i = src.index("\n## Begroting")
+        src = src[:i] + "\n" + extra + "\n" + src[i:]
+    if a.sectie_eind:
+        src = src.rstrip() + "\n\n" + Path(a.sectie_eind).read_text(encoding="utf-8").strip() + "\n"
     (map_ / "energieplan-huishouden-offerte.md").write_text(src, encoding="utf-8")
     kpis = [(B.eur2(R["inv"]), "investering incl. btw", False),
             (f"ca. {N['jaren']} jaar", "terugverdientijd, normaal scenario", True),
@@ -322,7 +350,13 @@ def main():
     koppen = dict(B.HEADLINES, **(B.HEADLINES_ZONDER_BATTERIJ if keuze == "geen" else {}),
                   **({"Waarom dit pakket": "Zonder batterij, met ruimte voor later."} if keuze == "geen" else {}),
                   **{"Optie: thuisbatterij": "Een batterij kan erbij, nu of later."})
-    titel = bouw(src, koppen, B.figuren(v, R), kpis, v["chip"], html)
+    koppen.update(dict(k.split("=", 1) for k in a.kop))
+    figs = B.figuren(v, R)
+    for f in a.figuur:
+        naam, rest = f.split("=", 1)
+        pad, eyebrow, titel_f, sub = (rest.split("|") + ["", "", ""])[:4]
+        figs[naam] = eigen_figuur(Path(pad), eyebrow, titel_f, sub)
+    titel = bouw(src, koppen, figs, kpis, v["chip"], html)
     subprocess.run(["node", str(HERE / "render_pdf.js"), str(html), str(map_ / "offerte.pdf"), titel], check=True,
                    stdout=subprocess.DEVNULL)
     uit = {"offerte": dict(inv=R["inv"], inv_ex=R["inv_ex"], netto=[s["netto"] for s in R["sc"]],
