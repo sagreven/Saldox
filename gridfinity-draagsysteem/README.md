@@ -260,11 +260,11 @@ los bestand en werkt met OpenSCAD 2021, de versie die MakerWorld gebruikt.
 | | `steunen` | breekbare steuntjes in de sleuf aan de voorkant, per vak van 4,2 cm (0 = geen) |
 | | `klik` | klein nokje tegen vanzelf openschuiven (standaard uit) |
 | | `schuif` | kant waar de deksel uit schuift: rechts, links, voor of achter |
-| Stapelen | `stapel_klik` | hoe ver de klik-nokjes in de stapelrand ingrijpen (0,2 mm; 0 = geen klik) |
+| Stapelen | `stapel_klik` | hoe ver de klik-nokjes in de stapelrand ingrijpen (0,4 mm; 0 = geen klik) |
 | Cassette | `lagen` | binnenhoogte in halve bakjes (1–6), met de hoogte van de dichte cassette in cm erbij |
 | | `baseplate` | uit = helemaal vlakke bodem voor een schuim- of TPU-inleg |
 | | `gridfinity_rijen` | aantal rijen Gridfinity vanaf de achterkant; de rijen ervoor krijgen een vlakke, 0,5 cm diepere vloer voor gereedschap (0 = overal) |
-| | `cassette_klik` | hoe ver de klik-nokjes in de Gridfinity-bodem van de cassette ingrijpen (0,15 mm; 0 = geen klik) |
+| | `cassette_klik` | hoe ver de klik-nokjes in de Gridfinity-bodem van de cassette ingrijpen (0,3 mm; 0 = geen klik) |
 | | `lid_gap` | speling tussen bovenste bakje en deksel (kleiner = vaster) |
 | | `deksel_extra` | extra ruimte boven de bakjes in de deksel (1 mm; alleen de deksel wordt hoger) |
 | | `cassette_sticker` | diepte van het stickervlak bovenop de deksel (0,3 mm; 0 = geen) |
@@ -318,6 +318,14 @@ doorsnede nagemeten (stapelen, deksel in de groef, scharnier, klikbeugels),
 en de schuifdeksel van een 1×1-bakje is geprint en getest (speling 0,1 mm is
 goed). Print nog één `cassette-2x2-4.5cm-schroeven` en een paar bakjes, en controleer:
 
+0. **Klik eerst afstellen met de proefstukjes** (1 × 1, een paar minuten
+   printen): `test-klik-voet` (de voeten van een bakje, met het groefje),
+   `test-klik-rand-0.3` t/m `-0.6` (stapelrand, waarde = `stapel_klik`) en
+   `test-klik-bodem-0.2` t/m `-0.5` (Gridfinity-bodem, waarde =
+   `cassette_klik`). Druk de voet in elke rand en elke bodem; kies de waarde
+   die duidelijk klikt maar met de hand nog los te trekken is, en zet die in de
+   generator. De standaard is 0,4 / 0,3 mm. Bakjes van vóór deze versie hebben
+   een groefje van 0,4 mm en ingrijping 0,2 / 0,15 mm: die klikken geprint niet.
 1. Valt een bakje goed op een ander bakje en in de cassette, en klikt het? Te
    stug: verklein `stapel_klik`; te los: vergroot hem.
 2. Passen je magneten in de gaten? Te los: verklein `magneet_speling`.

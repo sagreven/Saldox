@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -59,7 +59,7 @@ inleg_t = 1.2; // [0.8:0.2:3]
 
 /* [Stapelen] */
 // Bakjes klikken op elkaar vast: nokjes in de stapelrand vallen in een groefje in de voeten van het bakje erboven. Hoe ver de nokjes ingrijpen in mm (0 = geen klik)
-stapel_klik = 0.2; // [0:0.05:0.4]
+stapel_klik = 0.4; // [0:0.05:0.8]
 
 /* [Cassette] */
 // Binnenhoogte, in halve bakjes (een heel bakje telt als 2); erachter de hoogte van de gesloten cassette met magneten (zonder magneten 0.2 cm lager)
@@ -69,7 +69,7 @@ baseplate = true;
 // Aantal rijen Gridfinity, gerekend vanaf de achterkant (scharnier); de rijen ervoor krijgen een vlakke, 0.5 cm diepere vloer voor gereedschap (0 = overal Gridfinity)
 gridfinity_rijen = 0; // [0:1:8]
 // Bakjes klikken vast in de Gridfinity-bodem van de cassette: hoe ver de nokjes ingrijpen in mm (0 = geen klik)
-cassette_klik = 0.15; // [0:0.05:0.3]
+cassette_klik = 0.3; // [0:0.05:0.6]
 // Speling tussen bovenste bakje en deksel (klein = deksel klemt bakjes vast)
 lid_gap = 0.4; // [0.2:0.1:1]
 // Extra ruimte boven de bakjes in mm; alleen de deksel wordt hoger, de onderbak blijft gelijk
@@ -198,10 +198,10 @@ module gf_foot() {
         }
         // groefje rondom (45 graden flanken) waar de nokjes van de stapelrand
         // van het bakje eronder in vallen
-        if (stapel_klik > 0) difference() {
-            translate([-25, -25, klik_z - 0.4]) cube([50, 50, 0.8]);
-            hull() { slice(37.2, 37.2, 1.6, klik_z - 0.4); slice(36.4, 36.4, 1.2, klik_z); }
-            hull() { slice(36.4, 36.4, 1.2, klik_z); slice(37.2, 37.2, 1.6, klik_z + 0.4); }
+        if (stapel_klik > 0 || cassette_klik > 0) difference() {
+            translate([-25, -25, klik_z - groef]) cube([50, 50, 2 * groef]);
+            hull() { slice(37.2, 37.2, 1.6, klik_z - groef); slice(37.2 - 2 * groef, 37.2 - 2 * groef, 0.8, klik_z); }
+            hull() { slice(37.2 - 2 * groef, 37.2 - 2 * groef, 0.8, klik_z); slice(37.2, 37.2, 1.6, klik_z + groef); }
         }
     }
 }
@@ -209,11 +209,14 @@ module gf_foot() {
 // Klik bij stapelen: hoogte van groefje (voet) en nokje (stapelrand), gemeten
 // vanaf de onderkant van de voet, die in de stapelrand op de randbodem staat.
 klik_z = 2.2;
+// diepte van het groefje rondom de voet; de nokjes (stapel_klik, cassette_klik)
+// grijpen er hoogstens zo ver in
+groef = 0.8;
 
 // Nokje in de stapelrand, gezien vanaf de buitenkant van de wand: a = afstand
 // naar binnen, z = hoogte boven de onderkant van de stapelrand. De punt steekt
 // stapel_klik voorbij het voetvlak van het bakje erboven (dat ligt 2,15 mm naar
-// binnen) en valt bij gestapeld in het groefje van 0,4 mm.
+// binnen) en valt bij gestapeld in het groefje.
 module klik_nok(len) {
     a_tip = 2.15 + stapel_klik;
     p = a_tip - 0.9;
@@ -513,7 +516,7 @@ module baseplate_insert() {
 
 // Nokje op de wand van een baseplate-uitsparing (half 18,85 mm vanaf het
 // midden). De punt steekt cassette_klik voorbij het voetvlak (18,6 mm) en valt
-// bij een geplaatst bakje in het groefje van 0,4 mm.
+// bij een geplaatst bakje in het groefje.
 module socket_nok() {
     a_tip = 18.6 - cassette_klik;
     p = 18.85 - a_tip;
@@ -589,6 +592,13 @@ else if (onderdeel == "cassette_beide") {
 }
 else if (onderdeel == "inlegplaat") inlegplaat();
 else if (onderdeel == "baseplate") losse_baseplate();
+// proefstukjes voor de klik: alleen de voeten, of alleen de stapelrand
+else if (onderdeel == "test_voet") intersection() {
+    bakje(); translate([0, 0, -1]) rsq(W + 2, D + 2, 1, foot_h + 2.2);
+}
+else if (onderdeel == "test_rand") translate([0, 0, -(Hb - 1.2)]) intersection() {
+    bakje(); translate([0, 0, Hb - 1.2]) rsq(W + 2, D + 2, 1, lip_h + 2);
+}
 else if (onderdeel == "voorbeeld_bakje") { bakje(); if (deksel) schuifdeksel_dicht(); }
 else if (onderdeel == "voorbeeld_cassette") { cassette_body(); cassette_deksel(); }
 

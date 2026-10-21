@@ -58,3 +58,13 @@ echo "stl/inleg-krimptang-5x2.stl"
 openscad -q -o stl/inleg-krimptang-5x2.stl krimptang_inleg.scad
 echo "stl/inleg-krimptang-5x2-ingebouwd.stl"
 openscad -q -D frame_d=81.75 -o stl/inleg-krimptang-5x2-ingebouwd.stl krimptang_inleg.scad
+
+# proefstukjes voor de klik (1x1, snel te printen): voeten met het groefje,
+# stapelranden en Gridfinity-bodems met verschillende ingrijping
+gen test-klik-voet -D 'onderdeel="test_voet"' -D gx=1 -D gy=1 -D deksel=false
+for k in 0.3 0.4 0.5 0.6; do
+    gen "test-klik-rand-$k" -D 'onderdeel="test_rand"' -D gx=1 -D gy=1 -D deksel=false -D stapel_klik=$k
+done
+for k in 0.2 0.3 0.4 0.5; do
+    gen "test-klik-bodem-$k" -D 'onderdeel="baseplate"' -D gx=1 -D gy=1 -D cassette_klik=$k
+done

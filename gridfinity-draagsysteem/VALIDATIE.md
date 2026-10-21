@@ -42,6 +42,8 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **E1** | Bakje klikt in de ingebouwde Gridfinity-bodem | geplaatst geen overlap, 0,6 mm opgetild wel (klik) |
 | **E2** | Bakje klikt in de losse Gridfinity-bodem | idem |
 | **E3** | Bakje klikt op een ander bakje | idem |
+| **E4** | Nokjes in de stapelrand steken ver genoeg voorbij het voetvlak | 0,3 – 0,8 mm (groefje is 0,8 mm diep) |
+| **E5** | Nokjes in de Gridfinity-bodem (los en ingebouwd) idem | 0,25 – 0,8 mm |
 | **F1** | Schuifdeksel past dicht in de groef van het bakje | overlap 0 (zonder breekbare steuntjes) |
 | **F2** | Schuifdeksel schuift er helemaal uit | overlap 0 op elke positie |
 | **G1** | Krimptang-inleg past in de cassette (vlak + losse bodem, en ingebouwd) | overlap 0 met onderbak en bodem |
@@ -66,7 +68,7 @@ foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die
 tests zeggen dus: *als de tang deze maat heeft*, dan pakt de inleg hem. De
 echte maat moet uit P8 komen.
 
-Terugblik: test **C1** had de fout in de oudere cassettes gevonden (vloer op
+Terugblik: test **E4/E5** had gevonden dat de klik in de eerste versie te klein was (0,2 en 0,15 mm, geprint geen klik). Test **C1** had de fout in de oudere cassettes gevonden (vloer op
 7,85 in plaats van 3,2 mm, zie README); op het oude bestand geeft C1 FOUT.
 
 ### Draaien
@@ -89,7 +91,7 @@ Gebruik een schuifmaat. Noteer de waarde en of het binnen de grens valt.
 | **P4** | Binnendiepte klep: onderrand tot plafond | 7,0 mm | ± 0,3 |
 | **P5** | Lege cassette: klep gaat dicht en klikt | geen kier | 0 mm |
 | **P6** | Gevulde cassette (hele bakjes en twee halve gestapeld): klep gaat dicht | geen kier | 0 mm |
-| **P7** | Bakje in cassette / op bakje: voelbare klik, valt er bij omkeren niet uit | klikt, blijft zitten | — |
+| **P7** | Bakje in cassette / op bakje: voelbare klik, valt er bij omkeren niet uit (eerst met de proefstukjes `test-klik-*`) | klikt, blijft zitten | — |
 | **P8** | Krimptang meten: totale lengte, grootste breedte (handvatten in rust), hoogte handvatten als hij plat ligt | 181 / 73 / 24 mm | wijkt het > 2 mm af: invullen in `krimptang_inleg.scad` en opnieuw valideren |
 | **P9** | Krimptang in de inleg: klikt onder de paddenstoel, zit klem tussen de bogen | klikt, beweegt < 1 mm | — |
 | **P10** | Cassette met tang dicht, schudden en ondersteboven houden | tang en bakjes rammelen niet hoorbaar, klep blijft dicht | — |

@@ -186,6 +186,20 @@ zit = overlap(half, verplaatst(half, 0, 0, 17.5))
 til = overlap(half, verplaatst(half, 0, 0, 17.5 + LIFT))
 check("E3", "bakje klikt op een ander bakje", zit < 0.1 and til > 0.5, f"geplaatst {zit:.2f}, opgetild {til:.2f} mm3")
 
+# hoe ver de nokjes echt voorbij het voetvlak (18,6 mm uit het midden van een
+# vak) steken; minder dan 0,3 mm valt weg in de printtolerantie (oude versie:
+# 0,2 en 0,15 mm, klikte geprint niet)
+def ingrijping(m, x, y, z):
+    loc, _, _ = m.ray.intersects_location([[x, y, z]], [[1, 0, 0]])
+    return 18.6 - min(loc[:, 0] - x)
+b11 = laad("bakje-1x1-heel.stl")
+k = ingrijping(b11, 0, 0, 35 + 2.2)
+check("E4", "nokjes stapelrand grijpen ver genoeg in", 0.3 <= k <= 0.8, f"{k:.2f} mm")
+k = ingrijping(bp, -2 * G, -G / 2, 2.2)
+check("E5", "nokjes Gridfinity-bodem grijpen ver genoeg in", 0.25 <= k <= 0.8, f"{k:.2f} mm")
+k = ingrijping(onder, x, y, C_FLOOR + 2.2)
+check("E5", "nokjes ingebouwde bodem grijpen ver genoeg in", 0.25 <= k <= 0.8, f"{k:.2f} mm")
+
 # ---------- F: schuifdeksel ----------
 
 for gx, gy, hu in [(1, 1, 5), (1, 2, 5), (2, 2, 2.5)]:
