@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, doos:Doos - met opsteekdop, doos_deksel:Doos - dop, doos_en_deksel:Doos + dop - één printplaat, voorbeeld_doos:Voorbeeld - doos met dop dicht, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, koker:Borenkoker, koker_dop:Borenkoker - dop met de boren, voorbeeld_koker:Voorbeeld - borenkoker dicht, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -53,13 +53,13 @@ klik = false;
 // Kant waar de deksel uit schuift (voor = kant van de klikbeugels van de cassette)
 schuif = "rechts"; // [rechts:Rechts, links:Links, voor:Voor, achter:Achter]
 
-/* [Doos] */
-// Een doos heeft een dop die je er bovenop steekt, zoals bij een fles: de dop schuift over een kraag en klikt vast. Buitenkant gelijk met de doos, geen stapelrand. Hoogte = hoogte van het bakje (half of heel) inclusief dop; de indeling volgt "Indeling binnenin". Hoogte van de dop in mm
-dop_h = 8; // [5:1:15]
-// Speling tussen dop en kraag, per kant in mm
-dop_fit = 0.15; // [0.05:0.05:0.4]
-// Hoe ver het klikrandje op de kraag uitsteekt in mm; minus de speling is wat je voelt bij het klikken (0 = alleen klemmen)
-dop_klik = 0.5; // [0:0.05:0.8]
+/* [Borenkoker] */
+// Een borenkoker ligt in de lengte (breedte = lengte van de koker), is aan de rechterkant (+x) open en heeft bovenop een stapelrand. De boren steken met hun schacht in de dop; de dop schuift met de boren in de koker. Kies de maat bij Maat en Bakje (hoogte): 3-8 mm = 3 x 2 heel, 9-12 mm = 4 x 2 heel, SDS-plus = 4 x 1 heel. Welke boren
+koker_set = "3-8"; // [3-8:3 - 8 mm hout + staal + steen (18 boren), 9-12:9 - 12 mm hout + staal + steen (12 boren), sds:SDS-plus 6 - 12 mm (4 boren)]
+// Speling van de gaten voor de boren in mm (op diameter; klein = boren klemmen)
+koker_gat = 0.3; // [0.1:0.05:0.6]
+// Speling van de dop in de koker, per kant in mm
+koker_fit = 0.2; // [0.1:0.05:0.4]
 
 /* [Inlegplaat] */
 // Dikte van de vlakke plaat boven de voeten in mm (een inlegplaat maakt van Gridfinity-vakken een vlakke vloer, bv. voor gereedschap in een al geprinte cassette)
@@ -334,7 +334,11 @@ module bakje() {
             translate([0, 0, Hb]) lip_cut(W, D);
         }
     }
-    // nokjes in de stapelrand, één per vak aan elke buitenkant
+    stapel_nokjes();
+}
+
+// nokjes in de stapelrand, één per vak aan elke buitenkant
+module stapel_nokjes() {
     if (stapel_klik > 0) translate([0, 0, Hb]) {
         for (j = [0 : gy - 1], side = [-1, 1])
             translate([side * W / 2, (j - (gy - 1) / 2) * G, 0])
@@ -392,75 +396,105 @@ module schuifdeksel_dicht() {
     rotate([0, 0, sl_rot]) translate([lid_x, 0, z_g0]) schuifdeksel();
 }
 
-// ==== Doos met opsteekdop ====
-// De doos loopt tot de schouder (Ht - dop_h) op volle maat door, daarboven een
-// smallere kraag. De dop (wand dop_w, bovenkant dop_top) schuift over de kraag
-// en staat op de schouder; buitenkant gelijk met de doos. Een randje op de
-// kraag (dop_klik) valt in een groefje binnen in de dop.
+// ==== Borenkoker ====
+// Koker (W x D, hoogte Hb + stapelrand) met een holte die aan +x open is. De
+// dop (lengte k_pl) sluit de opening gelijk met de buitenkant af en heeft
+// blinde gaten vanaf de binnenkant: de voorkant blijft dicht en draagt de
+// maten. Twee rijen gaten boven elkaar, per kolom (boven, onder).
 
-Ht      = Hb + lip_h;                 // hoogte doos met dop = hoogte bakje
-dop_w   = 1.2;                        // wand dop
-dop_top = 1.6;                        // bovenkant dop
-kraag_w = 1.2;                        // wand kraag
-z_sch   = Ht - dop_h;                 // schouder: onderrand dop
-z_kr    = Ht - dop_top - 0.2;         // bovenkant kraag
-z_kl    = z_sch + 2;                  // hoogte klikrandje
-kr_w    = W - 2 * (dop_w + dop_fit);  // buitenmaat kraag
-kr_d    = D - 2 * (dop_w + dop_fit);
-kr_r    = 3.75 - dop_w - dop_fit;
-bi_w    = kr_w - 2 * kraag_w;         // binnenmaat doos
-bi_d    = kr_d - 2 * kraag_w;
-bi_r    = max(kr_r - kraag_w, 0.5);
+k_wand = 1.6;                     // zijwanden en achterwand
+k_dak  = 1.2;                     // dak tussen holte en stapelrand
+k_pl   = 12;                      // lengte dop
+k_front = 1.6;                    // dichte voorkant dop (gaten zijn blind)
+k_iw   = D - 2 * k_wand;          // breedte holte
+k_z0   = z_floor;                 // vloer holte
+k_z1   = Hb - k_dak;              // plafond holte
+k_r    = 3.75 - k_wand;           // hoekstraal holte
 
-// ring met 45 graden flanken: maat (w, d) op z - k en z + k, k groter op z
-module klikring(w, d, r, z, k) {
-    hull() { slice(w, d, r, z - k); slice(w + 2 * k, d + 2 * k, r + k, z); }
-    hull() { slice(w + 2 * k, d + 2 * k, r + k, z); slice(w, d, r, z + k); }
-}
+// kolommen: [breedte, gat boven, gat onder, dikte boor boven, onder,
+//            tekst boven, tekst onder]  (gat 0 = geen)
+// H = hout, S = staal, St = steen. Lengtes (DIN 338 en gangbare steenboren):
+// 3-8 mm tot 120 mm (koker 3 lang), 9-12 mm tot 151 mm en SDS 160 mm (4 lang).
+k_kolommen =
+    koker_set == "3-8" ? [
+        [3, 3, 3, 3, 3, "H3", "S3"], [4, 4, 4, 4, 4, "H4", "S4"],
+        [5, 5, 5, 5, 5, "H5", "S5"], [6, 6, 6, 6, 6, "H6", "S6"],
+        [7, 7, 7, 7, 7, "H7", "S7"], [8, 8, 8, 8, 8, "H8", "S8"],
+        [4, 3, 4, 3, 4, "St3", "St4"], [6, 5, 6, 5, 6, "St5", "St6"],
+        [8, 7, 8, 7, 8, "St7", "St8"]] :
+    koker_set == "9-12" ? [
+        [9, 9, 9, 9, 9, "H9", "S9"], [10, 10, 10, 10, 10, "H10", "S10"],
+        [11, 11, 11, 11, 11, "H11", "S11"], [12, 12, 12, 12, 12, "H12", "S12"],
+        [10, 9, 10, 9, 10, "St9", "St10"], [12, 11, 12, 11, 12, "St11", "St12"]] :
+    // SDS-plus: schacht 10 mm, boor 6 - 12 mm
+        [[10, 10, 10, 6, 8, "6", "8"], [12, 10, 10, 10, 12, "10", "12"]];
 
-module doos() {
+function k_som(k) = k == 0 ? 0 : k_kolommen[k - 1][0] + k_som(k - 1);
+k_n    = len(k_kolommen);
+k_tus  = (k_iw - k_som(k_n)) / (k_n + 1);           // ruimte tussen de boren
+function k_y(k) = -k_iw / 2 + k_tus * (k + 1) + k_som(k) + k_kolommen[k][0] / 2;
+function k_zb(k) = k_z1 - 1 - max(k_kolommen[k][1], k_kolommen[k][3]) / 2;  // midden gat boven
+function k_zo(k) = k_z0 + 1 + max(k_kolommen[k][2], k_kolommen[k][4]) / 2;  // midden gat onder
+
+is_koker = onderdeel == "koker" || onderdeel == "koker_dop" || onderdeel == "voorbeeld_koker";
+if (is_koker) assert(k_tus >= 1.5, str("Borenkoker: de boren passen niet naast elkaar in ", gy, " vakken breed"));
+if (is_koker) for (k = [0 : k_n - 1])
+    assert(k_zb(k) - k_zo(k) >= (max(k_kolommen[k][1], k_kolommen[k][3]) + max(k_kolommen[k][2], k_kolommen[k][4])) / 2 + 1,
+           "Borenkoker: de twee rijen boren passen niet boven elkaar; kies een hele hoogte");
+
+module koker() {
     difference() {
         union() {
-            for (i = [0 : gx - 1], j = [0 : gy - 1])
-                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) gf_foot();
-            translate([0, 0, foot_h - 0.01]) rsq(W, D, 3.75, z_sch - foot_h + 0.01);
-            translate([0, 0, z_sch - 0.01]) rsq(kr_w, kr_d, kr_r, z_kr - z_sch + 0.01);
-            if (dop_klik > 0) klikring(kr_w, kr_d, kr_r, z_kl, dop_klik);
+            difference() {
+                union() {
+                    for (i = [0 : gx - 1], j = [0 : gy - 1])
+                        translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) gf_foot();
+                    translate([0, 0, foot_h - 0.01]) rsq(W, D, 3.75, Hb + lip_h - foot_h + 0.01);
+                }
+                translate([0, 0, Hb]) lip_cut(W, D);
+            }
+            stapel_nokjes();
         }
-        translate([0, 0, z_floor]) rsq(bi_w, bi_d, bi_r, Ht);
-        // duimgreepjes aan de korte kanten, net onder de schouder
-        for (side = [-1, 1])
-            translate([side * W / 2, 0, z_sch]) scale([1, 1, 0.6])
-                rotate([0, 90, 0]) cylinder(r = 3, h = 2, center = true);
+        // holte, aan +x open
+        translate([k_wand + 5, 0, k_z0]) rsq(W + 10, k_iw, k_r, k_z1 - k_z0);
+        // greep: halve cirkel uit dak en voorkant, zodat je de dop met je
+        // vinger naar buiten trekt
+        translate([W / 2, 0, k_z1 - 0.01]) cylinder(r = 7, h = Hb + lip_h);
+        // groefjes voor de kliknokjes van de dop
+        for (side = [-1, 1]) translate([W / 2 - k_pl / 2, side * k_iw / 2, (k_z0 + k_z1) / 2])
+            rotate([0, 0, 45]) cube([1.1, 1.1, k_z1 - k_z0 - 6], center = true);
     }
-    // tussenschotten tot net onder de dop
-    for (k = [1 : nvx - 1])
-        translate([-bi_w / 2 + k * bi_w / nvx - 0.6, -bi_d / 2, z_floor - 0.01])
-            cube([1.2, bi_d, z_kr - z_floor + 0.01]);
-    for (k = [1 : nvy - 1])
-        translate([-bi_w / 2, -bi_d / 2 + k * bi_d / nvy - 0.6, z_floor - 0.01])
-            cube([bi_w, 1.2, z_kr - z_floor + 0.01]);
 }
 
 // dop in gesloten stand
-module doos_dop() {
-    g = dop_fit;
+module koker_dop_dicht() {
+    g = koker_fit;
     difference() {
-        translate([0, 0, z_sch]) rsq(W, D, 3.75, dop_h);
-        translate([0, 0, z_sch - 1]) rsq(kr_w + 2 * g, kr_d + 2 * g, kr_r + g, Ht - dop_top - z_sch + 1);
-        // invoerschuinte aan de onderrand
-        hull() {
-            slice(kr_w + 2 * g + 1, kr_d + 2 * g + 1, kr_r + g + 0.5, z_sch - 0.01);
-            slice(kr_w + 2 * g, kr_d + 2 * g, kr_r + g, z_sch + 0.5);
+        union() {
+            translate([W / 2 - k_pl / 2, 0, k_z0 + g]) rsq(k_pl, k_iw - 2 * g, 0.5, k_z1 - k_z0 - 2 * g);
+            // kliknokjes op de zijkanten (vallen in de groefjes van de koker)
+            for (side = [-1, 1]) translate([W / 2 - k_pl / 2, side * (k_iw / 2 - g), (k_z0 + k_z1) / 2])
+                rotate([0, 0, 45]) cube([0.85, 0.85, k_z1 - k_z0 - 7], center = true);
         }
-        if (dop_klik > 0) klikring(kr_w + 2 * g, kr_d + 2 * g, kr_r + g, z_kl, dop_klik + 0.1);
-        if (label_d > 0)
-            translate([0, 0, Ht - label_d]) rsq(W - 6, D - 6, 2, label_d + 1);
+        for (k = [0 : k_n - 1]) {
+            c = k_kolommen[k];
+            for (r = [[c[1], k_zb(k), c[5]], [c[2], k_zo(k), c[6]]]) if (r[0] > 0) {
+                translate([W / 2 - k_pl - 1, k_y(k), r[1]]) rotate([0, 90, 0])
+                    cylinder(d = r[0] + koker_gat, h = k_pl - k_front + 1);
+                // maat op de voorkant, over het gat heen
+                translate([W / 2 - 0.4, k_y(k), r[1]]) rotate([90, 0, 90])
+                    linear_extrude(1) text(r[2], size = min(2.4, (c[0] + k_tus - 0.8) / (0.8 * len(r[2]))),
+                                           halign = "center", valign = "center");
+            }
+        }
+        // vingergreep bovenop, onder de uitsparing in het dak (0,5 mm diep, boven de gaten)
+        for (dx = [2.5, 5]) translate([W / 2 - dx, 0, k_z1 - g + 0.5]) rotate([90, 0, 0]) cylinder(r = 1, h = 10, center = true);
     }
 }
 
-// dop om te printen: bovenkant op het bed
-module doos_deksel() translate([0, 0, Ht]) rotate([180, 0, 0]) doos_dop();
+// dop om te printen: voorkant op het bed
+module koker_dop() translate([0, 0, W / 2]) rotate([0, 90, 0]) translate([0, 0, -(k_z0 + k_z1) / 2])
+    koker_dop_dicht();
 
 // ==== Cassette ====
 
@@ -670,13 +704,9 @@ else if (onderdeel == "cassette_beide") {
 }
 else if (onderdeel == "inlegplaat") inlegplaat();
 else if (onderdeel == "baseplate") losse_baseplate();
-else if (onderdeel == "doos") doos();
-else if (onderdeel == "doos_deksel") doos_deksel();
-else if (onderdeel == "doos_en_deksel") {
-    doos();
-    translate([0, D + 10, 0]) doos_deksel();
-}
-else if (onderdeel == "voorbeeld_doos") { doos(); doos_dop(); }
+else if (onderdeel == "koker") koker();
+else if (onderdeel == "koker_dop") koker_dop();
+else if (onderdeel == "voorbeeld_koker") { koker(); koker_dop_dicht(); }
 // proefstukjes voor de klik: alleen de voeten, of alleen de stapelrand
 else if (onderdeel == "test_voet") intersection() {
     bakje(); translate([0, 0, -1]) rsq(W + 2, D + 2, 1, foot_h + 2.2);
@@ -695,7 +725,6 @@ c_ext_d = out_d + 2 * kr + 0.3 + ridge_d + 0.3 + latch_t + 2;  // incl. scharnie
 footprint =
     onderdeel == "schuifdeksel"    ? [lid_w, lid_d] :
     onderdeel == "bakje_en_deksel" ? [max(W, lid_w), D + 10 + lid_d] :
-    onderdeel == "doos_en_deksel"  ? [W, 2 * D + 10] :
     onderdeel == "cassette_beide"  ? [out_w, 2 * c_ext_d + 20] :
     is_cassette                    ? [out_w, c_ext_d] :
                                      [W, D];
@@ -716,10 +745,10 @@ if (is_cassette) {
 } else if (onderdeel == "baseplate") {
     echo(str("Losse Gridfinity-bodem ", gx, "x", gy, ": ", cm(gx * G), " x ", cm(gy * G),
              " x ", gf_base / 10, " cm"));
-} else if (onderdeel == "doos" || onderdeel == "doos_deksel" || onderdeel == "doos_en_deksel"
-           || onderdeel == "voorbeeld_doos") {
-    echo(str("Doos ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " x ", cm(Ht), " cm; binnen ",
-             cm(bi_w), " x ", cm(bi_d), " x ", cm(Ht - dop_top - z_floor), " cm (met dop)"));
+} else if (is_koker) {
+    echo(str("Borenkoker ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " x ", cm(Hb + lip_h),
+             " cm; boren tot ", round(W - k_wand - 2 - k_front), " mm lang, ", k_n, " kolommen, ",
+             round(k_tus * 10) / 10, " mm tussen de boren"));
 } else if (onderdeel == "inlegplaat") {
     echo(str("Inlegplaat ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " cm, vloer ",
              foot_h + inleg_t, " mm boven de bodem van de cassette"));

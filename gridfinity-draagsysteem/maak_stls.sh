@@ -69,8 +69,9 @@ for k in 0.2 0.3 0.4 0.5; do
     gen "test-klik-bodem-$k" -D 'onderdeel="baseplate"' -D gx=1 -D gy=1 -D cassette_klik=$k
 done
 
-# dozen met opsteekdop (geen stapelrand), bv. voor kleine boren
-for n in 2 3; do
-    gen "doos-${n}x1-half" -D 'onderdeel="doos"' -D gx=$n -D gy=1 -D hu=2.5 -D 'vakken="open"'
-    gen "doos-dop-${n}x1-half" -D 'onderdeel="doos_deksel"' -D gx=$n -D gy=1 -D hu=2.5
+# borenkokers: de dop met de boren schuift in de koker (hele hoogte, stapelrand)
+for k in "3-8 3 2" "9-12 4 2" "sds 4 1"; do
+    set -- $k
+    gen "koker-$1-$2x$3" -D 'onderdeel="koker"' -D "koker_set=\"$1\"" -D gx=$2 -D gy=$3 -D hu=5
+    gen "koker-$1-$2x$3-dop" -D 'onderdeel="koker_dop"' -D "koker_set=\"$1\"" -D gx=$2 -D gy=$3 -D hu=5
 done

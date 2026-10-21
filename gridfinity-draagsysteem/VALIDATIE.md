@@ -62,14 +62,15 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **H7** | `schuifdeksel-2x2.stl` heeft dezelfde maat als de deksel van het bakje | ± 0,05 mm |
 | **H8** | Deksel rust op de tussenschotten (elk vakje apart dicht) | bovenkant schot = onderkant deksel (± 0,05) |
 | **H9** | Breekbare steuntjes in de sleuf | 2 per vak langs de sleuf = 4 |
-| **I1** | Dozen 2×1 en 3×1 en hun doppen: dicht model, juiste maat | W × 41,5 mm |
-| **I2** | Dop past dicht op de doos | overlap 0 |
-| **I3** | Dop gelijk met de buitenkant, totale hoogte als een half bakje | 21,9 mm |
-| **I4** | Dop klikt vast | 0,6 mm opgetild: overlap met het klikrandje |
-| **I5** | Klikrandje grijpt ver genoeg in | 0,3 – 0,6 mm |
-| **I6** | Doos klikt in de Gridfinity-bodem | geplaatst geen overlap, opgetild wel |
-| **I7** | Doos klikt op een half bakje | idem |
-| **I8** | Doos op een half bakje in de cassette 5×4, klep dicht | overlap 0, ruimte ≥ 0,4 mm |
+| **I1** | Borenkokers 3-8 (3×2), 9-12 (4×2), SDS (4×1) en doppen: dicht model, juiste maat | W × D × 39,4 mm |
+| **I2** | Geprinte dop (voorkant op het bed) is dezelfde als de dop in de koker | volume ± 1 mm³ |
+| **I3** | Dop past dicht, voorkant gelijk met de koker | overlap 0 |
+| **I4** | Dop klikt vast | 2 mm eruit: nokjes raken de wand |
+| **I5** | Alle boren (lengtes uit README) passen met de dop dicht | overlap 0 met koker en dop, ≥ 0,5 mm vrij achteraan |
+| **I6** | Dop met boren schuift er helemaal uit | overlap 0 op elke positie |
+| **I7** | Koker klikt in de Gridfinity-bodem | geplaatst geen overlap, opgetild wel |
+| **I8** | Bakje klikt bovenop de koker (stapelrand) | idem |
+| **I9** | Drie kokers en een bakje 1×2 samen in de cassette 5×4, klep dicht | overlap 0, ruimte ≥ 0,4 mm |
 
 Voor G3–G6 gebruikt het script een benadering van de tang (de omtrek uit de
 foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die

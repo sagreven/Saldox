@@ -313,61 +313,93 @@ for f, vakken, hu, vx, vy in [("bakje-2x2-vakjes-heel.stl", "per_vak", 5, 2, 2),
     n = len(loc) // 2 - 2              # min de wandhoekjes aan beide uiteinden van de sleuf
     check("H9", f"{f}: breekbare steuntjes in de sleuf (2 per vak)", n == 4, f"{n} steuntjes")
 
-# ---------- I: dozen met grote schuifdeksel ----------
+# ---------- I: borenkokers ----------
 
+BOREN = """
+function blen(d, steen) = steen
+    ? lookup(d, [[3,70],[4,75],[5,85],[6,100],[7,100],[8,120],[9,120],[10,120],[11,150],[12,150]])
+    : lookup(d, [[3,61],[4,75],[5,86],[6,93],[7,109],[8,117],[9,125],[10,133],[11,142],[12,151]]);
+module boren() for (k = [0 : k_n - 1]) {
+    c = k_kolommen[k];
+    // [dikte boor, schacht, hoogte, tekst]; de schacht zit in de dop
+    for (r = [[c[3], c[1], k_zb(k), c[5]], [c[4], c[2], k_zo(k), c[6]]]) {
+        st = len(r[3]) > 1 && r[3][1] == "t";
+        L = koker_set == "sds" ? 160 : blen(r[0], st);
+        s = k_pl - k_front;
+        translate([W / 2 - k_front - 0.05, k_y(k), r[2]]) rotate([0, -90, 0]) {
+            cylinder(d = r[1], h = s + 1);
+            translate([0, 0, s + 0.1]) cylinder(d = r[0], h = L - s - 0.1);
+        }
+    }
+}
+"""
+gen = os.path.join(HIER, "generator.scad")
 onder = laad("cassette-5x4-4.5cm-onderbak.stl")
 h_body = onder.bounds[1][2] - KR
 klep, plafond = klep_dicht(laad("cassette-5x4-4.5cm-deksel.stl"), h_body)
 bp = laad("baseplate-5x2.stl")
-for n in (2, 3):
-    bx = laad(f"doos-{n}x1-half.stl")
-    dk = laad(f"doos-dop-{n}x1-half.stl")
-    W, Ht = n * G - 0.5, 21.9
-    e = bx.extents
-    check("I1", f"doos {n}x1 half: dicht model, maat", bx.is_watertight and len(bx.split()) == 1
-          and abs(e[0] - W) < 0.05 and abs(e[1] - 41.5) < 0.05,
+in_cassette = []
+for ks, gx, gy in [("3-8", 3, 2), ("9-12", 4, 2), ("sds", 4, 1)]:
+    naam = f"koker-{ks}-{gx}x{gy}"
+    kk = laad(naam + ".stl")
+    dp = laad(naam + "-dop.stl")
+    W, D = gx * G - 0.5, gy * G - 0.5
+    e = kk.extents
+    check("I1", f"{naam}: dicht model, maat", kk.is_watertight and len(kk.split()) == 1
+          and abs(e[0] - W) < 0.05 and abs(e[1] - D) < 0.05 and abs(e[2] - 39.4) < 0.05,
           f"{e[0]:.2f} x {e[1]:.2f} x {e[2]:.2f} mm")
-    check("I1", f"dop {n}x1: dicht model", dk.is_watertight and len(dk.split()) == 1,
-          f"{dk.extents[0]:.2f} x {dk.extents[1]:.2f} x {dk.extents[2]:.2f} mm")
-    # dop is ondersteboven geprint: terugdraaien, bovenkant op Ht
-    dicht = dk.copy()
-    dicht.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0]))
-    dicht.apply_translation([0, 0, Ht])
-    zit = overlap(bx, dicht)
-    check("I2", f"doos {n}x1: dop past dicht", zit < 0.01, f"overlap {zit:.3f} mm3")
-    sb = dicht.bounds
-    check("I3", f"doos {n}x1: dop gelijk met de buitenkant, hoogte {Ht} mm",
-          abs(sb[1][2] - Ht) < 0.05 and abs(dicht.extents[0] - W) < 0.05 and abs(dicht.extents[1] - 41.5) < 0.05,
-          f"{dicht.extents[0]:.2f} x {dicht.extents[1]:.2f}, bovenkant {sb[1][2]:.2f} mm")
-    til = overlap(bx, verplaatst(dicht, 0, 0, 0.6))
-    check("I4", f"doos {n}x1: dop klikt vast (0,6 mm opgetild: klikrandje)", til > 1, f"{til:.1f} mm3")
-    # hoe ver het klikrandje voorbij de binnenkant van de dop steekt
-    loc, _, _ = bx.ray.intersects_location([[W, 0, Ht - 8 + 2]], [[-1, 0, 0]])
-    rand = max(loc[:, 0])
-    loc, _, _ = dicht.ray.intersects_location([[0, 0, Ht - 8 + 0.8]], [[1, 0, 0]])
-    binnen = min(loc[:, 0])
-    k = rand - binnen
-    check("I5", f"doos {n}x1: klikrandje grijpt ver genoeg in", 0.3 <= k <= 0.6, f"{k:.2f} mm")
-    x = -2 * G + (n - 1) * G / 2
-    zit = overlap(bp, verplaatst(bx, x, -G / 2, 0))
-    lift = overlap(bp, verplaatst(bx, x, -G / 2, LIFT))
-    check("I6", f"doos {n}x1: klikt in de Gridfinity-bodem", zit < 0.1 and lift > 0.5,
-          f"geplaatst {zit:.2f}, opgetild {lift:.2f} mm3")
-    zit = overlap(half, verplaatst(bx, (n - 1) * G / 2, 0, 17.5))
-    lift = overlap(half, verplaatst(bx, (n - 1) * G / 2, 0, 17.5 + LIFT))
-    check("I7", f"doos {n}x1: klikt op een half bakje", zit < 0.1 and lift > 0.5,
-          f"geplaatst {zit:.2f}, opgetild {lift:.2f} mm3")
-    # in de cassette 5x4 op een half bakje, klep dicht
-    x, y = vak(0, 3, 5, 4)
-    x += (n - 1) * G / 2
-    stapel = [verplaatst(half, x - (n - 1) * G / 2, y, C_FLOOR), verplaatst(bx, x, y, C_FLOOR + 17.5),
-              verplaatst(dicht, x, y, C_FLOOR + 17.5)]
-    if n == 2:
-        stapel.append(verplaatst(half, x + G / 2, y, C_FLOOR))
-    botsing = sum(overlap(b, onder) + overlap(b, klep) for b in stapel)
-    ruimte = plafond - max(b.bounds[1][2] for b in stapel)
-    check("I8", f"doos {n}x1 met dop: op een half bakje in de cassette, klep dicht", botsing < 0.1 and ruimte >= 0.4,
-          f"overlap {botsing:.2f} mm3, ruimte {ruimte:.2f} mm")
+    check("I1", f"{naam}-dop: dicht model", dp.is_watertight and len(dp.split()) == 1)
+    vars_ = f'onderdeel = ""; koker_set = "{ks}"; gx = {gx}; gy = {gy}; hu = 5;'
+    dicht = scad_code(f"include <{gen}>\n{vars_}\nkoker_dop_dicht();\n", f"dop-{ks}.stl")
+    boren = scad_code(f"include <{gen}>\n{vars_}\n{BOREN}\nboren();\n", f"boren-{ks}.stl")
+    check("I2", f"{naam}: geprinte dop = dop in de koker", abs(dp.volume - dicht.volume) < 1,
+          f"{dp.volume:.0f} / {dicht.volume:.0f} mm3")
+    zit = overlap(kk, dicht)
+    check("I3", f"{naam}: dop past dicht, voorkant gelijk met de koker", zit < 0.01
+          and abs(dicht.bounds[1][0] - W / 2) < 0.05, f"overlap {zit:.3f} mm3")
+    klik = overlap(kk, verplaatst(dicht, 2))
+    check("I4", f"{naam}: dop klikt vast (2 mm eruit: nokjes tegen de wand)", klik > 0.3, f"{klik:.2f} mm3")
+    b1 = overlap(boren, kk)
+    b2 = overlap(boren, dicht)
+    vrij = boren.bounds[0][0] - (-W / 2 + 1.6)
+    check("I5", f"{naam}: alle boren passen, dop dicht", b1 < 0.01 and b2 < 0.01 and vrij >= 0.5,
+          f"overlap {b1 + b2:.3f} mm3, {vrij:.1f} mm vrij achteraan")
+    uit = max(overlap(kk, verplaatst(boren, dx)) for dx in range(10, int(W) + 20, 10))
+    check("I6", f"{naam}: dop met boren schuift er helemaal uit", uit < 0.01, f"max overlap {uit:.3f} mm3")
+    zit = overlap(bp, verplaatst(kk, -2 * G + (gx - 1) * G / 2, -G / 2 + (gy - 1) * G / 2, 0))
+    til = overlap(bp, verplaatst(kk, -2 * G + (gx - 1) * G / 2, -G / 2 + (gy - 1) * G / 2, LIFT))
+    check("I7", f"{naam}: klikt in de Gridfinity-bodem", zit < 0.1 and til > 0.5,
+          f"geplaatst {zit:.2f}, opgetild {til:.2f} mm3")
+    x, y = -(gx - 1) / 2 * G, -(gy - 1) / 2 * G
+    zit = overlap(kk, verplaatst(half, x, y, 35))
+    til = overlap(kk, verplaatst(half, x, y, 35 + LIFT))
+    check("I8", f"{naam}: bakje klikt bovenop (stapelrand)", zit < 0.1 and til > 0.5,
+          f"geplaatst {zit:.2f}, opgetild {til:.2f} mm3")
+    in_cassette.append((kk, dicht, boren))
+
+# alles samen in de cassette 5x4 van 4,5 cm, klep dicht: 9-12 achter (kolom 0-3,
+# rij 2-3), 3-8 voor (kolom 0-2, rij 0-1), SDS gedraaid in kolom 4, bakje 1x2 in
+# kolom 3, rij 0-1
+def midden(i0, i1, j0, j1):
+    a, b = vak(i0, j0, 5, 4), vak(i1, j1, 5, 4)
+    return (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+stuk = []
+for (kk, dicht, boren), (i0, i1, j0, j1), draai in zip(in_cassette, [(0, 2, 0, 1), (0, 3, 2, 3), (4, 4, 0, 3)],
+                                                       [False, False, True]):
+    x, y = midden(i0, i1, j0, j1)
+    for m in (kk, dicht, boren):
+        m = m.copy()
+        if draai:
+            m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [0, 0, 1]))
+        stuk.append(verplaatst(m, x, y, C_FLOOR))
+x, y = midden(3, 3, 0, 1)
+stuk.append(verplaatst(laad("bakje-1x2-vakjes-heel.stl"), x, y, C_FLOOR))
+botsing = sum(overlap(m, onder) + overlap(m, klep) for m in stuk)
+tussen = sum(overlap(stuk[i], stuk[j]) for i in range(0, len(stuk), 3) for j in range(i + 3, len(stuk), 3))
+ruimte = plafond - max(m.bounds[1][2] for m in stuk)
+check("I9", "kokers 3-8, 9-12, SDS en bakje 1x2 samen in cassette 5x4, klep dicht",
+      botsing < 0.1 and tussen < 0.1 and ruimte >= 0.4,
+      f"overlap {botsing:.2f} / {tussen:.2f} mm3, ruimte {ruimte:.2f} mm")
 
 # ---------- rapport ----------
 

@@ -149,25 +149,39 @@ Te stug of te los: pas `pad_haak`, `pad_groei`, `pad_t`, `pad_niveaus`, `pad_sta
 
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
-### Doos met opsteekdop (bv. kleine boren)
+### Borenkokers (hout, staal, steen en SDS-plus)
 
-Een lange doos met Gridfinity-voeten (met klik) en een dop die je er bovenop
-steekt, zoals bij een fles. De dop (8 mm hoog) schuift over een kraag, staat op
-de schouder en klikt achter een randje (0,35 mm). De buitenkant is gelijk met de
-doos; samen zijn ze even hoog als een half bakje (2,2 cm). Aan de korte kanten
-zit onder de dop een duimgreepje om hem eraf te wippen. Er is geen stapelrand:
-op een doos kan niets staan, maar een doos klikt wel op een half bakje of in de
-Gridfinity-bodem.
+Een koker ligt in de lengte in de Gridfinity, is aan één korte kant open en
+heeft bovenop een gewone stapelrand (met klik), zodat er een bakje op kan. De
+boren steken met hun schacht in de **dop**; de dop schuift met de boren in de
+koker, sluit gelijk met de buitenkant af en klikt vast met twee nokjes. Op de
+voorkant van de dop staat bij elk gat de maat (H = hout, S = staal, St =
+steen). Boven de dop zit een uitsparing in het dak om hem er met je vinger uit
+te trekken.
 
-| Bestand | Maat | Binnen |
-|---|---|---|
-| `doos-2x1-half` + `doos-dop-2x1-half` | 8,4 × 4,2 × 2,2 cm | 7,8 × 3,6 × 1,4 cm (boren tot ca. 78 mm lang) |
-| `doos-3x1-half` + `doos-dop-3x1-half` | 12,6 × 4,2 × 2,2 cm | 12,0 × 3,6 × 1,4 cm (boren tot ca. 120 mm) |
+| Bestand (+ `-dop`) | Maat | Boren | Langste boor |
+|---|---|---|---|
+| `koker-3-8-3x2` | 12,6 × 8,4 × 3,9 cm | 3 – 8 mm: boven hout, onder staal; rechts steen (3/4, 5/6, 7/8) | 120 mm |
+| `koker-9-12-4x2` | 16,8 × 8,4 × 3,9 cm | 9 – 12 mm: boven hout, onder staal; rechts steen (9/10, 11/12) | 162 mm |
+| `koker-sds-4x1` | 16,8 × 4,2 × 3,9 cm | SDS-plus 6, 8 (links) en 10, 12 (rechts), 160 mm | 162 mm |
 
-In de generator: onderdeel *Doos* en *Doos - dop*, met de gewone maat, hoogte
-(half of heel) en indeling. Onder *Doos*: hoogte van de dop, speling en klik
-(te stug: `dop_klik` kleiner; te los: groter). Print de doos rechtop en de dop
-met de bovenkant op het bed.
+Samen met een bakje 1 × 2 heel vullen ze precies de cassette 5 × 4 van 4,5 cm:
+
+```
+  ┌────┬────┬────┬────┬────┐
+  │ 9 – 12 mm (4 × 2)    │SDS │   achter (scharnier)
+  │                      │4×1 │
+  ├────┬────┬────┬────┤ ge-│
+  │ 3 – 8 mm     │1×2 │draaid│
+  │ (3 × 2)      │bak │    │   voor (klikbeugels)
+  └────┴────┴────┴────┴────┘
+```
+
+Lengtes waar mee gerekend is: staal DIN 338 (3 mm 61 … 12 mm 151), hout even
+lang, steen 70 – 150 mm, SDS-plus 160 mm. Langere boren: kies een langere koker
+(Maat) en controleer de melding "boren tot … mm lang". Zitten de boren te los
+of te vast in de dop: `koker_gat` (speling op de diameter, standaard 0,3 mm).
+Print de koker rechtop en de dop met de voorkant op het bed.
 
 ### Magneten en staalband: naast en op elkaar
 
