@@ -68,3 +68,10 @@ done
 for k in 0.2 0.3 0.4 0.5; do
     gen "test-klik-bodem-$k" -D 'onderdeel="baseplate"' -D gx=1 -D gy=1 -D cassette_klik=$k
 done
+
+# dozen met grote schuifdeksel (geen stapelrand), bv. voor kleine boren;
+# de deksel past op half en heel
+gen doos-2x1-half -D 'onderdeel="doos"' -D gx=2 -D gy=1 -D hu=2.5 -D 'vakken="open"'
+gen doos-3x1-half -D 'onderdeel="doos"' -D gx=3 -D gy=1 -D hu=2.5 -D 'vakken="open"'
+gen doos-deksel-2x1 -D 'onderdeel="doos_deksel"' -D gx=2 -D gy=1
+gen doos-deksel-3x1 -D 'onderdeel="doos_deksel"' -D gx=3 -D gy=1

@@ -62,6 +62,15 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **H7** | `schuifdeksel-2x2.stl` heeft dezelfde maat als de deksel van het bakje | ± 0,05 mm |
 | **H8** | Deksel rust op de tussenschotten (elk vakje apart dicht) | bovenkant schot = onderkant deksel (± 0,05) |
 | **H9** | Breekbare steuntjes in de sleuf | 2 per vak langs de sleuf = 4 |
+| **I1** | Dozen 2×1 en 3×1 en hun deksels: dicht model, juiste maat | W × 41,5 × 21,9 mm |
+| **I2** | Deksel past dicht in de doos | overlap 0 |
+| **I3** | Deksel ligt gelijk met de bovenrand | ≤ 0,15 mm lager |
+| **I4** | Deksel schuift er helemaal uit | overlap 0 op elke positie |
+| **I5** | Deksel kan er niet omhoog uit (zwaluwstaart) | 0,4 mm opgetild: overlap |
+| **I6** | Aanslag achteraan | 0,5 mm verder: overlap |
+| **I7** | Doos klikt in de Gridfinity-bodem | geplaatst geen overlap, opgetild wel |
+| **I8** | Doos klikt op een half bakje | idem |
+| **I9** | Doos op een half bakje in de cassette 5×4, klep dicht | overlap 0, ruimte ≥ 0,4 mm |
 
 Voor G3–G6 gebruikt het script een benadering van de tang (de omtrek uit de
 foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die

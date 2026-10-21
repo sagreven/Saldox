@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, doos:Doos - lange doos met grote schuifdeksel, doos_deksel:Doos - deksel, doos_en_deksel:Doos + deksel - één printplaat, voorbeeld_doos:Voorbeeld - doos met deksel dicht, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -52,6 +52,12 @@ steunen = 2; // [0:1:5]
 klik = false;
 // Kant waar de deksel uit schuift (voor = kant van de klikbeugels van de cassette)
 schuif = "rechts"; // [rechts:Rechts, links:Links, voor:Voor, achter:Achter]
+
+/* [Doos] */
+// Een doos heeft geen stapelrand: de deksel ligt over de hele bovenkant, gelijk met de rand, en schuift er aan de rechterkant (+x) uit. Hoogte = hoogte van het bakje (half of heel); de indeling volgt "Indeling binnenin". Dikte van de deksel in mm
+doos_deksel_t = 2.4; // [1.8:0.2:4]
+// Wanddikte van de doos in mm (de groef voor de deksel gaat er 1.2 mm in)
+doos_wand = 2.4; // [2:0.2:4]
 
 /* [Inlegplaat] */
 // Dikte van de vlakke plaat boven de voeten in mm (een inlegplaat maakt van Gridfinity-vakken een vlakke vloer, bv. voor gereedschap in een al geprinte cassette)
@@ -384,6 +390,64 @@ module schuifdeksel_dicht() {
     rotate([0, 0, sl_rot]) translate([lid_x, 0, z_g0]) schuifdeksel();
 }
 
+// ==== Doos met grote schuifdeksel ====
+// Geen stapelrand: de deksel bedekt de hele binnenkant plus de groeven in de
+// lange wanden en ligt gelijk met de bovenrand. Zijkanten en achterkant van de
+// deksel zijn 45 graden afgeschuind (zwaluwstaart, zonder support te printen).
+// De voorkant (+x) is recht en vormt de bovenrand van de voorwand.
+
+Ht      = Hb + lip_h;                 // hoogte doos = hoogte bakje met stapelrand
+d_g     = 1.2;                        // hoe ver de groef in de wand gaat
+d_bev   = doos_deksel_t - 0.6;        // afschuining deksel (onderste 0,6 mm recht)
+z_d0    = Ht - doos_deksel_t - lid_fit; // onderkant groef = bovenkant tussenschotten
+d_x0    = -W / 2 + doos_wand - d_g;   // achterkant deksel (in de achterwand)
+d_x1    = W / 2;                      // voorkant deksel (gelijk met de buitenkant)
+d_y     = D - 2 * doos_wand + 2 * d_g; // breedte deksel onderaan (zonder speling)
+
+// deksel (g = 0) of groef (g = speling), onderkant op z = 0
+module doos_deksel_vorm(g = 0, x1 = d_x1) {
+    module rr(xa, xb, y, z, h) translate([(xa + xb) / 2, 0, z]) rsq(xb - xa, y, 2, h);
+    hull() {
+        rr(d_x0 - g, x1, d_y + 2 * g, 0, 0.6 + g);
+        rr(d_x0 - g + d_bev, x1, d_y + 2 * g - 2 * d_bev, 0, doos_deksel_t + g);
+    }
+}
+
+module doos() {
+    iw = W - 2 * doos_wand;
+    id = D - 2 * doos_wand;
+    difference() {
+        union() {
+            for (i = [0 : gx - 1], j = [0 : gy - 1])
+                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, 0]) gf_foot();
+            translate([0, 0, foot_h - 0.01]) rsq(W, D, 3.75, Ht - foot_h + 0.01);
+        }
+        translate([0, 0, z_floor]) rsq(iw, id, 3.75 - doos_wand, z_d0 - z_floor + 0.01);
+        // groef: achteraan dicht, aan de voorkant (+x) door de wand naar buiten
+        translate([0, 0, z_d0]) doos_deksel_vorm(lid_fit, W);
+    }
+    // tussenschotten tot onder de deksel
+    for (k = [1 : nvx - 1])
+        translate([-iw / 2 + k * iw / nvx - 0.6, -id / 2, z_floor - 0.01])
+            cube([1.2, id, z_d0 - z_floor + 0.01]);
+    for (k = [1 : nvy - 1])
+        translate([-iw / 2, -id / 2 + k * id / nvy - 0.6, z_floor - 0.01])
+            cube([iw, 1.2, z_d0 - z_floor + 0.01]);
+}
+
+// deksel plat op het bed, met greepsleuf voor de duim en stickervlak
+module doos_deksel() {
+    sw = d_y - 2 * d_bev;              // bovenkant deksel
+    difference() {
+        doos_deksel_vorm();
+        for (k = [0 : 2])
+            translate([d_x1 - 6 - 3 * k, 0, doos_deksel_t - 0.8]) rsq(1.5, min(24, sw - 6), 0.7, 1);
+        if (label_d > 0)
+            translate([(d_x0 + d_bev + d_x1 - 14) / 2 + 1, 0, doos_deksel_t - label_d])
+                rsq(d_x1 - 14 - d_x0 - d_bev - 2, sw - 4, 1.5, label_d + 1);
+    }
+}
+
 // ==== Cassette ====
 
 // rand die de tong vormt: tussen holte en holte + halve wand
@@ -592,6 +656,13 @@ else if (onderdeel == "cassette_beide") {
 }
 else if (onderdeel == "inlegplaat") inlegplaat();
 else if (onderdeel == "baseplate") losse_baseplate();
+else if (onderdeel == "doos") doos();
+else if (onderdeel == "doos_deksel") doos_deksel();
+else if (onderdeel == "doos_en_deksel") {
+    doos();
+    translate([0, D / 2 + 10 + d_y / 2, 0]) doos_deksel();
+}
+else if (onderdeel == "voorbeeld_doos") { doos(); translate([0, 0, z_d0]) doos_deksel(); }
 // proefstukjes voor de klik: alleen de voeten, of alleen de stapelrand
 else if (onderdeel == "test_voet") intersection() {
     bakje(); translate([0, 0, -1]) rsq(W + 2, D + 2, 1, foot_h + 2.2);
@@ -610,6 +681,7 @@ c_ext_d = out_d + 2 * kr + 0.3 + ridge_d + 0.3 + latch_t + 2;  // incl. scharnie
 footprint =
     onderdeel == "schuifdeksel"    ? [lid_w, lid_d] :
     onderdeel == "bakje_en_deksel" ? [max(W, lid_w), D + 10 + lid_d] :
+    onderdeel == "doos_en_deksel"  ? [W, D + 10 + d_y] :
     onderdeel == "cassette_beide"  ? [out_w, 2 * c_ext_d + 20] :
     is_cassette                    ? [out_w, c_ext_d] :
                                      [W, D];
@@ -630,6 +702,10 @@ if (is_cassette) {
 } else if (onderdeel == "baseplate") {
     echo(str("Losse Gridfinity-bodem ", gx, "x", gy, ": ", cm(gx * G), " x ", cm(gy * G),
              " x ", gf_base / 10, " cm"));
+} else if (onderdeel == "doos" || onderdeel == "doos_deksel" || onderdeel == "doos_en_deksel"
+           || onderdeel == "voorbeeld_doos") {
+    echo(str("Doos ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " x ", cm(Ht), " cm; binnen ",
+             cm(W - 2 * doos_wand), " x ", cm(D - 2 * doos_wand), " x ", cm(z_d0 - z_floor), " cm"));
 } else if (onderdeel == "inlegplaat") {
     echo(str("Inlegplaat ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " cm, vloer ",
              foot_h + inleg_t, " mm boven de bodem van de cassette"));
