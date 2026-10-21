@@ -27,6 +27,7 @@ gen bakje-1x1-2vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=1 -D hu=5 \
 # 1x2 met de deksel dwars (opzij), zodat beide vakjes tegelijk opengaan
 gen bakje-1x2-vakjes-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5
 gen bakje-1x2-open-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakken="open"'
+gen bakje-2x1-open-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'vakken="open"'
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
 
