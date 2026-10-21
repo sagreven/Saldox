@@ -76,3 +76,8 @@ for k in "3-8 3 2" "9-12 4 2" "sds 4 1"; do
     gen "koker-$1-$2x$3" -D 'onderdeel="koker"' -D "koker_set=\"$1\"" -D gx=$2 -D gy=$3 -D hu=5
     gen "koker-$1-$2x$3-dop" -D 'onderdeel="koker_dop"' -D "koker_set=\"$1\"" -D gx=$2 -D gy=$3 -D hu=5
 done
+
+# 2x1 met de deksel dwars (naar voren), zodat beide vakjes tegelijk opengaan
+gen bakje-2x1-vakjes-heel-dwars -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'schuif="voor"'
+gen bakje-2x1-open-heel-dwars -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'schuif="voor"' -D 'vakken="open"'
+gen schuifdeksel-2x1-dwars -D 'onderdeel="schuifdeksel"' -D gx=2 -D gy=1 -D 'schuif="voor"'
