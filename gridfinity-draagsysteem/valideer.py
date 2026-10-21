@@ -321,44 +321,52 @@ klep, plafond = klep_dicht(laad("cassette-5x4-4.5cm-deksel.stl"), h_body)
 bp = laad("baseplate-5x2.stl")
 for n in (2, 3):
     bx = laad(f"doos-{n}x1-half.stl")
-    dk = laad(f"doos-deksel-{n}x1.stl")
+    dk = laad(f"doos-dop-{n}x1-half.stl")
     W, Ht = n * G - 0.5, 21.9
     e = bx.extents
     check("I1", f"doos {n}x1 half: dicht model, maat", bx.is_watertight and len(bx.split()) == 1
-          and abs(e[0] - W) < 0.05 and abs(e[1] - 41.5) < 0.05 and abs(e[2] - Ht) < 0.05,
+          and abs(e[0] - W) < 0.05 and abs(e[1] - 41.5) < 0.05,
           f"{e[0]:.2f} x {e[1]:.2f} x {e[2]:.2f} mm")
-    check("I1", f"doos-deksel {n}x1: dicht model", dk.is_watertight and len(dk.split()) == 1,
+    check("I1", f"dop {n}x1: dicht model", dk.is_watertight and len(dk.split()) == 1,
           f"{dk.extents[0]:.2f} x {dk.extents[1]:.2f} x {dk.extents[2]:.2f} mm")
-    z0 = Ht - dk.extents[2] - 0.1                 # deksel ligt op de groefbodem
-    dicht = verplaatst(dk, 0, 0, z0)
-    check("I2", f"doos {n}x1: deksel past dicht", overlap(bx, dicht) < 0.01, f"overlap {overlap(bx, dicht):.3f} mm3")
-    check("I3", f"doos {n}x1: deksel gelijk met de bovenrand", abs(dicht.bounds[1][2] - Ht) <= 0.15,
-          f"bovenkant {dicht.bounds[1][2]:.2f} mm, rand {Ht} mm")
-    uit = max(overlap(bx, verplaatst(dk, dx, 0, z0)) for dx in np.arange(0, W + 1, 4))
-    check("I4", f"doos {n}x1: deksel schuift er helemaal uit", uit < 0.01, f"max overlap {uit:.3f} mm3")
-    til = overlap(bx, verplaatst(dk, 0, 0, z0 + 0.4))
-    check("I5", f"doos {n}x1: deksel kan er niet uit omhoog (zwaluwstaart)", til > 1, f"opgetild {til:.1f} mm3")
-    terug = overlap(bx, verplaatst(dk, -0.5, 0, z0))
-    check("I6", f"doos {n}x1: aanslag achteraan", terug > 0.5, f"{terug:.1f} mm3")
+    # dop is ondersteboven geprint: terugdraaien, bovenkant op Ht
+    dicht = dk.copy()
+    dicht.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0]))
+    dicht.apply_translation([0, 0, Ht])
+    zit = overlap(bx, dicht)
+    check("I2", f"doos {n}x1: dop past dicht", zit < 0.01, f"overlap {zit:.3f} mm3")
+    sb = dicht.bounds
+    check("I3", f"doos {n}x1: dop gelijk met de buitenkant, hoogte {Ht} mm",
+          abs(sb[1][2] - Ht) < 0.05 and abs(dicht.extents[0] - W) < 0.05 and abs(dicht.extents[1] - 41.5) < 0.05,
+          f"{dicht.extents[0]:.2f} x {dicht.extents[1]:.2f}, bovenkant {sb[1][2]:.2f} mm")
+    til = overlap(bx, verplaatst(dicht, 0, 0, 0.6))
+    check("I4", f"doos {n}x1: dop klikt vast (0,6 mm opgetild: klikrandje)", til > 1, f"{til:.1f} mm3")
+    # hoe ver het klikrandje voorbij de binnenkant van de dop steekt
+    loc, _, _ = bx.ray.intersects_location([[W, 0, Ht - 8 + 2]], [[-1, 0, 0]])
+    rand = max(loc[:, 0])
+    loc, _, _ = dicht.ray.intersects_location([[0, 0, Ht - 8 + 0.8]], [[1, 0, 0]])
+    binnen = min(loc[:, 0])
+    k = rand - binnen
+    check("I5", f"doos {n}x1: klikrandje grijpt ver genoeg in", 0.3 <= k <= 0.6, f"{k:.2f} mm")
     x = -2 * G + (n - 1) * G / 2
     zit = overlap(bp, verplaatst(bx, x, -G / 2, 0))
     lift = overlap(bp, verplaatst(bx, x, -G / 2, LIFT))
-    check("I7", f"doos {n}x1: klikt in de Gridfinity-bodem", zit < 0.1 and lift > 0.5,
+    check("I6", f"doos {n}x1: klikt in de Gridfinity-bodem", zit < 0.1 and lift > 0.5,
           f"geplaatst {zit:.2f}, opgetild {lift:.2f} mm3")
     zit = overlap(half, verplaatst(bx, (n - 1) * G / 2, 0, 17.5))
     lift = overlap(half, verplaatst(bx, (n - 1) * G / 2, 0, 17.5 + LIFT))
-    check("I8", f"doos {n}x1: klikt op een half bakje", zit < 0.1 and lift > 0.5,
+    check("I7", f"doos {n}x1: klikt op een half bakje", zit < 0.1 and lift > 0.5,
           f"geplaatst {zit:.2f}, opgetild {lift:.2f} mm3")
     # in de cassette 5x4 op een half bakje, klep dicht
     x, y = vak(0, 3, 5, 4)
     x += (n - 1) * G / 2
     stapel = [verplaatst(half, x - (n - 1) * G / 2, y, C_FLOOR), verplaatst(bx, x, y, C_FLOOR + 17.5),
-              verplaatst(dk, x, y, C_FLOOR + 17.5 + z0)]
+              verplaatst(dicht, x, y, C_FLOOR + 17.5)]
     if n == 2:
         stapel.append(verplaatst(half, x + G / 2, y, C_FLOOR))
     botsing = sum(overlap(b, onder) + overlap(b, klep) for b in stapel)
     ruimte = plafond - max(b.bounds[1][2] for b in stapel)
-    check("I9", f"doos {n}x1: op een half bakje in de cassette, klep dicht", botsing < 0.1 and ruimte >= 0.4,
+    check("I8", f"doos {n}x1 met dop: op een half bakje in de cassette, klep dicht", botsing < 0.1 and ruimte >= 0.4,
           f"overlap {botsing:.2f} mm3, ruimte {ruimte:.2f} mm")
 
 # ---------- rapport ----------

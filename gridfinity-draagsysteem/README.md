@@ -149,22 +149,25 @@ Te stug of te los: pas `pad_haak`, `pad_groei`, `pad_t`, `pad_niveaus`, `pad_sta
 
 Is je tang langer dan 20,5 cm, neem dan 6 vakken breed (`gx = 6`).
 
-### Doos met grote schuifdeksel (bv. kleine boren)
+### Doos met opsteekdop (bv. kleine boren)
 
-Een lange doos met Gridfinity-voeten (met klik) en een stevige deksel van
-2,4 mm over de hele bovenkant. De deksel ligt gelijk met de bovenrand en schuift
-er aan de rechterkant uit; zijkanten en achterkant zijn zwaluwstaart, dus hij
-kan er niet omhoog uit. Er is geen stapelrand: op een doos kan niets staan, maar
-een doos klikt wel op een half bakje of in de Gridfinity-bodem.
+Een lange doos met Gridfinity-voeten (met klik) en een dop die je er bovenop
+steekt, zoals bij een fles. De dop (8 mm hoog) schuift over een kraag, staat op
+de schouder en klikt achter een randje (0,35 mm). De buitenkant is gelijk met de
+doos; samen zijn ze even hoog als een half bakje (2,2 cm). Aan de korte kanten
+zit onder de dop een duimgreepje om hem eraf te wippen. Er is geen stapelrand:
+op een doos kan niets staan, maar een doos klikt wel op een half bakje of in de
+Gridfinity-bodem.
 
 | Bestand | Maat | Binnen |
 |---|---|---|
-| `doos-2x1-half` + `doos-deksel-2x1` | 8,4 × 4,2 × 2,2 cm | 7,9 × 3,7 × 1,3 cm (boren tot ca. 78 mm lang) |
-| `doos-3x1-half` + `doos-deksel-3x1` | 12,6 × 4,2 × 2,2 cm | 12,1 × 3,7 × 1,3 cm (boren tot ca. 120 mm) |
+| `doos-2x1-half` + `doos-dop-2x1-half` | 8,4 × 4,2 × 2,2 cm | 7,8 × 3,6 × 1,4 cm (boren tot ca. 78 mm lang) |
+| `doos-3x1-half` + `doos-dop-3x1-half` | 12,6 × 4,2 × 2,2 cm | 12,0 × 3,6 × 1,4 cm (boren tot ca. 120 mm) |
 
-In de generator: onderdeel *Doos*, met de gewone maat, hoogte (half of heel) en
-indeling (tussenschotten tot onder de deksel). Print de doos rechtop en de
-deksel plat, met de greepribbels boven.
+In de generator: onderdeel *Doos* en *Doos - dop*, met de gewone maat, hoogte
+(half of heel) en indeling. Onder *Doos*: hoogte van de dop, speling en klik
+(te stug: `dop_klik` kleiner; te los: groter). Print de doos rechtop en de dop
+met de bovenkant op het bed.
 
 ### Magneten en staalband: naast en op elkaar
 
