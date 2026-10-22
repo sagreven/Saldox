@@ -77,7 +77,8 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **J4** | Lade schuift er helemaal uit, over het ribbeltje en onder het dak | overlap 0 op elke positie (0,5 mm opgetild) |
 | **J5** | 20 hele bakjes in de lade (5×4), lade dicht | overlap 0, ≥ 0,4 mm onder het dak |
 | **J6** | Bakje klikt in de lade | opgetild: overlap |
-| **J7** | Cassette 5×4 staat in het randje van de ladekast | geplaatst 0, 1 mm opzij: overlap |
+| **J7** | Ladekast heeft de buitenmaat van de onderbak van een cassette 5×4 | 216,9 × 174,9 mm (± 0,05), cassette erop: overlap 0 |
+| **J10** | Ladekast even hoog als een gesloten cassette van 4,6 cm | 46,0 mm (± 0,05) |
 | **J8** | Inleg en tangen (160, 160 en 200 mm, 20 mm dik) in de cassette van 2,8 cm, klep dicht | overlap 0, ≥ 0,4 mm onder de klep |
 | **J9** | Klemwanden staan buiten de handvatten, het randje grijpt erover | onder het randje overlap 0, randje > 0 |
 

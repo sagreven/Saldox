@@ -193,23 +193,25 @@ ladekast met een schuiflade voor 20 hele bakjes (bv. de lasdoppen).
 |---|---|
 | `cassette-5x4-2.8cm-tangen-onderbak` + `-deksel` | cassette, 21,7 × 18,8 × 2,8 cm |
 | `inleg-tangen-5x4` | plaat met per tang een klem en stootblokjes |
-| `ladekast-5x4` | kast, 22,1 × 17,9 × 4,8 cm, met randje waar de cassette in valt |
+| `ladekast-5x4` | kast, 21,7 × 17,5 × 4,6 cm: zelfde maat als de onderbak van een cassette 5 × 4 en even hoog als een gesloten cassette van 4,6 cm |
 | `lade-5x4` | schuiflade met Gridfinity-bodem en klik, 5 × 4 vakken |
 
-Samen 7,6 cm hoog. De tangen liggen om en om (punt links, rechts, links). De
+Samen 7,4 cm hoog (4,6 + 2,8), dus op hetzelfde raster als een cassette van 2,8 cm op een van 4,6 cm. De tangen liggen om en om (punt links, rechts, links). De
 klem zit bij de handvatten: knijp de tang dicht, druk hem tussen de wanden en
 laat los; hij veert open tegen de wanden en het randje bovenop houdt hem
 vast. De lade schuift naar voren (kant van de klikbeugels) en klikt dicht over
-een ribbeltje; aan de greep in de voorkant trek je hem open. Magneten: in de
-bodem en het dak van de kast, tegenover die in de cassettebodem (let op de
-polariteit: kast-dak en cassette-bodem moeten elkaar aantrekken).
+een ribbeltje; aan de greep in de voorkant trek je hem open. Magneten: alleen in het dak van de kast, tegenover die in de
+cassettebodem (let op de polariteit: ze moeten elkaar aantrekken); ze houden de
+cassette op de kast. De kast is printbaar zonder support als je hem **op zijn
+rug** print; daarom is hij een los onderdeel en niet één geheel met de cassette
+(dan zou het dak een brug van 21 cm zijn).
 
 Per tang staat in de generator (*Inleg voor tangen*, `tangen`): lengte, plek
 van de klem vanaf de punt, breedte tussen de klemwanden en dikte. De
 standaardwaarden zijn een schatting (Knipex 160 / 110 / 34 / 20, Wiha 200 / 140 / 38 / 20 mm): meet je tangen na.
 Is een tang dikker dan 21 mm, kies dan de cassette van 4,6 cm (`lagen = 2`).
-Printen: de kast **op zijn rug** (open voorkant naar boven, dan zijn er geen
-bruggen), de lade en de inleg rechtop.
+Printen: de kast op zijn rug (open voorkant naar boven), de lade en de inleg
+rechtop.
 
 ### Magneten en staalband: naast en op elkaar
 

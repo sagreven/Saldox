@@ -409,7 +409,7 @@ inl = laad("inleg-tangen-5x4.stl")
 for n, m in [("ladekast-5x4", kast), ("lade-5x4", lade), ("inleg-tangen-5x4", inl)]:
     check("J1", f"{n}: dicht model uit één stuk", m.is_watertight and len(m.split()) == 1,
           f"{m.extents[0]:.1f} x {m.extents[1]:.1f} x {m.extents[2]:.1f} mm")
-LK_FLOOR, LADE_KLIK = C_FLOOR, 0.5
+LK_FLOOR, LADE_KLIK = 1.2, 0.5
 dicht = verplaatst(lade, 0, 0, LK_FLOOR)
 v = overlap(kast, dicht)
 check("J2", "lade past dicht in de kast", v < 0.01, f"overlap {v:.3f} mm3")
@@ -419,20 +419,25 @@ uit = max(overlap(kast, verplaatst(dicht, 0, -d, LADE_KLIK)) for d in range(2, 1
 check("J4", "lade schuift er helemaal uit (over het ribbeltje, onder het dak)", uit < 0.01,
       f"max overlap {uit:.3f} mm3")
 # hele bakjes in de lade: alle 16 vakken
-bakken = [verplaatst(heel, (i - 2) * G, -kast.extents[1] / 2 + 6 + (j + 0.5) * G, LK_FLOOR + 1.6)
+bakken = [verplaatst(heel, (i - 2) * G, -kast.extents[1] / 2 + 3.6 + (j + 0.5) * G, LK_FLOOR + 1.6)
           for i in range(5) for j in range(4)]
-v = sum(overlap(b, lade) + overlap(b, kast) for b in bakken)
-ruimte = (kast.bounds[1][2] - 2 - C_FLOOR) - max(b.bounds[1][2] for b in bakken)
+v = sum(overlap(b, dicht) + overlap(b, kast) for b in bakken)
+ruimte = (kast.bounds[1][2] - 2.8) - max(b.bounds[1][2] for b in bakken)
 check("J5", "20 hele bakjes in de lade, lade dicht", v < 0.1 and ruimte >= 0.4,
       f"overlap {v:.2f} mm3, {ruimte:.2f} mm onder het dak")
 til = overlap(lade.copy(), verplaatst(bakken[5], 0, 0, LIFT - LK_FLOOR))
 check("J6", "bakje klikt in de lade", til > 0.5, f"opgetild {til:.2f} mm3")
 cas = laad("cassette-5x4-2.8cm-tangen-onderbak.stl")
-lk_h = kast.extents[2] - 2
+lk_h = kast.extents[2]
 v = overlap(kast, verplaatst(cas, 0, 0, lk_h))
-v2 = overlap(kast, verplaatst(cas, 1.0, 0, lk_h))
-check("J7", "cassette staat in het randje van de ladekast", v < 0.01 and v2 > 0.5,
-      f"overlap {v:.3f}, 1 mm opzij {v2:.1f} mm3")
+ow, od = 5 * G + 0.5 + 6.4, 4 * G + 0.5 + 6.4
+check("J7", "ladekast heeft de buitenmaat van de onderbak van een cassette 5x4", v < 0.01
+      and abs(kast.extents[0] - ow) < 0.05 and abs(kast.extents[1] - od) < 0.05,
+      f"{kast.extents[0]:.2f} x {kast.extents[1]:.2f} mm (cassette {ow:.2f} x {od:.2f}), overlap {v:.3f}")
+ond45 = laad("cassette-5x4-4.5cm-onderbak.stl")
+_, pl45 = klep_dicht(laad("cassette-5x4-4.5cm-deksel.stl"), ond45.bounds[1][2] - KR)
+check("J10", "ladekast even hoog als een gesloten cassette van 4,6 cm", abs(lk_h - (pl45 + TOP_T)) < 0.05,
+      f"{lk_h:.2f} / {pl45 + TOP_T:.2f} mm")
 h_body = cas.bounds[1][2] - KR
 klep, plafond = klep_dicht(laad("cassette-5x4-2.8cm-tangen-deksel.stl"), h_body)
 tangen = scad_code(f"include <{gen}>\nonderdeel = \"\"; gx = 5; gy = 4; lagen = 1; baseplate = false;\n"
