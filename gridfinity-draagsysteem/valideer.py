@@ -401,6 +401,55 @@ check("I9", "kokers 3-8, 9-12, SDS en bakje 1x2 samen in cassette 5x4, klep dich
       botsing < 0.1 and tussen < 0.1 and ruimte >= 0.4,
       f"overlap {botsing:.2f} / {tussen:.2f} mm3, ruimte {ruimte:.2f} mm")
 
+# ---------- J: tangen-cassette op ladekast ----------
+
+kast = laad("ladekast-4x4.stl")
+lade = laad("lade-4x4.stl")
+inl = laad("inleg-tangen-4x4.stl")
+for n, m in [("ladekast-4x4", kast), ("lade-4x4", lade), ("inleg-tangen-4x4", inl)]:
+    check("J1", f"{n}: dicht model uit één stuk", m.is_watertight and len(m.split()) == 1,
+          f"{m.extents[0]:.1f} x {m.extents[1]:.1f} x {m.extents[2]:.1f} mm")
+LK_FLOOR, LADE_KLIK = C_FLOOR, 0.5
+dicht = verplaatst(lade, 0, 0, LK_FLOOR)
+v = overlap(kast, dicht)
+check("J2", "lade past dicht in de kast", v < 0.01, f"overlap {v:.3f} mm3")
+v = overlap(kast, verplaatst(dicht, 0, -2))
+check("J3", "lade klikt dicht (2 mm eruit: ribbeltje)", v > 0.3, f"{v:.2f} mm3")
+uit = max(overlap(kast, verplaatst(dicht, 0, -d, LADE_KLIK)) for d in range(2, 180, 8))
+check("J4", "lade schuift er helemaal uit (over het ribbeltje, onder het dak)", uit < 0.01,
+      f"max overlap {uit:.3f} mm3")
+# hele bakjes in de lade: alle 16 vakken
+bakken = [verplaatst(heel, (i - 1.5) * G, -kast.extents[1] / 2 + 6 + (j + 0.5) * G, LK_FLOOR + 1.6)
+          for i in range(4) for j in range(4)]
+v = sum(overlap(b, lade) + overlap(b, kast) for b in bakken)
+ruimte = (kast.bounds[1][2] - 2 - C_FLOOR) - max(b.bounds[1][2] for b in bakken)
+check("J5", "16 hele bakjes in de lade, lade dicht", v < 0.1 and ruimte >= 0.4,
+      f"overlap {v:.2f} mm3, {ruimte:.2f} mm onder het dak")
+til = overlap(lade.copy(), verplaatst(bakken[5], 0, 0, LIFT - LK_FLOOR))
+check("J6", "bakje klikt in de lade", til > 0.5, f"opgetild {til:.2f} mm3")
+cas = laad("cassette-4x4-2.8cm-tangen-onderbak.stl")
+lk_h = kast.extents[2] - 2
+v = overlap(kast, verplaatst(cas, 0, 0, lk_h))
+v2 = overlap(kast, verplaatst(cas, 1.0, 0, lk_h))
+check("J7", "cassette staat in het randje van de ladekast", v < 0.01 and v2 > 0.5,
+      f"overlap {v:.3f}, 1 mm opzij {v2:.1f} mm3")
+h_body = cas.bounds[1][2] - KR
+klep, plafond = klep_dicht(laad("cassette-4x4-2.8cm-tangen-deksel.stl"), h_body)
+tangen = scad_code(f"include <{gen}>\nonderdeel = \"\"; gx = 4; gy = 4; lagen = 1; baseplate = false;\n"
+                   "tangen_in_inleg();\n", "tangen.stl")
+i_ = verplaatst(inl, 0, 0, C_FLOOR)
+t_ = verplaatst(tangen, 0, 0, C_FLOOR)
+v = overlap(i_, cas) + overlap(i_, klep) + overlap(t_, cas) + overlap(t_, klep)
+check("J8", "inleg en tangen (20 mm dik) in de cassette, klep dicht", v < 0.1 and t_.bounds[1][2] <= plafond - 0.4,
+      f"overlap {v:.2f} mm3, bovenkant tang {t_.bounds[1][2]:.1f}, plafond {plafond:.1f} mm")
+# onder het randje (wand = dikte tang - 1, randje 2 mm hoog) raken de wanden de
+# tang niet; het randje grijpt bewust over de handvatten
+onder_rand = trimesh.boolean.intersection([inl, doos(-100, 100, -100, 100, -1, 1.2 + 19 - 2)], engine="manifold")
+v = overlap(onder_rand, tangen)
+v2 = overlap(inl, tangen)
+check("J9", "klemwanden staan buiten de handvatten, randje grijpt erover", v < 0.1 and v2 > 1,
+      f"onder het randje {v:.2f}, randje {v2:.0f} mm3")
+
 # ---------- rapport ----------
 
 breed = max(len(r[1]) for r in resultaten)

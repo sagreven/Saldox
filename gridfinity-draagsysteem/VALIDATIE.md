@@ -71,6 +71,15 @@ Alle hoogtes zijn gemeten vanaf de onderkant van het onderdeel (of de tafel).
 | **I7** | Koker klikt in de Gridfinity-bodem | geplaatst geen overlap, opgetild wel |
 | **I8** | Bakje klikt bovenop de koker (stapelrand) | idem |
 | **I9** | Drie kokers en een bakje 1×2 samen in de cassette 5×4, klep dicht | overlap 0, ruimte ≥ 0,4 mm |
+| **J1** | Ladekast, lade en tangen-inleg: dicht model uit één stuk | |
+| **J2** | Lade past dicht in de kast | overlap 0 |
+| **J3** | Lade klikt dicht | 2 mm eruit: overlap met het ribbeltje |
+| **J4** | Lade schuift er helemaal uit, over het ribbeltje en onder het dak | overlap 0 op elke positie (0,5 mm opgetild) |
+| **J5** | 16 hele bakjes in de lade, lade dicht | overlap 0, ≥ 0,4 mm onder het dak |
+| **J6** | Bakje klikt in de lade | opgetild: overlap |
+| **J7** | Cassette 4×4 staat in het randje van de ladekast | geplaatst 0, 1 mm opzij: overlap |
+| **J8** | Inleg en tangen (20 mm dik) in de cassette van 2,8 cm, klep dicht | overlap 0, ≥ 0,4 mm onder de klep |
+| **J9** | Klemwanden staan buiten de handvatten, het randje grijpt erover | onder het randje overlap 0, randje > 0 |
 
 Voor G3–G6 gebruikt het script een benadering van de tang (de omtrek uit de
 foto, met de opening tussen de handvatten, als blok van `tang_h` hoog). Die

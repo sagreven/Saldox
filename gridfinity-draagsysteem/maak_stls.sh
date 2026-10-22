@@ -81,3 +81,11 @@ done
 gen bakje-2x1-vakjes-heel-dwars -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'schuif="voor"'
 gen bakje-2x1-open-heel-dwars -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'schuif="voor"' -D 'vakken="open"'
 gen schuifdeksel-2x1-dwars -D 'onderdeel="schuifdeksel"' -D gx=2 -D gy=1 -D 'schuif="voor"'
+
+# cassette 4x4 voor drie tangen (vlakke bodem + inleg met klemmen) op een
+# ladekast met schuiflade voor hele bakjes
+gen cassette-4x4-2.8cm-tangen-onderbak -D 'onderdeel="cassette_onderbak"' -D gx=4 -D gy=4 -D lagen=1 -D baseplate=false
+gen cassette-4x4-2.8cm-tangen-deksel -D 'onderdeel="cassette_deksel"' -D gx=4 -D gy=4 -D lagen=1 -D baseplate=false
+gen inleg-tangen-4x4 -D 'onderdeel="tangen_inleg"' -D gx=4 -D gy=4
+gen ladekast-4x4 -D 'onderdeel="ladekast"' -D gx=4 -D gy=4
+gen lade-4x4 -D 'onderdeel="lade"' -D gx=4 -D gy=4

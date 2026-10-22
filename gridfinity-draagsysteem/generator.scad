@@ -21,7 +21,7 @@
 // Printer > bed) en stopt met een melding als het te groot is.
 
 /* [Wat wil je printen?] */
-onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, koker:Borenkoker, koker_dop:Borenkoker - dop met de boren, voorbeeld_koker:Voorbeeld - borenkoker dicht, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
+onderdeel = "bakje"; // [bakje:Bakje, schuifdeksel:Schuifdeksel, bakje_en_deksel:Bakje + deksel - één printplaat, cassette_onderbak:Cassette - onderbak, cassette_deksel:Cassette - deksel, cassette_beide:Cassette - onderbak + deksel, inlegplaat:Inlegplaat - vlakke plaat met Gridfinity-voeten, baseplate:Losse Gridfinity-bodem - voor een cassette met vlakke bodem, koker:Borenkoker, koker_dop:Borenkoker - dop met de boren, voorbeeld_koker:Voorbeeld - borenkoker dicht, ladekast:Ladekast - onder een cassette, lade:Ladekast - schuiflade, tangen_inleg:Inleg voor tangen met klemmen, voorbeeld_ladekast:Voorbeeld - cassette op ladekast met tangen, test_voet:Proefstukje klik - voeten van het bakje, test_rand:Proefstukje klik - stapelrand van het bakje, voorbeeld_bakje:Voorbeeld - bakje met deksel dicht, voorbeeld_cassette:Voorbeeld - cassette dicht]
 
 /* [Maat] */
 // Breedte (maat van het bakje; een cassette is 0.6 cm groter)
@@ -98,6 +98,18 @@ magneet_speling = 0.2; // [0:0.05:0.4]
 staalband_b = 12.7; // [10, 12, 12.7, 15, 19, 25]
 // Dikte van de staalband in mm (de baan wordt zo diep, zodat de band vlak ligt)
 staalband_t = 0.5; // [0.3:0.1:1]
+
+/* [Ladekast] */
+// Een ladekast gaat onder een cassette van dezelfde maat (Maat): een koker met een schuiflade naar voren, met Gridfinity-bodem en klik voor hele bakjes. Bovenop een opstaand randje waar de cassette in valt en magneten tegenover die in de cassettebodem. Ruimte boven het bakje tot het dak in mm
+lade_speling = 0.8; // [0.4:0.1:2]
+// Hoe ver het klikribbeltje de lade dichthoudt in mm
+lade_klik = 0.5; // [0:0.1:1]
+
+/* [Inleg voor tangen] */
+// Per tang: [lengte, plek van de klem gemeten vanaf de punt, breedte tussen de klemwanden, dikte van de tang] in mm. De tang veert vanzelf open en drukt zijn handvatten tegen de klemwanden; een randje bovenop houdt hem vast. Standaard: Knipex 14 26 160, Knipex 11 06 160, Wiha punttang 160 (nameten!)
+tangen = [[160, 110, 34, 20], [160, 110, 34, 20], [160, 110, 34, 20]];
+// Hoogste klemwand in mm; de wand is 1 mm lager dan de dikte van de tang, zodat het randje over de handvatten grijpt
+klem_h = 25; // [6:1:30]
 
 /* [Printer] */
 // Maat van je printbed in mm (vierkant)
@@ -684,6 +696,145 @@ module latch_arm(x) {
     }
 }
 
+// ==== Ladekast met schuiflade ====
+// Koker (de "kast") met de lade erin, schuift naar voren (-y, de kant van de
+// klikbeugels van de cassette). Printen: de kast op zijn rug (open voorkant
+// naar boven), dan zijn er geen bruggen; de lade rechtop.
+// Maten in y: achterwand kast, speling, achterwand lade, Gridfinity-bodem
+// gx x 42 (voeten van de bakjes), voorwand lade met greep.
+
+lk_rand   = 1.6;                        // randje bovenop, rondom de cassette
+lk_w      = out_w + 2 * lk_rand + 0.4;  // buitenmaat kast
+lk_d      = out_d + 2 * lk_rand + 0.4;
+lk_r      = out_r + lk_rand;
+lk_floor  = c_floor;                    // bodem met magneten
+ld_plaat  = 1.6;                        // bodem lade
+ld_wand   = 1.2;                        // zij- en achterwand lade
+ld_voor   = 6;                          // voorwand lade (met greep)
+ld_fit    = 0.3;                        // speling lade in de kast, per kant
+ld_iw     = gx * G - 0.02;              // binnenmaat lade (Gridfinity-bodem sluit aan op de wanden)
+ld_id     = gy * G - 0.02;
+ld_w      = ld_iw + 2 * ld_wand;
+ld_d      = ld_id + ld_wand + ld_voor;
+lk_ih     = ld_plaat + 5 * U + lip_h + lade_speling; // hoogte binnen: heel bakje + speling
+lk_dak    = c_floor;                    // dak met magneten
+lk_h      = lk_floor + lk_ih + lk_dak;  // hoogte kast (zonder randje)
+lk_iw     = ld_w + 2 * ld_fit;          // opening van de kast
+ld_y0     = -lk_d / 2;                  // voorkant lade = voorkant kast
+ld_klik_y = ld_y0 + ld_voor + 8;        // ribbeltje in de kastbodem
+
+module ladekast() {
+    difference() {
+        union() {
+            rsq(lk_w, lk_d, lk_r, lk_h);
+            // randje bovenop, de cassette valt erin
+            translate([0, 0, lk_h - 0.01]) difference() {
+                rsq(lk_w, lk_d, lk_r, 2 + 0.01);
+                translate([0, 0, -1]) rsq(out_w + 0.4, out_d + 0.4, out_r + 0.2, 4);
+            }
+        }
+        // ruimte voor de lade, voor open
+        translate([0, -ld_fit - 5, lk_floor + (lk_ih) / 2])
+            cube([lk_iw, lk_d - 2 * lk_rand - 0.4 - 1.6 + 10, lk_ih], center = true);
+        if (magneten) {
+            bottom_magnets();
+            for (i = [0 : gx - 1], j = [0 : gy - 1])
+                translate([(i - (gx - 1) / 2) * G, (j - (gy - 1) / 2) * G, lk_h + 0.01])
+                    mirror([0, 0, 1]) mag_hole(false);
+        }
+    }
+    // klikribbeltje (45 graden) in de bodem; de lade heeft er een groefje voor
+    if (lade_klik > 0) translate([0, ld_klik_y, lk_floor])
+        rotate([0, 90, 0]) rotate([0, 0, 45])
+            cube([lade_klik * sqrt(2), lade_klik * sqrt(2), 40], center = true);
+}
+
+module lade() {
+    zt = lk_ih - lade_klik - 0.5;      // hoogte lade: past ook onder het dak als hij over het ribbeltje gaat
+    difference() {
+        union() {
+            // bodem, wanden (achter en zij 25 mm hoog), voorwand tot bijna het dak
+            translate([-ld_w / 2, ld_y0, 0]) cube([ld_w, ld_d, ld_plaat]);
+            for (side = [-1, 1]) translate([side > 0 ? ld_w / 2 - ld_wand : -ld_w / 2, ld_y0, 0])
+                cube([ld_wand, ld_d, 25]);
+            translate([-ld_w / 2, ld_y0 + ld_d - ld_wand, 0]) cube([ld_w, ld_wand, 25]);
+            translate([-ld_w / 2, ld_y0, 0]) cube([ld_w, ld_voor, zt]);
+            // Gridfinity-bodem met klik
+            translate([0, ld_y0 + ld_voor + ld_id / 2, ld_plaat - 0.01]) losse_baseplate();
+        }
+        // greep in de voorwand: kom met vlakke bovenkant om je vingers achter te haken
+        translate([0, ld_y0 - 0.01, zt / 2 + 2]) hull() {
+            translate([-25, 0, 0]) cube([50, 4.5, 8]);
+            translate([-22, 0, -6]) cube([44, 0.01, 6]);
+        }
+        // groefje voor het klikribbeltje
+        if (lade_klik > 0) translate([0, ld_klik_y, 0])
+            rotate([0, 90, 0]) rotate([0, 0, 45])
+                cube([(lade_klik + 0.2) * sqrt(2), (lade_klik + 0.2) * sqrt(2), 42], center = true);
+    }
+}
+
+// lade in de kast (dicht)
+module lade_dicht() translate([0, 0, lk_floor]) lade();
+
+// ==== Inleg voor tangen ====
+// Plaat op de vlakke bodem van een cassette (baseplate uit). Per tang een vak
+// over de hele lengte, om en om met de punt links en rechts. Bij de punt en bij
+// de handvatten een stootblokje; bij de handvatten een klem: twee wanden met
+// bovenaan een randje. De tang wordt dichtgeknepen, in de klem gedrukt en
+// veert open tegen de wanden.
+
+ti_t = 1.2;                          // dikte plaat
+ti_w = cav_w - 0.5;
+ti_d = cav_d - 0.5;
+function ti_n() = len(tangen);
+function ti_y(k) = -ti_d / 2 + ti_d / ti_n() * (k + 0.5);
+function ti_dir(k) = k % 2 == 0 ? 1 : -1;   // punt naar -x (1) of +x (-1)
+
+module klemwand(h) {
+    // wand 3 mm dik (-y), 14 mm lang, met bovenaan een randje van 1 mm naar binnen (+y)
+    rotate([90, 0, 90]) linear_extrude(14, center = true)
+        polygon([[-3, 0], [0, 0], [0, h - 2], [1, h - 1], [1, h - 0.6], [0.6, h], [-3, h]]);
+}
+
+module tangen_inleg() {
+    translate([0, 0, 0]) rsq(ti_w, ti_d, cav_r - 0.25, ti_t);
+    for (k = [0 : ti_n() - 1]) {
+        t = tangen[k];
+        dir = ti_dir(k);
+        translate([0, ti_y(k), ti_t - 0.01]) scale([dir, 1, 1]) {
+            // klem
+            for (side = [-1, 1]) translate([-t[0] / 2 + t[1], side * t[2] / 2, 0])
+                scale([1, side > 0 ? -1 : 1, 1]) klemwand(min(klem_h, t[3] - 1));
+            // stootblokjes bij de punt en achter de handvatten
+            translate([-t[0] / 2 - 4, -8, 0]) cube([3, 16, 5]);
+            translate([t[0] / 2 + 1, -12, 0]) cube([3, 24, 5]);
+        }
+    }
+}
+
+// grove vorm van een tang voor de voorbeelden: kop en twee handvatten die
+// openveren tot de klemwanden
+module tang_vorm(t) {
+    L = t[0]; kp = 0.33 * L;
+    hull() { translate([0, -2, 0]) cube([1, 4, t[3] * 0.7]); translate([kp, -9, 0]) cube([12, 18, t[3]]); }
+    // handvatten: in de klem evenwijdig (tegen de wanden), daarachter verder open
+    for (side = [-1, 1]) {
+        hull() {
+            translate([kp + 6, side * 5 - 4, 0]) cube([8, 8, t[3]]);
+            translate([t[1] - 8, side * (t[2] / 2 - 4) - 4, 0]) cube([16, 8, t[3]]);
+        }
+        hull() {
+            translate([t[1] + 8, side * (t[2] / 2 - 4) - 4, 0]) cube([0.01, 8, t[3]]);
+            translate([L - 8, side * (t[2] / 2 + 2) - 4, 0]) cube([8, 8, t[3]]);
+        }
+    }
+}
+
+module tangen_in_inleg() for (k = [0 : ti_n() - 1])
+    translate([0, ti_y(k), ti_t]) scale([ti_dir(k), 1, 1]) translate([-tangen[k][0] / 2, 0, 0.05])
+        tang_vorm(tangen[k]);
+
 // ==== Uitvoer ====
 
 module cassette_deksel_print() {
@@ -704,6 +855,18 @@ else if (onderdeel == "cassette_beide") {
 }
 else if (onderdeel == "inlegplaat") inlegplaat();
 else if (onderdeel == "baseplate") losse_baseplate();
+else if (onderdeel == "ladekast") ladekast();
+else if (onderdeel == "lade") lade();
+else if (onderdeel == "tangen_inleg") tangen_inleg();
+else if (onderdeel == "voorbeeld_ladekast") {
+    color("SteelBlue") ladekast();
+    color("LightGray") translate([0, -60, 0]) lade_dicht();
+    translate([0, 0, lk_h]) {
+        color("SteelBlue") cassette_body();
+        color("Orange") translate([0, 0, c_floor]) tangen_inleg();
+        color("DimGray") translate([0, 0, c_floor]) tangen_in_inleg();
+    }
+}
 else if (onderdeel == "koker") koker();
 else if (onderdeel == "koker_dop") koker_dop();
 else if (onderdeel == "voorbeeld_koker") { koker(); koker_dop_dicht(); }
@@ -724,6 +887,8 @@ is_cassette = onderdeel == "cassette_onderbak" || onderdeel == "cassette_deksel"
 c_ext_d = out_d + 2 * kr + 0.3 + ridge_d + 0.3 + latch_t + 2;  // incl. scharnier en klikbeugels
 footprint =
     onderdeel == "schuifdeksel"    ? [lid_w, lid_d] :
+    onderdeel == "ladekast"        ? [lk_w, lk_d] :
+    onderdeel == "lade"            ? [ld_w, ld_d] :
     onderdeel == "bakje_en_deksel" ? [max(W, lid_w), D + 10 + lid_d] :
     onderdeel == "cassette_beide"  ? [out_w, 2 * c_ext_d + 20] :
     is_cassette                    ? [out_w, c_ext_d] :
@@ -745,6 +910,9 @@ if (is_cassette) {
 } else if (onderdeel == "baseplate") {
     echo(str("Losse Gridfinity-bodem ", gx, "x", gy, ": ", cm(gx * G), " x ", cm(gy * G),
              " x ", gf_base / 10, " cm"));
+} else if (onderdeel == "ladekast" || onderdeel == "lade" || onderdeel == "voorbeeld_ladekast") {
+    echo(str("Ladekast ", gx, "x", gy, ": ", cm(lk_w), " x ", cm(lk_d), " x ", cm(lk_h + 2),
+             " cm (met randje); lade ", gx, "x", gy, " vakken voor hele bakjes"));
 } else if (is_koker) {
     echo(str("Borenkoker ", gx, "x", gy, ": ", cm(W), " x ", cm(D), " x ", cm(Hb + lip_h),
              " cm; boren tot ", round(W - k_wand - 2 - k_front), " mm lang, ", k_n, " kolommen, ",

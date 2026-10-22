@@ -183,6 +183,34 @@ lang, steen 70 – 150 mm, SDS-plus 160 mm. Langere boren: kies een langere koke
 of te vast in de dop: `koker_gat` (speling op de diameter, standaard 0,3 mm).
 Print de koker rechtop en de dop met de voorkant op het bed.
 
+### Tangen-cassette op een ladekast
+
+Voor de Knipex 14 26 160, de Knipex 11 06 160 en een Wiha punttang: een cassette
+4 × 4 van 2,8 cm met vlakke bodem en een inleg met drie klemmen, op een
+ladekast met een schuiflade voor 16 hele bakjes (bv. de lasdoppen).
+
+| Bestand | Wat |
+|---|---|
+| `cassette-4x4-2.8cm-tangen-onderbak` + `-deksel` | cassette, 17,5 × 18,8 × 2,8 cm |
+| `inleg-tangen-4x4` | plaat met per tang een klem en stootblokjes |
+| `ladekast-4x4` | kast, 17,9 × 17,9 × 4,8 cm, met randje waar de cassette in valt |
+| `lade-4x4` | schuiflade met Gridfinity-bodem en klik, 4 × 4 vakken |
+
+Samen 7,6 cm hoog. De tangen liggen om en om (punt links, rechts, links). De
+klem zit bij de handvatten: knijp de tang dicht, druk hem tussen de wanden en
+laat los; hij veert open tegen de wanden en het randje bovenop houdt hem
+vast. De lade schuift naar voren (kant van de klikbeugels) en klikt dicht over
+een ribbeltje; aan de greep in de voorkant trek je hem open. Magneten: in de
+bodem en het dak van de kast, tegenover die in de cassettebodem (let op de
+polariteit: kast-dak en cassette-bodem moeten elkaar aantrekken).
+
+Per tang staat in de generator (*Inleg voor tangen*, `tangen`): lengte, plek
+van de klem vanaf de punt, breedte tussen de klemwanden en dikte. De
+standaardwaarden zijn een schatting (160 / 110 / 34 / 20 mm): meet je tangen na.
+Is een tang dikker dan 21 mm, kies dan de cassette van 4,6 cm (`lagen = 2`).
+Printen: de kast **op zijn rug** (open voorkant naar boven, dan zijn er geen
+bruggen), de lade en de inleg rechtop.
+
 ### Magneten en staalband: naast en op elkaar
 
 - **Naast elkaar (Packout):** in beide zijwanden twee gaten per vak van 4,2 cm
