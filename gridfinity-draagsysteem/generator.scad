@@ -106,8 +106,8 @@ lade_speling = 0.8; // [0.4:0.1:2]
 lade_klik = 0.5; // [0:0.1:1]
 
 /* [Inleg voor tangen] */
-// Per tang: [lengte, plek van de klem gemeten vanaf de punt, breedte tussen de klemwanden, dikte van de tang] in mm. De tang veert vanzelf open en drukt zijn handvatten tegen de klemwanden; een randje bovenop houdt hem vast. Standaard: Knipex 14 26 160, Knipex 11 06 160, Wiha punttang 160 (nameten!)
-tangen = [[160, 110, 34, 20], [160, 110, 34, 20], [160, 110, 34, 20]];
+// Per tang: [lengte, plek van de klem gemeten vanaf de punt, breedte tussen de klemwanden, dikte van de tang] in mm. De tang veert vanzelf open en drukt zijn handvatten tegen de klemwanden; een randje bovenop houdt hem vast. Standaard: Knipex 14 26 160, Knipex 11 06 160, Wiha punttang Professional electric 200 mm (nameten!); voor 200 mm is de cassette 5 vakken breed
+tangen = [[160, 110, 34, 20], [160, 110, 34, 20], [200, 140, 38, 20]];
 // Hoogste klemwand in mm; de wand is 1 mm lager dan de dikte van de tang, zodat het randje over de handvatten grijpt
 klem_h = 25; // [6:1:30]
 
