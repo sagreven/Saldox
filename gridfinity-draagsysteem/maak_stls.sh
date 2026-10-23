@@ -30,6 +30,9 @@ gen bakje-1x2-open-heel -D 'onderdeel="bakje"' -D gx=1 -D gy=2 -D hu=5 -D 'vakke
 gen bakje-2x1-open-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=1 -D hu=5 -D 'vakken="open"'
 gen bakje-2x2-2vakjes-heel -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
     -D 'vakken="eigen"' -D vakjes_x=2 -D vakjes_y=1
+# 2x2 met de tussenwand in de schuifrichting: beide vakjes gaan tegelijk open
+gen bakje-2x2-2vakjes-heel-samen -D 'onderdeel="bakje"' -D gx=2 -D gy=2 -D hu=5 \
+    -D 'vakken="eigen"' -D vakjes_x=1 -D vakjes_y=2
 
 gen baseplate-5x2 -D 'onderdeel="baseplate"' -D gx=5 -D gy=2
 gen baseplate-5x2-zonder-klik -D 'onderdeel="baseplate"' -D gx=5 -D gy=2 -D cassette_klik=0
