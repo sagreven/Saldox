@@ -25,13 +25,14 @@ from opmaak import bouw
 HERE = Path(__file__).parent
 
 
-def posten(H, modules, bedrading_uurbasis=True):
+def posten(H, modules, alleen_apparatuur=False):
     """Begroting (post, excl. btw, btw, status). Alles 21%: de omvormer komt er voor de batterij."""
     torens = 1 if modules <= 4 else 2
     return [
         (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW", H["prijs"], 0.21, H["status"]),
         (f"{modules} batterijmodules Sofar BTS 5K, samen {B.nl(modules * 5.12, 2)} kWh ({modules} × €{B.BTS5K:.0f})", round(modules * B.BTS5K, 2), 0.21, "Inkoopprijs"),
         (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})", torens * O.BDU, 0.21, "Stelpost"),
+    ] + ([("Installatieautomaat 3-fase met aardlek, groep omvormer (materiaal)", O.AUTOMAAT, 0.21, "Opgegeven")] if alleen_apparatuur else [
         ("Oude omvormer demonteren, bestaande panelen aansluiten op de nieuwe omvormer (werk)", 150.00, 0.21, "Stelpost"),
         ("Omvormer plaatsen en aansluiten (werk)", 200.00, 0.21, "Stelpost"),
         ("Installatie batterij en DC-bekabeling (werk)", 450.00, 0.21, "Stelpost"),
@@ -42,7 +43,7 @@ def posten(H, modules, bedrading_uurbasis=True):
         ("Handmatige omschakelaar voor noodstroom (ATS), 3-fase (materiaal)", O.ATS_MATERIAAL, 0.21, "Opgegeven"),
         ("Omschakelaar aansluiten in de meterkast (werk)", O.ATS_WERK, 0.21, "Stelpost"),
         ("Transport", B.TRANSPORT, 0.21, "Tarief"),
-    ]
+    ])
 
 
 def batterij_kw(H, modules):
@@ -80,6 +81,8 @@ def main():
     ap.add_argument("--omvormer", choices=list(O.HYD), default="hyd10")
     ap.add_argument("--ere", type=float, default=0.13)
     ap.add_argument("--datum", default=dt.date.today().isoformat())
+    ap.add_argument("--alleen-apparatuur", action="store_true",
+                    help="alleen omvormer, batterijmodules en BDU; installatie, meterkast, noodstroom, EMS en transport niet in de prijs")
     ap.add_argument("--sectie-eind")
     ap.add_argument("--figuur", action="append", default=[])
     ap.add_argument("--kop", action="append", default=[])
@@ -98,7 +101,7 @@ def main():
     auto = bool(a.auto_kwh)
 
     # begroting
-    regels = [(p, ex, b, st, round(ex * (1 + b), 2)) for p, ex, b, st in posten(H, a.modules)]
+    regels = [(p, ex, b, st, round(ex * (1 + b), 2)) for p, ex, b, st in posten(H, a.modules, a.alleen_apparatuur)]
     inv_ex = round(sum(r[1] for r in regels), 2)
     inv = round(sum(r[4] for r in regels), 2)
     RES = 75
@@ -123,7 +126,7 @@ def main():
     for mod in (2, 3, 4):
         k = batterij_kw(H, mod)
         w, _, met = waarde(basis, mod, k, auto=auto)
-        inv_m = round(sum(round(ex * (1 + b), 2) for _, ex, b, _ in posten(H, mod)), 2)
+        inv_m = round(sum(round(ex * (1 + b), 2) for _, ex, b, _ in posten(H, mod, a.alleen_apparatuur)), 2)
         net = round(w, -1) - RES
         maten.append(dict(mod=mod, kwh=mod * 5.12, kw=k, inv=inv_m, netto=net, jaren=B.jr(inv_m, net),
                           winst=15 * net - inv_m, zv=met["zelfverbruik"], huidig=mod == a.modules))
@@ -134,6 +137,9 @@ def main():
     lp_tekst = O.info_laadpaal(R_lp, a.auto_kwh, a.ere, kw=11.0) if auto else ""
     L = O.LAADPAAL_INFO
 
+    AA = a.alleen_apparatuur
+    excl = ("exclusief installatie, noodstroomschakelaar en EMS-koppeling" if AA
+            else "exclusief het trekken van de bedrading (op uurbasis)")
     t = []
     titel = f"Energieplan {a.klant}"
     t.append(f"# {titel}\n\n{B.KLANT['datum']} · Saldox · offerte voor {a.klant}" + (f", {a.plaats}" if a.plaats else "")
@@ -141,13 +147,15 @@ def main():
     zv_nu = nu["zelfverbruik"]
     t.append(f"""## Samenvatting
 
-De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvormer met een thuisbatterij van {B.nl(a.modules * 5.12, 1)} kWh. Dat kost {B.eur2(inv)} incl. btw, exclusief het trekken van de bedrading (op uurbasis), en levert {'met de auto erbij ' if auto else ''}normaal netto {B.eur(N['netto'])} per jaar op; het is in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar).
+De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvormer met een thuisbatterij van {B.nl(a.modules * 5.12, 1)} kWh. Dat kost {B.eur2(inv)} incl. btw, {excl}, en levert {'met de auto erbij ' if auto else ''}normaal netto {B.eur(N['netto'])} per jaar op; het is in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar){', zonder de kosten van installatie' if AA else ''}.
 
 - **Nu:** u neemt {B.nl(a.afname)} kWh per jaar af en levert {B.nl(a.teruglevering)} kWh terug; van uw zonnestroom gebruikt u ca. {B.pct(zv_nu)} zelf.
 - **Met batterij:** de batterij bewaart zonnestroom voor de avond en laadt op goedkope uren; u gebruikt dan ca. {B.pct(met_b['zelfverbruik'])} van uw zonnestroom zelf.""" + (f"""
 - **De auto:** {a.auto_tekst or f'ca. {B.nl(a.auto_kwh)} kWh per jaar thuis laden'}. De batterij levert met de auto {B.eur(N['batt'])} per jaar op, zonder auto {B.eur(round(w_nu, -1))}.""" if auto else "") + f"""
-- **Noodstroom:** met de handmatige omschakelaar draait het huis bij stroomuitval op batterij en panelen.
-- **Btw:** omvormer, batterij en installatie vallen onder 21%.
+""" + ("- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU en de installatieautomaat met aardlek; installatie en aansluiting worden apart afgesproken.\n"
+         "- **Btw:** omvormer en batterij vallen onder 21%.\n" if AA else
+         "- **Noodstroom:** met de handmatige omschakelaar draait het huis bij stroomuitval op batterij en panelen.\n"
+         "- **Btw:** omvormer, batterij en installatie vallen onder 21%.\n") + f"""
 """)
 
     t.append(f"""## Uw installatie nu
@@ -172,16 +180,17 @@ De woning heeft {a.bestaand_panelen} zonnepanelen op het platte dak, op frames n
     rows = "\n".join(f"| {p} | {B.eur2(ex)} | {int(b * 100)}% | {B.eur2(inc)} | {st} |" for p, ex, b, st, inc in regels)
     t.append(f"""## Begroting
 
-Het pakket kost {B.eur2(inv_ex)} excl. btw en {B.eur2(inv)} incl. btw, exclusief het trekken van de bedrading (op uurbasis).
+Het pakket kost {B.eur2(inv_ex)} excl. btw en {B.eur2(inv)} incl. btw, {excl}.
 
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
 {rows}
 | **Totaal** | **{B.eur2(inv_ex)}** | | **{B.eur2(inv)}** | |
 
-- **Btw 21%:** de omvormer komt er voor de batterij en valt daarom, net als de batterij en de installatie, onder 21%.
-- **Bedrading op uurbasis:** het trekken van de AC- en DC-kabels zit niet in de prijs; Saldox rekent dit werk af op uurbasis, à {B.eur2(B.UURTARIEF_BEDRADING)} per uur excl. btw.
-- **Stelposten** zijn inschattingen; bij de schouw worden ze definitief.
+- **Btw 21%:** de omvormer komt er voor de batterij en valt daarom, net als de batterij{'' if AA else ' en de installatie'}, onder 21%.
+""" + ("- **Niet in de prijs:** het demonteren van de oude omvormer, het plaatsen en aansluiten van omvormer en batterij, het aanleggen van de groep in de meterkast, "
+         "overspanningsbeveiliging, een omschakelaar voor noodstroom, de EMS-koppeling en transport. Die worden na de schouw apart afgesproken.\n" if AA else
+         f"- **Bedrading op uurbasis:** het trekken van de AC- en DC-kabels zit niet in de prijs; Saldox rekent dit werk af op uurbasis, à {B.eur2(B.UURTARIEF_BEDRADING)} per uur excl. btw.\n") + f"""- **Stelposten** zijn inschattingen; bij de schouw worden ze definitief.
 - **Aansluiting:** de {H['naam']} is 3-fase; de woning heeft een 3-fase aansluiting nodig (3x25 A). Is de meterkast vol, dan is een uitbreiding van de groepenkast nodig (niet in de prijs).
 """)
 
@@ -204,7 +213,7 @@ Normaal levert de batterij {B.eur(N['bruto'])} per jaar op; na de reservering vo
 
     t.append(f"""## Terugverdientijd
 
-Het pakket van {B.eur2(inv)} is normaal in ca. {N['jaren']} jaar terugverdiend; pessimistisch in {sc[0]['jaren']} jaar en optimistisch in {sc[2]['jaren']} jaar.
+Het pakket van {B.eur2(inv)}{' (zonder installatie)' if AA else ''} is normaal in ca. {N['jaren']} jaar terugverdiend; pessimistisch in {sc[0]['jaren']} jaar en optimistisch in {sc[2]['jaren']} jaar.
 
 <!-- FIG:kasstroom -->
 
@@ -263,7 +272,8 @@ De installatie is in één tot twee dagen klaar; de batterij hoort op een droge,
 
 - **{H['naam']}:** 3-fase hybride omvormer, {H['kw']} kW, twee MPPT's en twee batterij-ingangen voor Sofar BTS 5K. Het EMS van Saldox stuurt hem op de uurprijs.
 - **Sofar BTS 5K ({a.modules}×):** LFP-batterij, 5,12 kWh per module, samen {B.nl(a.modules * 5.12, 2)} kWh, bruikbaar ca. {B.nl(a.modules * 5.12 * 0.9, 1)} kWh. Garantie 10 jaar: 70% capaciteit na 10 jaar.
-- **Noodstroom:** bij stroomuitval zet u de handmatige omschakelaar om; het huis, of de groepen op de noodstroom, draait dan op batterij en panelen.
+""" + ("- **Noodstroom:** de omvormer heeft een noodstroomuitgang; met een omschakelaar in de meterkast (niet in deze prijs) draait het huis bij stroomuitval op batterij en panelen.\n" if AA else
+         "- **Noodstroom:** bij stroomuitval zet u de handmatige omschakelaar om; het huis, of de groepen op de noodstroom, draait dan op batterij en panelen.\n") + f"""
 - **Veiligheid:** de installatie voldoet aan NEN 1010. Meld de batterij bij de opstalverzekeraar en de netbeheerder (energieleveren.nl).
 """)
     t.append(f"""## Planning
@@ -310,7 +320,7 @@ De cijfers gaan uit van de meterstanden en de aannames hieronder.
               "Wist u dat? Laden met de Zaptec Go 2": "Thuis laden levert ERE-vergoeding op.",
               "Stroomcontract en prijzen": "Dynamisch laat de batterij verdienen.",
               "Met en zonder saldering": "Vanaf 2027 telt elke eigen kWh zwaarder.",
-              "Installatie en veiligheid": "Eén installatie, met noodstroom.",
+              "Installatie en veiligheid": "Eén installatie, klaar voor noodstroom.",
               "Planning": "Binnen anderhalve maand werkend.",
               "Aannames en te bevestigen": "Wat we bij u thuis nog bevestigen."}
     koppen.update(dict(k.split("=", 1) for k in a.kop))
@@ -326,7 +336,7 @@ De cijfers gaan uit van de meterstanden en de aannames hieronder.
     map_ = O.UIT / f"{a.datum}-{O.slug(a.klant)}"
     map_.mkdir(parents=True, exist_ok=True)
     (map_ / "energieplan-huishouden-offerte.md").write_text(src, encoding="utf-8")
-    kpis = [(B.eur2(inv), "investering incl. btw, excl. bedrading op uurbasis", False),
+    kpis = [(B.eur2(inv), "omvormer en batterij incl. btw, excl. installatie" if AA else "investering incl. btw, excl. bedrading op uurbasis", False),
             (f"ca. {N['jaren']} jaar", "terugverdientijd, normaal scenario", True),
             (B.eur(N["netto"]), "netto per jaar (normaal)", False),
             (B.pct(met_b["zelfverbruik"]), "zonnestroom zelf gebruikt met batterij", False)]
