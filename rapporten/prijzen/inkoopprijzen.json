@@ -114,6 +114,14 @@
    "eenheid": "stuk",
    "datum": "2026-10-20",
    "btw_consument": 0.21
+  },
+  {
+   "artikel": "Ohme Home Pro MID laadpaal, incl. installatie (MID-meter, geschikt voor ERE)",
+   "prijs_incl_btw": 650.0,
+   "prijs": 537.19,
+   "eenheid": "stuk",
+   "datum": "2026-11-09",
+   "btw_consument": 0.21
   }
  ],
  "eerder_opgegeven": [
