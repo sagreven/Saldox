@@ -31,7 +31,7 @@ def posten(H, modules, alleen_apparatuur=False):
     return [
         (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW", H["prijs"], 0.21, H["status"]),
         (f"{modules} batterijmodules Sofar BTS 5K, samen {B.nl(modules * 5.12, 2)} kWh ({modules} × €{B.BTS5K:.0f})", round(modules * B.BTS5K, 2), 0.21, "Inkoopprijs"),
-        (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})", torens * O.BDU, 0.21, "Stelpost"),
+        (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})", torens * O.BDU, 0.21, "Inkoopprijs"),
     ] + ([("Installatieautomaat 3-fase met aardlek, groep omvormer (materiaal)", O.AUTOMAAT, 0.21, "Opgegeven")] if alleen_apparatuur else [
         ("Oude omvormer demonteren, bestaande panelen aansluiten op de nieuwe omvormer (werk)", 150.00, 0.21, "Stelpost"),
         ("Omvormer plaatsen en aansluiten (werk)", 200.00, 0.21, "Stelpost"),
@@ -110,6 +110,8 @@ def main():
         ohme = next(r for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Ohme Home Pro MID"))
         regels.append(("Laadpaal Ohme Home Pro MID, incl. installatie (MID-meter voor ERE)", ohme["prijs"], 0.21, "Opgegeven",
                        ohme["prijs_incl_btw"]))
+        regels.append(("Installatieautomaat met aardlek, groep laadpaal (materiaal)", O.AUTOMAAT, 0.21, "Opgegeven",
+                       round(O.AUTOMAAT * 1.21, 2)))
     inv_lp = round(sum(r[4] for r in regels), 2) - inv_b
     inv_ex = round(sum(r[1] for r in regels), 2)
     inv = round(sum(r[4] for r in regels), 2)
@@ -171,7 +173,7 @@ De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvorm
 - **Met batterij:** de batterij bewaart zonnestroom voor de avond en laadt op goedkope uren; u gebruikt dan ca. {B.pct(met_b['zelfverbruik'])} van uw zonnestroom zelf.""" + (f"""
 - **De auto:** {a.auto_tekst or f'ca. {B.nl(a.auto_kwh)} kWh per jaar thuis laden'}.""" + (f""" De Ohme laadt slim op goedkope uren (ca. {B.eur(N['slim'])} per jaar) en de MID-meter levert ERE-vergoeding op (ca. {B.eur(N['ere'])} per jaar).""" if LP else f""" De batterij levert met de auto {B.eur(N['batt'])} per jaar op, zonder auto {B.eur(round(w_nu, -1))}.""") if auto else "") + f"""
 - **Besparing per jaar:** batterij {B.eur(N['batt'])}""" + (f""", slim laden {B.eur(N['slim'])}, ERE {B.eur(N['ere'])}""" if LP else "") + f"""; na de reservering voor de omvormer {B.eur(N['netto'])} netto.
-""" + (f"- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU en de installatieautomaat met aardlek{', en de laadpaal inclusief installatie' if LP else ''}; installatie en aansluiting van omvormer en batterij worden apart afgesproken.\n"
+""" + (f"- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU en de installatieautomaat met aardlek{', en de laadpaal inclusief installatie met een eigen installatieautomaat met aardlek' if LP else ''}; installatie en aansluiting van omvormer en batterij worden apart afgesproken.\n"
          f"- **Btw:** omvormer, batterij{' en laadpaal' if LP else ''} vallen onder 21%.\n" if AA else
          "- **Noodstroom:** met de handmatige omschakelaar draait het huis bij stroomuitval op batterij en panelen.\n"
          "- **Btw:** omvormer, batterij en installatie vallen onder 21%.\n") + f"""
@@ -260,7 +262,7 @@ Het pakket van {B.eur2(inv)}{' (zonder installatie van omvormer en batterij)' if
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
 | Omvormer en batterij | {B.eur2(inv_b)} | {B.eur(N['batt'] - RES)} | {B.jr(inv_b, N['batt'] - RES)} jaar |
-""" + (f"""| Laadpaal Ohme Home Pro MID (slim laden en ERE) | {B.eur2(inv_lp)} | {B.eur(lp_n)} | {B.jr(inv_lp, lp_n)} jaar |
+""" + (f"""| Laadpaal Ohme Home Pro MID en installatieautomaat (slim laden en ERE) | {B.eur2(inv_lp)} | {B.eur(lp_n)} | {B.jr(inv_lp, lp_n)} jaar |
 """ if LP else "") + f"""| **Totaal** | **{B.eur2(inv)}** | **{B.eur(N['netto'])}** | **{N['jaren']} jaar** |
 """)
 
@@ -291,7 +293,7 @@ De Ohme Home Pro MID heeft een ingebouwde, geijkte MID-meter. Daarmee levert elk
 | Slim laden op goedkope uren, t.o.v. direct laden bij thuiskomst | {B.eur(N['slim'])} besparing |
 | ERE-vergoeding ({B.eur(a.ere, 2)} per kWh) | {B.eur(N['ere'])} |
 | **Opbrengst laadpaal per jaar** | **{B.eur(lp_n)}** |
-| Laadpaal incl. installatie | {B.eur2(inv_lp)}, terugverdiend in ca. {B.jr(inv_lp, lp_n)} jaar |
+| Laadpaal incl. installatie en installatieautomaat | {B.eur2(inv_lp)}, terugverdiend in ca. {B.jr(inv_lp, lp_n)} jaar |
 
 - **Alleen de MID-versie:** de Ohme Home Pro MID komt in aanmerking voor ERE's; de gewone Home Pro (van vóór november 2024), de ePod en de Go niet.
 - **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto wordt geladen ERE's op. U meldt de laadpaal aan bij een inboekdienstverlener (bijvoorbeeld Joulo, dat de laadsessies via uw Ohme-account ophaalt); die verkoopt de ERE's en betaalt u uit. De opbrengst schommelt met de markt.

@@ -77,7 +77,7 @@ HYD = {"hyd15": dict(naam="Sofar HYD 15KTL-3PH", kw=15, prijs=opgegeven("Omvorme
 AUTOMAAT = next(r["prijs"] for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Installatieautomaat 3-fase"))
 ATS_MATERIAAL = next(r["prijs"] for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Handmatige omschakelaar"))
 ATS_WERK = 150.00  # stelpost: omschakelaar aansluiten in de meterkast
-BDU = 300.00  # stelpost: BDU-besturingsunit per batterijtoren (marktprijs ca. €284)
+BDU = next(r["prijs"] for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("BDU-besturingsunit"))
 
 
 def hyd_batterij(modules, kwmax=15):
@@ -88,7 +88,7 @@ def hyd_batterij(modules, kwmax=15):
     return [(f"{modules} batterijmodules Sofar BTS 5K, samen {B.nl(modules * 5.12, 2)} kWh ({modules} × €{B.BTS5K:.0f})",
              round(modules * B.BTS5K, 2), 0.21, "Inkoopprijs", "batt"),
             (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})",
-             torens * BDU, 0.21, "Stelpost", "batt"),
+             torens * BDU, 0.21, "Inkoopprijs", "batt"),
             ("Installatie batterij en DC-bekabeling", 450.00, 0.21, "Stelpost", "batt"),
             ("EMS-koppeling Saldox (P1-meter en gateway)", 150.00, 0.21, "Stelpost", "batt"),
             ("Handmatige omschakelaar voor noodstroom (ATS), 3-fase (materiaal)", ATS_MATERIAAL, 0.21, "Opgegeven", "batt"),

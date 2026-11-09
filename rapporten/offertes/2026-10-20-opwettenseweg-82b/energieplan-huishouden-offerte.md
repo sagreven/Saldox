@@ -154,7 +154,7 @@ U kunt de installatie aanvullen met een thuisbatterij, nu of later. Een batterij
 | Post | Excl. btw | Btw | Incl. btw | Status |
 | --- | --- | --- | --- | --- |
 | 6 batterijmodules Sofar BTS 5K, samen 30,72 kWh (6 × €600) | €3.600,00 | 21% | €4.356,00 | Inkoopprijs |
-| 2 BDU-besturingsunits (2 torens) | €600,00 | 21% | €726,00 | Stelpost |
+| 2 BDU-besturingsunits (2 torens) | €600,00 | 21% | €726,00 | Inkoopprijs |
 | Installatie batterij en DC-bekabeling | €450,00 | 21% | €544,50 | Stelpost |
 | EMS-koppeling Saldox (P1-meter en gateway) | €150,00 | 21% | €181,50 | Stelpost |
 | Handmatige omschakelaar voor noodstroom (ATS), 3-fase (materiaal) | €170,00 | 21% | €205,70 | Opgegeven |

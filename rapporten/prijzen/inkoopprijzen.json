@@ -122,6 +122,13 @@
    "eenheid": "stuk",
    "datum": "2026-11-09",
    "btw_consument": 0.21
+  },
+  {
+   "artikel": "BDU-besturingsunit Sofar BTS 5K (per batterijtoren)",
+   "prijs": 300.0,
+   "eenheid": "stuk",
+   "datum": "2026-11-09",
+   "btw_consument": 0.21
   }
  ],
  "eerder_opgegeven": [

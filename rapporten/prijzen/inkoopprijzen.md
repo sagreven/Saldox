@@ -33,6 +33,7 @@ Btw 21%: €474,58 · totaal incl. btw €2.734,50.
 | 20 oktober 2026 | Installatieautomaat 3-fase met aardlek (groep omvormer in de meterkast), per stuk | €200,00 | 0% |
 | 20 oktober 2026 | Handmatige omschakelaar noodstroom (ATS), 3-fase, per stuk | €170,00 | 21% |
 | 9 november 2026 | Ohme Home Pro MID laadpaal, incl. installatie; €650,00 incl. btw | €537,19 | 21% |
+| 9 november 2026 | BDU-besturingsunit Sofar BTS 5K, per batterijtoren | €300,00 | 21% |
 
 ## Eerder opgegeven (energieplan Run 4258)
 
