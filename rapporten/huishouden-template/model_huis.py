@@ -70,17 +70,32 @@ def huisprofiel():
 PROFIEL = huisprofiel()
 
 
-def ev_profiel(kwh_jaar, kw, slim):
+def profiel(dagfactor=1.0):
+    """Huisprofiel met het verbruik op werkdagen tussen 9 en 17 uur maal `dagfactor` (genormaliseerd).
+    Lager dan 1: er is overdag weinig verbruik, bijvoorbeeld omdat iedereen werkt; af te stemmen
+    op de meterstanden (afname en teruglevering)."""
+    if dagfactor == 1.0:
+        return PROFIEL
+    w = [f * (dagfactor if TIJD[i].weekday() < 5 and 9 <= TIJD[i].hour < 17 else 1.0) for i, f in enumerate(PROFIEL)]
+    s = sum(w)
+    return [x / s for x in w]
+
+
+def ev_profiel(kwh_jaar, kw, slim, laaddagen=7):
     """EV-laden per uur. Slim: goedkoopste uren waarin de auto thuis is (avond/nacht,
-    in het weekend ook overdag). Niet slim: direct vanaf 18:00 op vol vermogen."""
+    in het weekend ook overdag). Niet slim: direct vanaf 18:00 op vol vermogen.
+    laaddagen=5: alleen op werkdagen laden (bijvoorbeeld na het woon-werkverkeer)."""
     if not kwh_jaar:
         return [0.0] * len(UUR)
-    per_dag = kwh_jaar / 365
     load = [0.0] * len(UUR)
     dagen = {}
     for i, t in enumerate(TIJD):
         dagen.setdefault(t.date(), []).append(i)
+    laad = [d for d in dagen if laaddagen >= 7 or d.weekday() < laaddagen]
+    per_dag = kwh_jaar / len(laad)
     for dag, idx in dagen.items():
+        if dag not in laad:
+            continue
         weekend = TIJD[idx[0]].weekday() >= 5
         thuis = [i for i in idx if TIJD[i].hour >= 18 or TIJD[i].hour < 7 or (weekend and 9 <= TIJD[i].hour < 17)]
         if slim:
@@ -117,9 +132,9 @@ def simuleer(a, pv=True, batterij=True, contract="dynamisch", ev_slim=True, stap
     n = len(SPOT)
     kwp = a["panelen"] * a["wp"] / 1000
     pv_kwh = kwp * a["opbrengst_kwh_per_kwp"] if pv else 0
-    ev = ev_profiel(a["ev_kwh"], a["ev_kw"], ev_slim)
+    ev = ev_profiel(a["ev_kwh"], a["ev_kw"], ev_slim, a.get("ev_laaddagen", 7))
     wp = warmtepomp_profiel(a.get("wp_kwh", 0), a.get("wp_tapwater", 0.0))
-    last = [a["verbruik_kwh"] * f + ev[i] + wp[i] for i, f in enumerate(PROFIEL)]
+    last = [a["verbruik_kwh"] * f + ev[i] + wp[i] for i, f in enumerate(profiel(a.get("dagfactor", 1.0)))]
     zon = [pv_kwh * ZON[i] / ZON_SOM for i in range(n)]
     netto_vraag = [last[i] - zon[i] for i in range(n)]
     dyn = contract == "dynamisch"
