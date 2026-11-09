@@ -25,6 +25,9 @@ from opmaak import bouw
 HERE = Path(__file__).parent
 
 
+KEURING = next(t["prijs"] for t in B._PRIJSLIJST["tarieven"] if t["artikel"].startswith("Installatiekeuring"))
+
+
 def posten(H, modules, alleen_apparatuur=False):
     """Begroting (post, excl. btw, btw, status). Alles 21%: de omvormer komt er voor de batterij."""
     torens = 1 if modules <= 4 else 2
@@ -32,6 +35,7 @@ def posten(H, modules, alleen_apparatuur=False):
         (f"Hybride omvormer {H['naam']}, 3-fase, {H['kw']} kW", H["prijs"], 0.21, H["status"]),
         (f"{modules} batterijmodules Sofar BTS 5K, samen {B.nl(modules * 5.12, 2)} kWh ({modules} × €{B.BTS5K:.0f})", round(modules * B.BTS5K, 2), 0.21, "Inkoopprijs"),
         (f"{torens} BDU-besturingsunit{'s' if torens > 1 else ''} ({torens} {'torens' if torens > 1 else 'toren'})", torens * O.BDU, 0.21, "Inkoopprijs"),
+        ("Installatiekeuring en certificering", KEURING, 0.21, "Tarief"),
     ] + ([("Installatieautomaat 3-fase met aardlek, groep omvormer (materiaal)", O.AUTOMAAT, 0.21, "Opgegeven")] if alleen_apparatuur else [
         ("Oude omvormer demonteren, bestaande panelen aansluiten op de nieuwe omvormer (werk)", 150.00, 0.21, "Stelpost"),
         ("Omvormer plaatsen en aansluiten (werk)", 200.00, 0.21, "Stelpost"),
@@ -173,7 +177,7 @@ De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvorm
 - **Met batterij:** de batterij bewaart zonnestroom voor de avond en laadt op goedkope uren; u gebruikt dan ca. {B.pct(met_b['zelfverbruik'])} van uw zonnestroom zelf.""" + (f"""
 - **De auto:** {a.auto_tekst or f'ca. {B.nl(a.auto_kwh)} kWh per jaar thuis laden'}.""" + (f""" De Ohme laadt slim op goedkope uren (ca. {B.eur(N['slim'])} per jaar) en de MID-meter levert ERE-vergoeding op (ca. {B.eur(N['ere'])} per jaar).""" if LP else f""" De batterij levert met de auto {B.eur(N['batt'])} per jaar op, zonder auto {B.eur(round(w_nu, -1))}.""") if auto else "") + f"""
 - **Besparing per jaar:** batterij {B.eur(N['batt'])}""" + (f""", slim laden {B.eur(N['slim'])}, ERE {B.eur(N['ere'])}""" if LP else "") + f"""; na de reservering voor de omvormer {B.eur(N['netto'])} netto.
-""" + (f"- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU en de installatieautomaat met aardlek{', en de laadpaal inclusief installatie met een eigen installatieautomaat met aardlek' if LP else ''}; installatie en aansluiting van omvormer en batterij worden apart afgesproken.\n"
+""" + (f"- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU, de installatieautomaat met aardlek en de installatiekeuring met certificering{', en de laadpaal inclusief installatie met een eigen installatieautomaat met aardlek' if LP else ''}; installatie en aansluiting van omvormer en batterij worden apart afgesproken.\n"
          f"- **Btw:** omvormer, batterij{' en laadpaal' if LP else ''} vallen onder 21%.\n" if AA else
          "- **Noodstroom:** met de handmatige omschakelaar draait het huis bij stroomuitval op batterij en panelen.\n"
          "- **Btw:** omvormer, batterij en installatie vallen onder 21%.\n") + f"""
@@ -336,7 +340,7 @@ De installatie is in één tot twee dagen klaar; de batterij hoort op een droge,
 - **Sofar BTS 5K ({a.modules}×):** LFP-batterij, 5,12 kWh per module, samen {B.nl(a.modules * 5.12, 2)} kWh, bruikbaar ca. {B.nl(a.modules * 5.12 * 0.9, 1)} kWh. Garantie 10 jaar: 70% capaciteit na 10 jaar.
 """ + ("- **Noodstroom:** de omvormer heeft een noodstroomuitgang; met een omschakelaar in de meterkast (niet in deze prijs) draait het huis bij stroomuitval op batterij en panelen.\n" if AA else
          "- **Noodstroom:** bij stroomuitval zet u de handmatige omschakelaar om; het huis, of de groepen op de noodstroom, draait dan op batterij en panelen.\n") + f"""
-- **Veiligheid:** de installatie voldoet aan NEN 1010. Meld de batterij bij de opstalverzekeraar en de netbeheerder (energieleveren.nl).
+- **Veiligheid:** de installatie voldoet aan NEN 1010; na de installatie wordt ze gekeurd en gecertificeerd. Meld de batterij bij de opstalverzekeraar en de netbeheerder (energieleveren.nl).
 
 **Plaatsing en afmetingen**
 

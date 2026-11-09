@@ -176,6 +176,12 @@
    "eenheid": "uur",
    "datum": "2026-10-20",
    "btw_consument": 0.0
+  },
+  {
+   "artikel": "Installatiekeuring en certificering (vast bedrag)",
+   "prijs": 350.0,
+   "datum": "2026-11-09",
+   "btw_consument": 0.21
   }
  ]
 }
