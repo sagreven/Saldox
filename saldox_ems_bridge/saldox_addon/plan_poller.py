@@ -11,6 +11,20 @@ Gepubliceerde entities (slug standaard `saldox_plan`):
   sensor.{slug}_next_action          — eerstvolgende geplande actie (tekst)
   sensor.{slug}_battery_soc_pct      — geplande batterij SoC nu (%)
 
+Per-uur plan-sensors (voor terugkijken/plan-vs-gemeten; HA-recorder bewaart de historie):
+  sensor.{slug}_consumption          — gepland verbruik dit uur (W)      — LIVE (last-write-wins)
+  sensor.{slug}_pv                   — geplande PV dit uur (W)           — LIVE
+  sensor.{slug}_soc                  — geplande SoC dit uur (%)          — LIVE
+  sensor.{slug}_grid                 — gepland grid dit uur (W, +import) — LIVE
+  sensor.{slug}_price                — EPEX dit uur (EUR/kWh)            — LIVE
+  sensor.{slug}_action               — geplande actie dit uur (tekst)   — LIVE
+  sensor.{slug}_<metric>_committed   — idem, maar één keer per uur (op :00) weggeschreven als
+                                       VASTE referentie (wordt binnen het uur niet herzien).
+
+Elke per-uur-sensor draagt de attributes `for_hour_utc` (voor welk uur dit plan geldt) en
+`plan_recomputed_at` (wanneer het plan laatst herberekend is), zodat een terugblik weet welke
+versie hij vergelijkt — ook als de planner het uur onderweg meermaals herzien heeft.
+
 De _savings_eur sensor draagt als attributes het volledige plan (timeline,
 actions, batterySoC, evSoC) zodat het ingress-dashboard alles kan plotten.
 """
@@ -74,6 +88,8 @@ class PlanPoller:
         self._on_update = on_update
         self._get_readings = get_readings
         self._get_hourly_usage: Callable[[], list[dict]] | None = None
+        # Uur (UTC, op het hele uur) waarvoor de committed-snapshot al geschreven is.
+        self._committed_hour: datetime | None = None
 
     def set_hourly_usage_source(self, fn: Callable[[], list[dict]]) -> None:
         """Set callback that returns completed hourly usage entries."""
@@ -195,6 +211,97 @@ class PlanPoller:
         "ExportToGrid": "Export naar net",
         "SolarCharge": "Zonne-laden",
     }
+
+    # -----------------------------------------------------------------------
+    #  Per-uur plan-sensors (voor terugkijken / plan-vs-gemeten)
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _slot_for_now(timeline: list[dict[str, Any]], now_utc: datetime) -> dict[str, Any] | None:
+        """De timeline-slot waarvan het start-uur gelijk is aan het lopende uur (UTC)."""
+        hour_start = now_utc.replace(minute=0, second=0, microsecond=0)
+        for s in timeline:
+            try:
+                st = datetime.fromisoformat(s["startUtc"].replace("Z", "+00:00"))
+            except (KeyError, ValueError, AttributeError):
+                continue
+            if st.replace(minute=0, second=0, microsecond=0) == hour_start:
+                return s
+        return None
+
+    def _action_label_now(self, actions: list[dict[str, Any]], now_utc: datetime) -> str:
+        """Label van de actie die NU loopt, of 'idle' als er geen actie geldt."""
+        for a in actions:
+            try:
+                st = datetime.fromisoformat(a["startUtc"].replace("Z", "+00:00"))
+                en = datetime.fromisoformat(a["endUtc"].replace("Z", "+00:00"))
+            except (KeyError, ValueError, AttributeError):
+                continue
+            if st <= now_utc < en:
+                kind = a.get("kind", "")
+                return self._ACTION_LABELS.get(kind, kind) or "idle"
+        return "idle"
+
+    # (suffix, waarde-key, unit, device_class) — action wordt apart afgehandeld.
+    _HOUR_NUMERIC = (
+        ("consumption", "consumptionWatts", "W", "power"),
+        ("pv", "pvWatts", "W", "power"),
+        ("soc", "socPercent", "%", "battery"),
+        ("grid", "gridWatts", "W", "power"),
+        ("price", "priceEurKwh", "EUR/kWh", "monetary"),
+    )
+
+    async def _publish_hour_sensors(
+        self, timeline: list[dict[str, Any]], actions: list[dict[str, Any]],
+        now_utc: datetime, fetched_at: str,
+    ) -> None:
+        """Publiceer de plan-waarden van het lopende uur als HA-sensors.
+
+        Live sensors worden elke tick overschreven (last-write-wins). De committed-sensors
+        worden één keer per uur (de eerste tick ná het hele uur) weggeschreven en daarna
+        binnen dat uur NIET meer herzien — een vaste referentie voor de terugblik.
+        """
+        slot = self._slot_for_now(timeline, now_utc)
+        if slot is None:
+            return
+
+        hour_start = now_utc.replace(minute=0, second=0, microsecond=0)
+        attrs = {
+            "for_hour_utc": hour_start.isoformat(),
+            "plan_recomputed_at": fetched_at,
+            "source": "saldox-api",
+        }
+        do_commit = self._committed_hour != hour_start
+
+        async def write(suffix: str, value: Any, unit: str | None, dclass: str | None, numeric: bool) -> None:
+            await self._ha.post_state(
+                entity_id=f"sensor.{self._slug}_{suffix}",
+                state=value if value is not None else "unknown",
+                unit=unit if (unit and value is not None) else None,
+                friendly_name=f"{self._friendly} {suffix.replace('_', ' ')} (plan)",
+                device_class=dclass if value is not None else None,
+                state_class="measurement" if numeric else None,
+                extra_attrs=attrs,
+            )
+            if do_commit:
+                await self._ha.post_state(
+                    entity_id=f"sensor.{self._slug}_{suffix}_committed",
+                    state=value if value is not None else "unknown",
+                    unit=unit if (unit and value is not None) else None,
+                    friendly_name=f"{self._friendly} {suffix.replace('_', ' ')} committed (plan)",
+                    device_class=dclass if value is not None else None,
+                    state_class="measurement" if numeric else None,
+                    extra_attrs={**attrs, "committed": True},
+                )
+
+        for suffix, key, unit, dclass in self._HOUR_NUMERIC:
+            val = slot.get(key)
+            await write(suffix, round(val, 3) if isinstance(val, (int, float)) else val, unit, dclass, True)
+        await write("action", self._action_label_now(actions, now_utc), "", None, False)
+
+        if do_commit:
+            self._committed_hour = hour_start
+            _LOG.info("Plan committed-snapshot geschreven voor uur %s", attrs["for_hour_utc"])
 
     async def _push_telemetry(self) -> None:
         """Push current Modbus readings to Saldox API for pattern learning."""
@@ -367,6 +474,9 @@ class PlanPoller:
             savings or 0, optimized or 0, naive or 0, len(actions),
             action_text,
         )
+
+        # Per-uur plan-sensors (live + committed-snapshot) voor terugkijken/plan-vs-gemeten.
+        await self._publish_hour_sensors(timeline, actions, datetime.now(timezone.utc), fetched_at)
 
         # Fetch savings history and merge into plan data for the dashboard.
         savings_history = await self._fetch_savings()
