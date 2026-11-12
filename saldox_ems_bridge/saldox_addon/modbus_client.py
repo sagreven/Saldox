@@ -40,7 +40,14 @@ _ModbusClient = AsyncModbusTcpClient | AsyncModbusSerialClient
 # eindeloos hangen → de hele asyncio-event-loop bevroor (de manual-override / 15 kW-force-charge
 # freeze). asyncio.wait_for annuleert elke transactie hard na dit aantal seconden, zodat de
 # poll-/control-loop nóóit meer vastloopt; de link wordt dan gesloten en volgende poll reconnect.
-HARD_TXN_TIMEOUT = 4.0
+#
+# MOET RUIM BOVEN de pymodbus client-timeout (5.0s) liggen: anders cancelt de watchdog een
+# trage-maar-geldige read vóórdat pymodbus z'n eigen timeout kan afhandelen. Dat corrumpeert
+# de serial-framer ("Request cancelled outside library") en de poll blijft op een deel-batch
+# steken (20/39 readings, FOUT-state). Op 8s vangt de watchdog alleen écht oneindige hangs
+# (de force-charge-freeze), terwijl pymodbus' eigen 5s-timeout trage no-responses netjes
+# per register afhandelt (read_all slaat over en gaat door).
+HARD_TXN_TIMEOUT = 8.0
 
 
 @dataclass
