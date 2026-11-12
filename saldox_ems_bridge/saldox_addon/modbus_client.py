@@ -35,6 +35,13 @@ _LOG = logging.getLogger(__name__)
 
 _ModbusClient = AsyncModbusTcpClient | AsyncModbusSerialClient
 
+# Harde watchdog per Modbus-transactie. pymodbus' eigen `timeout` vuurt op serial niet altijd
+# betrouwbaar: bij frame-corruptie tijdens hoog-vermogen laden (RS485-ruis) bleef een read/write
+# eindeloos hangen → de hele asyncio-event-loop bevroor (de manual-override / 15 kW-force-charge
+# freeze). asyncio.wait_for annuleert elke transactie hard na dit aantal seconden, zodat de
+# poll-/control-loop nóóit meer vastloopt; de link wordt dan gesloten en volgende poll reconnect.
+HARD_TXN_TIMEOUT = 4.0
+
 
 @dataclass
 class Reading:
@@ -177,12 +184,14 @@ class SofarModbusClient:
             for reg in registers:
                 try:
                     if reg.fc == "input":
-                        resp = await self._client.read_input_registers(
-                            reg.address, count=reg.word_count
+                        resp = await asyncio.wait_for(
+                            self._client.read_input_registers(reg.address, count=reg.word_count),
+                            timeout=HARD_TXN_TIMEOUT,
                         )
                     else:
-                        resp = await self._client.read_holding_registers(
-                            reg.address, count=reg.word_count
+                        resp = await asyncio.wait_for(
+                            self._client.read_holding_registers(reg.address, count=reg.word_count),
+                            timeout=HARD_TXN_TIMEOUT,
                         )
                     if resp.isError():
                         _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
@@ -200,6 +209,14 @@ class SofarModbusClient:
                     if abs(reg.scale) in (1.0, 10.0, 100.0) and isinstance(value, float):
                         value = int(value)
                     out.append(Reading(name=reg.name, value=value, unit=reg.unit, description=reg.description))
+                except asyncio.TimeoutError:
+                    # Hard-timeout: de serial-link hangt (bv. frame-corruptie bij hoog laden).
+                    # Sluit de verbinding en stop de batch — verder lezen zou elke keer opnieuw
+                    # timeouten. Volgende poll reconnect. Dit voorkomt de event-loop-freeze.
+                    _LOG.warning("Hard-timeout (%.0fs) read %s (0x%04X) — link gesloten, reconnect bij volgende poll",
+                                 HARD_TXN_TIMEOUT, reg.name, reg.address)
+                    self._close_locked()
+                    break
                 except Exception as ex:  # noqa: BLE001
                     _LOG.warning("Read faalde voor %s (0x%04X): %s", reg.name, reg.address, ex)
         return out
@@ -215,12 +232,24 @@ class SofarModbusClient:
         async with self._lock:
             await self._connect_locked()
             assert self._client is not None
-            if reg.word_count == 1:
-                resp = await self._client.write_registers(reg.address, values=[value & 0xFFFF])
-            else:
-                hi = (value >> 16) & 0xFFFF
-                lo = value & 0xFFFF
-                resp = await self._client.write_registers(reg.address, values=[hi, lo])
+            try:
+                if reg.word_count == 1:
+                    resp = await asyncio.wait_for(
+                        self._client.write_registers(reg.address, values=[value & 0xFFFF]),
+                        timeout=HARD_TXN_TIMEOUT,
+                    )
+                else:
+                    hi = (value >> 16) & 0xFFFF
+                    lo = value & 0xFFFF
+                    resp = await asyncio.wait_for(
+                        self._client.write_registers(reg.address, values=[hi, lo]),
+                        timeout=HARD_TXN_TIMEOUT,
+                    )
+            except asyncio.TimeoutError:
+                self._close_locked()
+                raise RuntimeError(
+                    f"Hard-timeout ({HARD_TXN_TIMEOUT:.0f}s) write {reg.name} — link gesloten"
+                )
             if resp.isError():
                 raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
             _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
@@ -275,7 +304,17 @@ class SofarModbusClient:
                     await self._connect_locked()
                     assert self._client is not None
 
-                resp = await self._client.write_registers(0x1187, values=values)
+                try:
+                    resp = await asyncio.wait_for(
+                        self._client.write_registers(0x1187, values=values),
+                        timeout=HARD_TXN_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    _LOG.warning("Hard-timeout (%.0fs) passive block write poging %d/2 — link gesloten",
+                                 HARD_TXN_TIMEOUT, poging)
+                    self._close_locked()
+                    laatste_resp = "hard-timeout (link hing)"
+                    continue
                 if not resp.isError():
                     if self.passive_write_failures:
                         _LOG.info("Passive block write hersteld na %d mislukte pogingen",
@@ -299,7 +338,10 @@ class SofarModbusClient:
         """Read back passive registers and warn if values don't match what was written."""
         assert self._client is not None
         try:
-            resp = await self._client.read_holding_registers(0x1187, count=6)
+            resp = await asyncio.wait_for(
+                self._client.read_holding_registers(0x1187, count=6),
+                timeout=HARD_TXN_TIMEOUT,
+            )
             if resp.isError():
                 _LOG.warning("VERIFY: read-back failed: %s", resp)
                 return
