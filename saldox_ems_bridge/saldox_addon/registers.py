@@ -72,15 +72,33 @@ SOFAR_HYD_REGISTERS: list[Register] = [
     Register("load_power_w",             0x04AF, 1, "holding", 10.0,  "W", signed=True,
              description="Home consumption"),
 
-    # ----- Battery -----
+    # ----- Battery pack 1 (0x0604-0x060A) -----
+    # LET OP: dit blok is Batterij 1 (BDU 1), niet het systeemtotaal. De namen houden
+    # we "battery_*" voor backward-compat (Saldox/HA gebruiken sensor.sofar_hyd_battery_*).
     # Battery power: S16 × -10 W (Sofar: negatief = charge, positief = discharge)
     Register("battery_power_w",          0x0606, 1, "holding", -10.0, "W", signed=True,
-             description="Battery power. Scale -10: Sofar neg=charge, wij + = laden"),
+             description="Battery 1 power. Scale -10: Sofar neg=charge, wij + = laden"),
     Register("battery_voltage_v",        0x0604, 1, "holding", 0.1,   "V"),
+    Register("battery1_current_a",       0x0605, 1, "holding", 0.01,  "A", signed=True,
+             description="Battery 1 stroom (Sofar: neg=laden). Scale verifiëren tegen bekende aggregaat."),
     Register("battery_temperature_c",    0x0607, 1, "holding", 1.0,   "°C", signed=True),
     Register("battery_soc_percent",      0x0608, 1, "holding", 1.0,   "%"),
     Register("battery_soh_percent",      0x0609, 1, "holding", 1.0,   "%"),
     Register("battery_cycles",           0x060A, 1, "holding", 1.0,   ""),
+
+    # ----- Battery pack 2 (0x060B-0x0611) -----
+    # Spiegelt bat1 exact, +7 adres-offset (Sofar HYD 3PH dual-battery map). Toegevoegd om
+    # te diagnosticeren of BDU 2 daadwerkelijk meelaadt (hh.imming: 2×15 kWh via 2 BDU's).
+    # Scales mirroren bat1; na deploy verifiëren dat bat1_power + bat2_power ≈ battery_power_w.
+    Register("battery2_voltage_v",       0x060B, 1, "holding", 0.1,   "V"),
+    Register("battery2_current_a",       0x060C, 1, "holding", 0.01,  "A", signed=True,
+             description="Battery 2 stroom (Sofar: neg=laden)."),
+    Register("battery2_power_w",         0x060D, 1, "holding", -10.0, "W", signed=True,
+             description="Battery 2 power. Scale -10 zoals bat1: Sofar neg=charge, wij + = laden"),
+    Register("battery2_temperature_c",   0x060E, 1, "holding", 1.0,   "°C", signed=True),
+    Register("battery2_soc_percent",     0x060F, 1, "holding", 1.0,   "%"),
+    Register("battery2_soh_percent",     0x0610, 1, "holding", 1.0,   "%"),
+    Register("battery2_cycles",          0x0611, 1, "holding", 1.0,   ""),
 
     # ----- Energy counters (U32, little-endian word order) -----
     Register("today_production_kwh",     0x0684, 2, "holding", 0.01,  "kWh"),

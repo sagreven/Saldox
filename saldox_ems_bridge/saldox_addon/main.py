@@ -75,6 +75,17 @@ SENSOR_MAP = {
     "pv1_current_a":          ("pv1_current",    "current",         "measurement"),
     "pv2_voltage_v":          ("pv2_voltage",    "voltage",         "measurement"),
     "pv2_current_a":          ("pv2_current",    "current",         "measurement"),
+    # ----- Per-batterij (bat1-stroom + volledige bat2) — diagnose 2-BDU-setup -----
+    # Publiceert sensor.sofar_hyd_bat1_current + sensor.sofar_hyd_bat2_* zodat we kunnen
+    # zien of BDU 2 meelaadt (hh.imming: 2×15 kWh via 2 BDU's). Ook zichtbaar in /status.
+    "battery1_current_a":     ("bat1_current",    "current",         "measurement"),
+    "battery2_voltage_v":     ("bat2_voltage",    "voltage",         "measurement"),
+    "battery2_current_a":     ("bat2_current",    "current",         "measurement"),
+    "battery2_power_w":       ("bat2_power",      "power",           "measurement"),
+    "battery2_temperature_c": ("bat2_temperature","temperature",     "measurement"),
+    "battery2_soc_percent":   ("bat2_soc",        "battery",         "measurement"),
+    "battery2_soh_percent":   ("bat2_soh",        None,              "measurement"),
+    "battery2_cycles":        ("bat2_cycles",     None,              "total_increasing"),
 }
 
 
