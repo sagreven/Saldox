@@ -116,72 +116,92 @@ class SofarModbusClient:
 
     async def connect(self) -> None:
         async with self._lock:
-            if self._client and self._client.connected:
-                return
-            self._client = self._make_client()
-            # pymodbus 3.x: zet slave/unit ID op het client-object zelf.
-            # Dit werkt in alle 3.x versies ongeacht keyword API changes.
-            self._client.slave = self._unit_id
-            ok = await self._client.connect()
-            if not ok:
-                if self._connection_type == "serial":
-                    raise ConnectionError(
-                        f"Modbus RTU connect faalde naar {self._serial_port}"
-                    )
-                raise ConnectionError(
-                    f"Modbus TCP connect faalde naar {self._host}:{self._port}"
-                )
+            await self._connect_locked()
+
+    async def _connect_locked(self) -> None:
+        """Connect-logica die ervan uitgaat dat self._lock AL vastgehouden wordt.
+
+        De transactie-methodes (read_all/write_holding/write_passive_block) roepen dit
+        aan binnen hun eigen `async with self._lock`, zodat 'ensure-connected + transactie'
+        atomair onder één lock-acquire valt. asyncio.Lock is NIET reentrant — daarom mag
+        hier geen self.connect() (die zou de lock nogmaals pakken → deadlock)."""
+        if self._client and self._client.connected:
+            return
+        self._client = self._make_client()
+        # pymodbus 3.x: zet slave/unit ID op het client-object zelf.
+        # Dit werkt in alle 3.x versies ongeacht keyword API changes.
+        self._client.slave = self._unit_id
+        ok = await self._client.connect()
+        if not ok:
             if self._connection_type == "serial":
-                _LOG.info(
-                    "Modbus connected (RTU) → %s @ %d baud (unit %s)",
-                    self._serial_port, self._baudrate, self._unit_id,
+                raise ConnectionError(
+                    f"Modbus RTU connect faalde naar {self._serial_port}"
                 )
-            else:
-                _LOG.info(
-                    "Modbus connected (TCP) → %s:%s (unit %s)",
-                    self._host, self._port, self._unit_id,
-                )
+            raise ConnectionError(
+                f"Modbus TCP connect faalde naar {self._host}:{self._port}"
+            )
+        if self._connection_type == "serial":
+            _LOG.info(
+                "Modbus connected (RTU) → %s @ %d baud (unit %s)",
+                self._serial_port, self._baudrate, self._unit_id,
+            )
+        else:
+            _LOG.info(
+                "Modbus connected (TCP) → %s:%s (unit %s)",
+                self._host, self._port, self._unit_id,
+            )
 
     async def close(self) -> None:
         async with self._lock:
-            if self._client:
-                self._client.close()
-                self._client = None
+            self._close_locked()
+
+    def _close_locked(self) -> None:
+        """Close zonder de lock te pakken — aangeroepen binnen een reeds-gehouden lock
+        (bv. de reconnect-retry in write_passive_block)."""
+        if self._client:
+            self._client.close()
+            self._client = None
 
     async def read_all(self, registers: Iterable[Register] = SOFAR_HYD_REGISTERS) -> list[Reading]:
         """Lees alle opgegeven registers. Errors per register worden gelogd maar
-        stoppen de batch niet — partieel resultaat is beter dan helemaal niets."""
-        await self.connect()
+        stoppen de batch niet — partieel resultaat is beter dan helemaal niets.
+
+        De hele batch draait onder self._lock zodat reads nooit interleaven met een
+        write op dezelfde RS485-poort (half-duplex). Zonder deze serialisatie botste de
+        poll-loop met een force-charge-write en hing de pymodbus-transactie → event-loop
+        bevroor (manual-override freeze)."""
         out: list[Reading] = []
-        assert self._client is not None
-        for reg in registers:
-            try:
-                if reg.fc == "input":
-                    resp = await self._client.read_input_registers(
-                        reg.address, count=reg.word_count
-                    )
-                else:
-                    resp = await self._client.read_holding_registers(
-                        reg.address, count=reg.word_count
-                    )
-                if resp.isError():
-                    _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
-                    continue
-                raw_int = _decode(resp.registers, reg)
-                # Negatieve scale (bijv. -10) = multiply by |scale| en keer teken om.
-                # Sofar conventie: battery charge = negatief, maar wij willen + = laden.
-                if reg.scale < 0:
-                    value = raw_int * abs(reg.scale) * -1
-                elif reg.scale != 1.0:
-                    value = raw_int * reg.scale
-                else:
-                    value = raw_int
-                # Render integers als int wanneer schaal geheel is.
-                if abs(reg.scale) in (1.0, 10.0, 100.0) and isinstance(value, float):
-                    value = int(value)
-                out.append(Reading(name=reg.name, value=value, unit=reg.unit, description=reg.description))
-            except Exception as ex:  # noqa: BLE001
-                _LOG.warning("Read faalde voor %s (0x%04X): %s", reg.name, reg.address, ex)
+        async with self._lock:
+            await self._connect_locked()
+            assert self._client is not None
+            for reg in registers:
+                try:
+                    if reg.fc == "input":
+                        resp = await self._client.read_input_registers(
+                            reg.address, count=reg.word_count
+                        )
+                    else:
+                        resp = await self._client.read_holding_registers(
+                            reg.address, count=reg.word_count
+                        )
+                    if resp.isError():
+                        _LOG.warning("Modbus error voor %s (0x%04X): %s", reg.name, reg.address, resp)
+                        continue
+                    raw_int = _decode(resp.registers, reg)
+                    # Negatieve scale (bijv. -10) = multiply by |scale| en keer teken om.
+                    # Sofar conventie: battery charge = negatief, maar wij willen + = laden.
+                    if reg.scale < 0:
+                        value = raw_int * abs(reg.scale) * -1
+                    elif reg.scale != 1.0:
+                        value = raw_int * reg.scale
+                    else:
+                        value = raw_int
+                    # Render integers als int wanneer schaal geheel is.
+                    if abs(reg.scale) in (1.0, 10.0, 100.0) and isinstance(value, float):
+                        value = int(value)
+                    out.append(Reading(name=reg.name, value=value, unit=reg.unit, description=reg.description))
+                except Exception as ex:  # noqa: BLE001
+                    _LOG.warning("Read faalde voor %s (0x%04X): %s", reg.name, reg.address, ex)
         return out
 
     async def write_holding(self, reg: Register, value: int) -> None:
@@ -192,17 +212,18 @@ class SofarModbusClient:
         """
         if reg.fc != "holding":
             raise ValueError(f"{reg.name} is geen writable holding-register")
-        await self.connect()
-        assert self._client is not None
-        if reg.word_count == 1:
-            resp = await self._client.write_registers(reg.address, values=[value & 0xFFFF])
-        else:
-            hi = (value >> 16) & 0xFFFF
-            lo = value & 0xFFFF
-            resp = await self._client.write_registers(reg.address, values=[hi, lo])
-        if resp.isError():
-            raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
-        _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
+        async with self._lock:
+            await self._connect_locked()
+            assert self._client is not None
+            if reg.word_count == 1:
+                resp = await self._client.write_registers(reg.address, values=[value & 0xFFFF])
+            else:
+                hi = (value >> 16) & 0xFFFF
+                lo = value & 0xFFFF
+                resp = await self._client.write_registers(reg.address, values=[hi, lo])
+            if resp.isError():
+                raise RuntimeError(f"Modbus write faalde voor {reg.name}: {resp}")
+            _LOG.info("Modbus wrote %s = %s (raw)", reg.name, value)
 
     async def write_passive_block(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
         """Schrijf alle 3 Passive Mode registers als één FC16 blok (6 registers).
@@ -218,9 +239,6 @@ class SofarModbusClient:
             min_bat_w: min battery power in W (- = max discharge)
             max_bat_w: max battery power in W (+ = max charge)
         """
-        await self.connect()
-        assert self._client is not None
-
         def to_u32_words_be(val: int) -> list[int]:
             """Big-endian word order: [hi, lo] — matches Sofar HYD convention."""
             if val < 0:
@@ -229,44 +247,53 @@ class SofarModbusClient:
 
         values = to_u32_words_be(grid_w) + to_u32_words_be(min_bat_w) + to_u32_words_be(max_bat_w)
 
-        # Twee pogingen, met een verse verbinding tussendoor.
-        #
-        # Op 28-09-2026 faalde deze schrijfactie vanaf 16:36 met exception 7 (Negative
-        # Acknowledge) en bleef dat zeventien uur doen. De executor viel elke cyclus
-        # terug op set_auto(), de omvormer regelde zichzelf, en bij 9% SoC laadde hij
-        # uit het net bij tegen EUR 0,38 -- terwijl diezelfde dag uren van EUR 0,10 had.
-        #
-        # De oude code gooide de fout meteen door. connect() hergebruikt een client
-        # die zichzelf "connected" noemt, dus er werd nooit een nieuwe verbinding
-        # opgezet: een halfdode link bleef eindeloos hetzelfde antwoord geven. Nu gaat
-        # de verbinding na de eerste mislukking dicht en wordt hij opnieuw opgebouwd.
-        laatste_resp = None
-        for poging in (1, 2):
-            if poging > 1:
-                await self.close()
-                await asyncio.sleep(0.5)
-                await self.connect()
-                assert self._client is not None
+        # Serialiseer de HELE actie (connect + reconnect-retry + write + read-back verify)
+        # onder self._lock, zodat er geen poll-read tussen komt op de RS485-poort (zie read_all).
+        # Gebruikt de lock-vrije _connect_locked/_close_locked varianten om reentrancy te vermijden
+        # (asyncio.Lock is niet reentrant). _verify_passive_block leest rauw op self._client en
+        # pakt de lock dus NIET — veilig binnen deze held-lock.
+        async with self._lock:
+            await self._connect_locked()
+            assert self._client is not None
 
-            resp = await self._client.write_registers(0x1187, values=values)
-            if not resp.isError():
-                if self.passive_write_failures:
-                    _LOG.info("Passive block write hersteld na %d mislukte pogingen",
-                              self.passive_write_failures)
-                self.passive_write_failures = 0
-                _LOG.info("Modbus passive block WRITE: grid=%dW, min_bat=%dW, max_bat=%dW",
-                          grid_w, min_bat_w, max_bat_w)
-                await self._verify_passive_block(grid_w, min_bat_w, max_bat_w)
-                return
+            # Twee pogingen, met een verse verbinding tussendoor.
+            #
+            # Op 28-09-2026 faalde deze schrijfactie vanaf 16:36 met exception 7 (Negative
+            # Acknowledge) en bleef dat zeventien uur doen. De executor viel elke cyclus
+            # terug op set_auto(), de omvormer regelde zichzelf, en bij 9% SoC laadde hij
+            # uit het net bij tegen EUR 0,38 -- terwijl diezelfde dag uren van EUR 0,10 had.
+            #
+            # De oude code gooide de fout meteen door. connect() hergebruikt een client
+            # die zichzelf "connected" noemt, dus er werd nooit een nieuwe verbinding
+            # opgezet: een halfdode link bleef eindeloos hetzelfde antwoord geven. Nu gaat
+            # de verbinding na de eerste mislukking dicht en wordt hij opnieuw opgebouwd.
+            laatste_resp = None
+            for poging in (1, 2):
+                if poging > 1:
+                    self._close_locked()
+                    await asyncio.sleep(0.5)
+                    await self._connect_locked()
+                    assert self._client is not None
 
-            laatste_resp = resp
-            _LOG.warning("Passive block write poging %d/2 faalde: %s", poging, resp)
+                resp = await self._client.write_registers(0x1187, values=values)
+                if not resp.isError():
+                    if self.passive_write_failures:
+                        _LOG.info("Passive block write hersteld na %d mislukte pogingen",
+                                  self.passive_write_failures)
+                    self.passive_write_failures = 0
+                    _LOG.info("Modbus passive block WRITE: grid=%dW, min_bat=%dW, max_bat=%dW",
+                              grid_w, min_bat_w, max_bat_w)
+                    await self._verify_passive_block(grid_w, min_bat_w, max_bat_w)
+                    return
 
-        self.passive_write_failures += 1
-        raise RuntimeError(
-            f"Passive block write faalde na 2 pogingen ({self.passive_write_failures}x achtereen): "
-            f"{laatste_resp}"
-        )
+                laatste_resp = resp
+                _LOG.warning("Passive block write poging %d/2 faalde: %s", poging, resp)
+
+            self.passive_write_failures += 1
+            raise RuntimeError(
+                f"Passive block write faalde na 2 pogingen ({self.passive_write_failures}x achtereen): "
+                f"{laatste_resp}"
+            )
 
     async def _verify_passive_block(self, grid_w: int, min_bat_w: int, max_bat_w: int) -> None:
         """Read back passive registers and warn if values don't match what was written."""
