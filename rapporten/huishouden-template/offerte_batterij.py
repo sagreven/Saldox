@@ -69,14 +69,16 @@ def main():
     ap = argparse.ArgumentParser(description="Saldox-offerte: batterij bij bestaande zonnepanelen")
     ap.add_argument("--klant", required=True)
     ap.add_argument("--plaats", default="")
-    ap.add_argument("--bestaand-panelen", type=int, required=True)
-    ap.add_argument("--bestaand-wp", type=int, required=True)
+    ap.add_argument("--bestaand-panelen", type=int, default=0, help="aantal bestaande panelen (of --bestaand-kwp)")
+    ap.add_argument("--bestaand-wp", type=int, default=0)
+    ap.add_argument("--bestaand-kwp", type=float, help="vermogen van de bestaande panelen als het aantal onbekend is")
+    ap.add_argument("--bestaand-tekst", default="", help="beschrijving van de bestaande installatie (eerste zin van 'Uw installatie nu')")
     ap.add_argument("--opbrengst", type=int, help="kWh per kWp van de bestaande panelen (of --opwek)")
     ap.add_argument("--opwek", type=int, help="opwek van de panelen per jaar (kWh, omvormer of portaal)")
     ap.add_argument("--dagfactor", type=float, default=1.0, help="verbruik op werkdagen 9-17 uur t.o.v. het standaardprofiel")
     ap.add_argument("--opbrengst-bron", default="")
-    ap.add_argument("--afname", type=int, required=True, help="meter: afname per jaar (kWh)")
-    ap.add_argument("--teruglevering", type=int, required=True, help="meter: teruglevering per jaar (kWh)")
+    ap.add_argument("--afname", type=int, help="meter: afname per jaar (kWh); zonder: berekend")
+    ap.add_argument("--teruglevering", type=int, help="meter: teruglevering per jaar (kWh); zonder: berekend")
     ap.add_argument("--verbruik", type=int, required=True, help="totaal verbruik van het huis (afname + eigen zonnestroom)")
     ap.add_argument("--auto-kwh", type=int, default=0, help="thuis laden per jaar (kWh), auto die erbij komt")
     ap.add_argument("--auto-laaddagen", type=int, default=7)
@@ -87,7 +89,7 @@ def main():
     ap.add_argument("--datum", default=dt.date.today().isoformat())
     ap.add_argument("--alleen-apparatuur", action="store_true",
                     help="alleen omvormer, batterijmodules en BDU; installatie, meterkast, noodstroom, EMS en transport niet in de prijs")
-    ap.add_argument("--laadpaal", choices=["geen", "ohme"], default="geen",
+    ap.add_argument("--laadpaal", choices=["geen", "ohme", "zaptec"], default="geen",
                     help="ohme: Ohme Home Pro MID incl. installatie (prijslijst) als post, met slim laden en ERE in de opbrengst")
     ap.add_argument("--sectie-eind")
     ap.add_argument("--figuur", action="append", default=[])
@@ -97,23 +99,38 @@ def main():
     d = dt.date.fromisoformat(a.datum)
     B.KLANT["datum"] = f"{d.day} {O.MAANDEN[d.month - 1]} {d.year}"
     H = O.HYD[a.omvormer]
-    kwp = a.bestaand_panelen * a.bestaand_wp / 1000
+    if a.bestaand_kwp:
+        kwp = a.bestaand_kwp
+        a.bestaand_panelen, a.bestaand_wp = 1, round(kwp * 1000)  # alleen het vermogen telt in het model
+        pan_tekst = pan_kort = f"ca. {B.nl(kwp, 1)} kWp"
+    else:
+        kwp = a.bestaand_panelen * a.bestaand_wp / 1000
+        pan_tekst = f"{a.bestaand_panelen} panelen van ca. {a.bestaand_wp} Wp ({B.nl(kwp, 1)} kWp)"
+        pan_kort = f"{a.bestaand_panelen} panelen, {B.nl(kwp, 1)} kWp"
     if a.opwek:
         a.opbrengst = round(a.opwek / kwp)
     basis = dict(m.AANNAMES, panelen=a.bestaand_panelen, wp=a.bestaand_wp, opbrengst_kwh_per_kwp=a.opbrengst,
                  verbruik_kwh=a.verbruik, ev_kwh=a.auto_kwh, ev_kw=11.0, ev_laaddagen=a.auto_laaddagen,
                  dagfactor=a.dagfactor)
     nu = m.simuleer(dict(basis, ev_kwh=0), batterij=False)
+    meter = a.afname is not None and a.teruglevering is not None
+    afname = a.afname if meter else round(nu["import_kwh"], -1)
+    terug = a.teruglevering if meter else round(nu["export_kwh"], -1)
     auto = bool(a.auto_kwh)
 
     # begroting
     regels = [(p, ex, b, st, round(ex * (1 + b), 2)) for p, ex, b, st in posten(H, a.modules, a.alleen_apparatuur)]
     inv_b = round(sum(r[4] for r in regels), 2)            # omvormer en batterij
-    LP = a.laadpaal == "ohme" and bool(a.auto_kwh)
-    if LP:
+    LP = a.laadpaal != "geen" and bool(a.auto_kwh)
+    LPNAAM = {"ohme": "Ohme Home Pro MID", "zaptec": "Zaptec Go 2"}.get(a.laadpaal, "")
+    if a.laadpaal == "ohme" and LP:
         ohme = next(r for r in B._PRIJSLIJST["losse_prijzen"] if r["artikel"].startswith("Ohme Home Pro MID"))
         regels.append(("Laadpaal Ohme Home Pro MID, incl. installatie (MID-meter voor ERE)", ohme["prijs"], 0.21, "Opgegeven",
                        ohme["prijs_incl_btw"]))
+    elif a.laadpaal == "zaptec" and LP:
+        for post, ex, b, st in B.PRIJZEN_LAADPAAL:
+            regels.append((post, ex, b, st, round(ex * (1 + b), 2)))
+    if LP:
         regels.append(("Installatieautomaat met aardlek, groep laadpaal (materiaal)", O.AUTOMAAT, 0.21, "Opgegeven",
                        round(O.AUTOMAAT * 1.21, 2)))
     inv_lp = round(sum(r[4] for r in regels), 2) - inv_b
@@ -171,11 +188,11 @@ def main():
     zv_nu = nu["zelfverbruik"]
     t.append(f"""## Samenvatting
 
-De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvormer met een thuisbatterij van {B.nl(a.modules * 5.12, 1)} kWh{', en de auto laadt aan een Ohme Home Pro MID' if LP else ''}. Dat kost {B.eur2(inv)} incl. btw, {excl}, en levert {'met de auto erbij ' if auto else ''}normaal netto {B.eur(N['netto'])} per jaar op; het is in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar){', zonder de installatie van omvormer en batterij' if AA else ''}.
+De bestaande zonnepanelen ({pan_kort}) gaan op een nieuwe hybride omvormer met een thuisbatterij van {B.nl(a.modules * 5.12, 1)} kWh{', en de auto laadt aan een ' + LPNAAM if LP else ''}. Dat kost {B.eur2(inv)} incl. btw, {excl}, en levert {'met de auto erbij ' if auto else ''}normaal netto {B.eur(N['netto'])} per jaar op; het is in ca. {N['jaren']} jaar terugverdiend ({sc[2]['jaren']} tot {sc[0]['jaren']} jaar){', zonder de installatie van omvormer en batterij' if AA else ''}.
 
-- **Nu:** u neemt {B.nl(a.afname)} kWh per jaar af en levert {B.nl(a.teruglevering)} kWh terug; van uw zonnestroom gebruikt u ca. {B.pct(zv_nu)} zelf.
+- **Nu:** u neemt {'' if meter else 'naar schatting '}{B.nl(afname)} kWh per jaar af en levert {B.nl(terug)} kWh terug; van uw zonnestroom gebruikt u ca. {B.pct(zv_nu)} zelf.
 - **Met batterij:** de batterij bewaart zonnestroom voor de avond en laadt op goedkope uren; u gebruikt dan ca. {B.pct(met_b['zelfverbruik'])} van uw zonnestroom zelf.""" + (f"""
-- **De auto:** {a.auto_tekst or f'ca. {B.nl(a.auto_kwh)} kWh per jaar thuis laden'}.""" + (f""" De Ohme laadt slim op goedkope uren (ca. {B.eur(N['slim'])} per jaar) en de MID-meter levert ERE-vergoeding op (ca. {B.eur(N['ere'])} per jaar).""" if LP else f""" De batterij levert met de auto {B.eur(N['batt'])} per jaar op, zonder auto {B.eur(round(w_nu, -1))}.""") if auto else "") + f"""
+- **De auto:** {a.auto_tekst or f'ca. {B.nl(a.auto_kwh)} kWh per jaar thuis laden'}.""" + (f""" De {LPNAAM} laadt slim op goedkope uren (ca. {B.eur(N['slim'])} per jaar) en de MID-meter levert ERE-vergoeding op (ca. {B.eur(N['ere'])} per jaar).""" if LP else f""" De batterij levert met de auto {B.eur(N['batt'])} per jaar op, zonder auto {B.eur(round(w_nu, -1))}.""") if auto else "") + f"""
 - **Besparing per jaar:** batterij {B.eur(N['batt'])}""" + (f""", slim laden {B.eur(N['slim'])}, ERE {B.eur(N['ere'])}""" if LP else "") + f"""; na de reservering voor de omvormer {B.eur(N['netto'])} netto.
 """ + (f"- **Installatie:** in deze prijs zitten de omvormer, de batterijmodules, de BDU, de installatieautomaat met aardlek en de installatiekeuring met certificering{', en de laadpaal inclusief installatie met een eigen installatieautomaat met aardlek' if LP else ''}; installatie en aansluiting van omvormer en batterij worden apart afgesproken.\n"
          f"- **Btw:** omvormer, batterij{' en laadpaal' if LP else ''} vallen onder 21%.\n" if AA else
@@ -185,20 +202,20 @@ De bestaande {a.bestaand_panelen} zonnepanelen gaan op een nieuwe hybride omvorm
 
     t.append(f"""## Uw installatie nu
 
-De woning heeft {a.bestaand_panelen} zonnepanelen op het platte dak, op frames naar het zuiden. Uit de meterstanden leidt Saldox af hoe groot de installatie is en hoeveel u zelf gebruikt.
+{a.bestaand_tekst or 'De woning heeft al zonnepanelen.'} """ + ("Uit de meterstanden leidt Saldox af hoeveel u zelf gebruikt." if meter else "Saldox schat met de simulatie per uur hoeveel u zelf gebruikt en teruglevert.") + f"""
 
 | | Per jaar |
 | --- | --- |
-| Afname van het net (meter) | {B.nl(a.afname)} kWh |
-| Teruglevering aan het net (meter) | {B.nl(a.teruglevering)} kWh |
+| Afname van het net ({'meter' if meter else 'berekend'}) | {B.nl(afname)} kWh |
+| Teruglevering aan het net ({'meter' if meter else 'berekend'}) | {B.nl(terug)} kWh |
 | Opwek zonnepanelen ({'opgave' if a.opwek else 'berekend'}) | {B.nl(round(nu['pv_kwh'], -1))} kWh |
-| Totaal verbruik van het huis (afname + eigen zonnestroom) | {B.nl(a.verbruik)} kWh |
+| Totaal verbruik van het huis{' (afname + eigen zonnestroom)' if meter else ' (aanname)'} | {B.nl(a.verbruik)} kWh |
 | Zonnestroom zelf gebruikt | {B.pct(zv_nu)} |
 """ + (f"| Auto, thuis laden (nieuw) | {B.nl(a.auto_kwh)} kWh |\n" if auto else "") + f"""
-- **Panelen:** {a.bestaand_panelen} panelen van ca. {a.bestaand_wp} Wp ({B.nl(kwp, 1)} kWp), {B.nl(a.opbrengst)} kWh per kWp.
-- **Weinig verbruik overdag:** u gebruikt maar {B.pct(zv_nu)} van uw zonnestroom zelf. Saldox heeft het verbruiksprofiel daarop afgestemd: op werkdagen tussen 9 en 17 uur is het verbruik ca. {B.pct(a.dagfactor)} van een standaard huishouden. Daarmee komt de simulatie per uur uit op {B.nl(round(nu['import_kwh'], -1))} kWh afname en {B.nl(round(nu['export_kwh'], -1))} kWh teruglevering, gelijk aan uw meterstanden.
+- **Panelen:** {pan_tekst}, {B.nl(a.opbrengst)} kWh per kWp.
+""" + ("" if a.dagfactor >= 1 else f"""- **Weinig verbruik overdag:** u gebruikt maar {B.pct(zv_nu)} van uw zonnestroom zelf. Saldox heeft het verbruiksprofiel daarop afgestemd: op werkdagen tussen 9 en 17 uur is het verbruik ca. {B.pct(a.dagfactor)} van een standaard huishouden. Daarmee komt de simulatie per uur uit op {B.nl(round(nu['import_kwh'], -1))} kWh afname en {B.nl(round(nu['export_kwh'], -1))} kWh teruglevering, gelijk aan uw meterstanden.
 - **Juist dan helpt een batterij:** de zonnestroom die overdag terug het net op gaat, gebruikt u 's avonds alsnog zelf.
-- **Bij de schouw:** typeplaatje van panelen en omvormer bekijken; de exacte paneelgegevens maken de berekening definitief.
+""") + f"""- **Bij de schouw:** typeplaatje van panelen en omvormer bekijken; de exacte paneelgegevens maken de berekening definitief.
 - **Bestaande omvormer:** die gaat eruit; de panelen komen op de nieuwe hybride omvormer.
 """)
 
@@ -226,7 +243,7 @@ Normaal levert {'het pakket' if LP else 'de batterij'} {B.eur(N['bruto'])} per j
 | Per jaar | Pessimistisch | Normaal | Optimistisch |
 | --- | --- | --- | --- |
 | Batterij (eigen zonnestroom, slim laden en ontladen{', laden van de auto' if auto else ''}) | {B.eur(sc[0]['batt'])} | {B.eur(sc[1]['batt'])} | {B.eur(sc[2]['batt'])} |
-""" + (f"""| Slim laden van de auto (Ohme), t.o.v. direct laden | {B.eur(sc[0]['slim'])} | {B.eur(sc[1]['slim'])} | {B.eur(sc[2]['slim'])} |
+""" + (f"""| Slim laden van de auto ({LPNAAM}), t.o.v. direct laden | {B.eur(sc[0]['slim'])} | {B.eur(sc[1]['slim'])} | {B.eur(sc[2]['slim'])} |
 | ERE-vergoeding ({B.eur(ERE3[0], 2)} / {B.eur(ERE3[1], 2)} / {B.eur(ERE3[2], 2)} per kWh) | {B.eur(sc[0]['ere'])} | {B.eur(sc[1]['ere'])} | {B.eur(sc[2]['ere'])} |
 """ if LP else "") + f"""| **Bruto per jaar** | **{B.eur(sc[0]['bruto'])}** | **{B.eur(sc[1]['bruto'])}** | **{B.eur(sc[2]['bruto'])}** |
 | Reservering vervanging omvormer | −{B.eur(RES)} | −{B.eur(RES)} | −{B.eur(RES)} |
@@ -247,12 +264,12 @@ Wat u per jaar aan stroom betaalt, stap voor stap: van de situatie met de auto z
 | Stroomkosten per jaar (dynamisch contract, normaal) | Per jaar | Besparing |
 | --- | --- | --- |
 | Met de auto, direct laden bij thuiskomst, zonder batterij | {B.eur(k_dom)} | — |
-| Met de Ohme: slim laden op goedkope uren | {B.eur(k_slim)} | {B.eur(k_dom - k_slim)} |
+| Met de {LPNAAM}: slim laden op goedkope uren | {B.eur(k_slim)} | {B.eur(k_dom - k_slim)} |
 | Met de batterij erbij | {B.eur(k_batt)} | {B.eur(k_slim - k_batt)} |
 | ERE-vergoeding via de MID-meter | −{B.eur(N['ere'])} | {B.eur(N['ere'])} |
 | **Na het complete pakket** | **{B.eur(k_batt - N['ere'])}** | **{B.eur(k_dom - k_batt + N['ere'])}** |
 
-- **Stroomkosten:** de kosten van afname min de opbrengst van teruglevering, incl. btw en energiebelasting; vaste leveringskosten en netbeheer veranderen niet en staan er niet in.
+- **Stroomkosten:** de kosten van afname min de opbrengst van teruglevering, incl. btw en energiebelasting; vaste leveringskosten en netbeheer veranderen niet en staan er niet in.{' Een negatief bedrag betekent dat u per saldo verdient aan de teruglevering.' if k_batt - N['ere'] < 0 else ''}
 - **Reservering:** van de besparing gaat {B.eur(RES)} per jaar naar de reservering voor vervanging van de omvormer; netto blijft {B.eur(N['netto'])} over.
 - **Zonder auto:** zonder auto levert alleen de batterij iets op: netto ca. {B.eur(round(w_nu, -1) - RES)} per jaar.
 """)
@@ -266,7 +283,7 @@ Het pakket van {B.eur2(inv)}{' (zonder installatie van omvormer en batterij)' if
 | Onderdeel | Investering incl. btw | Netto per jaar (normaal) | Terugverdientijd (normaal) |
 | --- | --- | --- | --- |
 | Omvormer en batterij | {B.eur2(inv_b)} | {B.eur(N['batt'] - RES)} | {B.jr(inv_b, N['batt'] - RES)} jaar |
-""" + (f"""| Laadpaal Ohme Home Pro MID en installatieautomaat (slim laden en ERE) | {B.eur2(inv_lp)} | {B.eur(lp_n)} | {B.jr(inv_lp, lp_n)} jaar |
+""" + (f"""| Laadpaal {LPNAAM} en installatieautomaat (slim laden en ERE) | {B.eur2(inv_lp)} | {B.eur(lp_n)} | {B.jr(inv_lp, lp_n)} jaar |
 """ if LP else "") + f"""| **Totaal** | **{B.eur2(inv)}** | **{B.eur(N['netto'])}** | **{N['jaren']} jaar** |
 """)
 
@@ -288,9 +305,9 @@ Met dezelfde omvormer kan de batterij kleiner of groter. Per grootte, {'met de a
     if lp_tekst:
         t.append(lp_tekst.strip() + "\n")
     if LP:
-        t.append(f"""## Laden met de Ohme Home Pro MID
+        t.append(f"""## Laden met de {LPNAAM}
 
-De Ohme Home Pro MID heeft een ingebouwde, geijkte MID-meter. Daarmee levert elke kWh die u thuis in de auto laadt ERE-vergoeding op: ca. {B.eur(a.ere, 2)} per kWh, bij {B.nl(a.auto_kwh)} kWh per jaar ca. {B.eur(N['ere'])}.
+De {LPNAAM} heeft een ingebouwde, geijkte MID-meter. Daarmee levert elke kWh die u thuis in de auto laadt ERE-vergoeding op: ca. {B.eur(a.ere, 2)} per kWh, bij {B.nl(a.auto_kwh)} kWh per jaar ca. {B.eur(N['ere'])}.
 
 | Laden per jaar ({B.nl(a.auto_kwh)} kWh) | Bedrag |
 | --- | --- |
@@ -299,8 +316,11 @@ De Ohme Home Pro MID heeft een ingebouwde, geijkte MID-meter. Daarmee levert elk
 | **Opbrengst laadpaal per jaar** | **{B.eur(lp_n)}** |
 | Laadpaal incl. installatie en installatieautomaat | {B.eur2(inv_lp)}, terugverdiend in ca. {B.jr(inv_lp, lp_n)} jaar |
 
-- **Alleen de MID-versie:** de Ohme Home Pro MID komt in aanmerking voor ERE's; de gewone Home Pro (van vóór november 2024), de ePod en de Go niet.
-- **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto wordt geladen ERE's op. U meldt de laadpaal aan bij een inboekdienstverlener (bijvoorbeeld Joulo, dat de laadsessies via uw Ohme-account ophaalt); die verkoopt de ERE's en betaalt u uit. De opbrengst schommelt met de markt.
+""" + ("- **Alleen de MID-versie:** de Ohme Home Pro MID komt in aanmerking voor ERE's; de gewone Home Pro (van vóór november 2024), de ePod en de Go niet.\n"
+         "- **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto wordt geladen ERE's op. U meldt de laadpaal aan bij een inboekdienstverlener (bijvoorbeeld Joulo, dat de laadsessies via uw Ohme-account ophaalt); die verkoopt de ERE's en betaalt u uit. De opbrengst schommelt met de markt.\n"
+         if a.laadpaal == "ohme" else
+         "- **Zaptec Go 2:** tot 22 kW (3-fase) of 7,4 kW (1-fase), MID-meter, 4G, OCPP en dynamische load balancing via de P1-meter.\n"
+         "- **ERE:** sinds 1 januari 2026 levert stroom die thuis in een elektrische auto wordt geladen ERE's op, ook als gasten of klanten laden. U meldt de laadpaal aan bij een inboekdienstverlener; die verkoopt de ERE's en betaalt u uit. De opbrengst schommelt met de markt.\n") + f"""
 - **Slim laden:** de auto laadt {'op werkdagen ' if a.auto_laaddagen == 5 else ''}op de goedkoopste uren dat hij thuis is; met de batterij erbij ook met stroom die overdag is opgeslagen.
 - **Btw:** de laadpaal en de installatie vallen onder 21%.
 """)
@@ -368,11 +388,12 @@ Van akkoord tot werkend systeem duurt het ca. 4 tot 6 weken.
 """)
     t.append(f"""## Aannames en te bevestigen
 
-De cijfers gaan uit van de meterstanden en de aannames hieronder.
+De cijfers gaan uit van {'de meterstanden' if meter else 'een geschat verbruik'} en de aannames hieronder.
 
 **Te bevestigen bij de klant**
 
-- [ ] Typeplaatje panelen en omvormer (aantal, Wp, bouwjaar)
+- [ ] Typeplaatje panelen en omvormer (aantal, Wp, bouwjaar)""" + ("" if meter else """
+- [ ] Jaarafrekening: afname, teruglevering en opwek""") + f"""
 - [ ] 3-fase aansluiting (3x25 A) en ruimte in de meterkast
 - [ ] Plek voor de batterij: droog, vorstvrij, bereikbaar
 - [ ] Kabelroute dak–omvormer–meterkast (bedrading op uurbasis)
@@ -381,7 +402,7 @@ De cijfers gaan uit van de meterstanden en de aannames hieronder.
 
 **Aannames**
 
-- Verbruik {B.nl(a.verbruik)} kWh per jaar (afname {B.nl(a.afname)} kWh plus eigen zonnestroom); overdag op werkdagen {B.pct(a.dagfactor)} van een standaardprofiel""" + (f"""; auto {B.nl(a.auto_kwh)} kWh per jaar""" if auto else "") + f"""
+- Verbruik {B.nl(a.verbruik)} kWh per jaar""" + (f" (afname {B.nl(afname)} kWh plus eigen zonnestroom)" if meter else " (aanname, te bevestigen met de jaarafrekening)") + ("" if a.dagfactor >= 1 else f"; overdag op werkdagen {B.pct(a.dagfactor)} van een standaardprofiel") + (f"; auto {B.nl(a.auto_kwh)} kWh per jaar" if auto else "") + f"""
 - Panelen {B.nl(kwp, 1)} kWp, {B.nl(a.opbrengst)} kWh per kWp ({a.opbrengst_bron or 'PVGIS'})
 - Batterij {B.nl(a.modules * 5.12 * 0.9, 1)} kWh bruikbaar, {B.nl(kw, 1)} kW, rendement 90% heen en terug
 - Reservering vervanging omvormer €{RES} per jaar
@@ -391,14 +412,14 @@ De cijfers gaan uit van de meterstanden en de aannames hieronder.
     src = "\n".join(t)
 
     koppen = {"Samenvatting": "Wat het kost, en wat het u oplevert.",
-              "Uw installatie nu": "Uw panelen, uit de meterstanden afgeleid.",
+              "Uw installatie nu": "Uw panelen, uit de meterstanden afgeleid." if meter else "Uw panelen en uw verbruik.",
               "Begroting": "Elke post op een rij.",
               "Wat het per jaar oplevert": "Uur voor uur doorgerekend.",
               "Terugverdientijd": "Wanneer de batterij zich heeft terugverdiend.",
               "Batterijgrootte": "Kleiner of groter kan ook.",
               "Wist u dat? Laden met de Zaptec Go 2": "Thuis laden levert ERE-vergoeding op.",
               "Volledig besparingsoverzicht": "Wat u per jaar aan stroom betaalt, stap voor stap.",
-              "Laden met de Ohme Home Pro MID": "Elke geladen kWh levert ERE-vergoeding op.",
+              f"Laden met de {LPNAAM}": "Elke geladen kWh levert ERE-vergoeding op.",
               "Stroomcontract en prijzen": "Dynamisch laat de batterij verdienen.",
               "Met en zonder saldering": "Vanaf 2027 telt elke eigen kWh zwaarder.",
               "Installatie en veiligheid": "Eén installatie, klaar voor noodstroom.",
