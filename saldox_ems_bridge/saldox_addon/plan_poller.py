@@ -64,6 +64,58 @@ def derive_grid_power_w(
     return load_w - pv_w - battery_w
 
 
+def build_telemetry_payload(readings: dict) -> dict[str, float]:
+    """Bouw de telemetrie-payload uit de Modbus-readings (mapping + per-pack + afgeleide grid).
+
+    Pure functie (geen I/O) zodat de mapping — inclusief de per-pack bat1/bat2-velden — direct
+    te unit-testen is. ``readings`` is ``{register_naam: {"value": x, ...}}``.
+
+    Per-pack (2-BDU): bat2 = het +7-offsetblok (0x060D/0x060F). bat1 = het basisblok
+    (0x0606/0x0608). GEVERIFIEERD 21-11-2026: ``battery_power_w``/``battery_soc_percent`` zijn
+    fysiek BAT1, niet het aggregaat — een aggregaat kan nooit kleiner zijn dan een enkel pack,
+    maar battery_power_w (340W) < battery2_power_w (430W). We pushen bat1 daarom óók apart. Het
+    bestaande 'aggregaat'-veld (batteryPowerW/batterySoCPercent) laten we bewust ongemoeid i.v.m.
+    continuïteit van de server-historie.
+    """
+    payload: dict[str, float] = {}
+    mapping = {
+        "battery_soc_percent": "batterySoCPercent",
+        "battery_power_w": "batteryPowerW",
+        "ev_soc_percent": "evSoCPercent",
+        "ev_power_w": "evPowerW",
+        "pv_total_power_w": "pvPowerW",
+        "load_power_w": "loadPowerW",
+        "battery2_power_w": "bat2PowerW",
+        "battery2_soc_percent": "bat2SoCPercent",
+    }
+    for modbus_key, api_key in mapping.items():
+        entry = readings.get(modbus_key)
+        if entry and entry.get("value") is not None:
+            payload[api_key] = float(entry["value"])
+
+    for src_key, bat1_key in (("battery_power_w", "bat1PowerW"), ("battery_soc_percent", "bat1SoCPercent")):
+        entry = readings.get(src_key)
+        if entry and entry.get("value") is not None:
+            payload[bat1_key] = float(entry["value"])
+
+    def _val(key: str) -> float | None:
+        e = readings.get(key)
+        return float(e["value"]) if e and e.get("value") is not None else None
+
+    # Grid (PCC): afgeleid uit de energiebalans i.p.v. register 0x0488 (zie derive_grid_power_w).
+    # LET OP: gebruikt battery_power_w = BAT1 — zodra bat2 actief is mist dit bat2's bijdrage.
+    # Bekende beperking (zie 2.6.4-notitie); aggregaat-correctie volgt apart.
+    grid = derive_grid_power_w(_val("load_power_w"), _val("pv_total_power_w"), _val("battery_power_w"))
+    if grid is not None:
+        payload["gridPowerW"] = grid
+    else:
+        raw = _val("ac_active_power_w")
+        if raw is not None:
+            payload["gridPowerW"] = raw
+
+    return payload
+
+
 class PlanPoller:
     """Pollt de Saldox EMS plan API en pusht samenvatting naar HA."""
 
@@ -311,47 +363,8 @@ class PlanPoller:
         if not readings:
             return
 
-        payload: dict[str, float] = {}
-        # Map Modbus register names to telemetry fields. LET OP: gridPowerW staat hier
-        # bewust NIET bij — dat leiden we hieronder af uit de energiebalans (zie onder).
-        mapping = {
-            "battery_soc_percent": "batterySoCPercent",
-            "battery_power_w": "batteryPowerW",
-            "ev_soc_percent": "evSoCPercent",
-            "ev_power_w": "evPowerW",
-            "pv_total_power_w": "pvPowerW",
-            "load_power_w": "loadPowerW",
-        }
-        for modbus_key, api_key in mapping.items():
-            entry = readings.get(modbus_key)
-            if entry and entry.get("value") is not None:
-                payload[api_key] = float(entry["value"])
-
-        # Grid (PCC) power: AFGELEID uit de energiebalans i.p.v. register 0x0488.
-        #
-        # De Sofar HYD PCC-register (ac_active_power_w, 0x0488) blaast tijdens Passive-mode
-        # geforceerd laden op met ~het laadvermogen — een firmware-quirk, bevestigd op
-        # 2026-10-06: het register las ~13,3 kW terwijl load/pv/battery sloten op een echte
-        # netimport van ~5 kW (de accu nam 7,5 kW; fysiek onmogelijk om 13 kW te importeren).
-        # Het register is per officiële Sofar-map wél het juiste PCC-register met de juiste
-        # schaal, dus een scale-fix zou de (correcte) idle/ontlaad-metingen juist breken.
-        # De drie componenten balanceren consistent, dus leiden we grid daaruit af:
-        #   grid = load − pv − battery_power   (battery_power: − = laden, + = ontladen)
-        #   resultaat: + = import, − = export (zoals de server verwacht).
-        def _val(key: str) -> float | None:
-            e = readings.get(key)
-            return float(e["value"]) if e and e.get("value") is not None else None
-
-        grid = derive_grid_power_w(
-            _val("load_power_w"), _val("pv_total_power_w"), _val("battery_power_w"))
-        if grid is not None:
-            payload["gridPowerW"] = grid
-        else:
-            # Fallback: ruwe PCC-register als een van de drie componenten ontbreekt.
-            raw = _val("ac_active_power_w")
-            if raw is not None:
-                payload["gridPowerW"] = raw
-
+        # Mapping (incl. per-pack bat1/bat2) + afgeleide grid: zie build_telemetry_payload (puur/testbaar).
+        payload = build_telemetry_payload(readings)
         if not payload:
             return
 
