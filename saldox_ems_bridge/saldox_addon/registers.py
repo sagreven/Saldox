@@ -121,7 +121,35 @@ SOFAR_HYD_REGISTERS: list[Register] = [
              description="Min battery power in Passive Mode. - = discharge limit"),
     Register("passive_max_battery_power_w",  0x118B, 2, "holding", 1.0, "W", signed=True, swap_words=False,
              description="Max battery power in Passive Mode. + = charge limit"),
+
+    # ----- Battery CONFIG (instelregisters, niet metingen) -----
+    # Adressen geverifieerd tegen sofar_g3hyd.yaml (davidrapan/ha-solarman), groep "Settings".
+    # Dit zijn instellingen in de omvormer, geen telemetrie: ze veranderen alleen als iemand
+    # ze wijzigt. Daarom horen ze in de TRAGE configpoll, niet in de regellus.
+    #
+    # Waarom ze meedoen: DOD/EOD = 90 betekent ontladen tot 10% SoC, en dat is de ECHTE
+    # ondergrens van dit systeem — de accu hangt structureel op 9-10%, niet door de planner
+    # maar door deze instelling. Saldox rekende met een eigen, hogere SoC-vloer en wist dit niet.
+    Register("battery_dod_percent",          0x104D, 1, "holding", 1.0, "%",
+             description="Depth of Discharge, netgekoppeld. 90 = ontladen tot 10% SoC"),
+    Register("battery_eod_percent",          0x104E, 1, "holding", 1.0, "%",
+             description="End of Discharge, off-grid/EPS. 90 = ontladen tot 10% SoC"),
+    Register("battery_eps_buffer_percent",   0x1052, 1, "holding", 1.0, "%",
+             description="Reserve die de omvormer apart houdt voor EPS/backup"),
 ]
+
+# Configregisters: traag uitlezen (bij start + 1x/24u) en naar /api/ha/device-config pushen.
+# Apart van de telemetrie omdat de Modbus-bus hier fragiel is (FC03-only, bevriest bij drukte)
+# en deze waarden bijna nooit veranderen.
+CONFIG_REGISTER_NAMES: tuple[str, ...] = (
+    "battery_dod_percent",
+    "battery_eod_percent",
+    "battery_eps_buffer_percent",
+    "battery_soh_percent",
+    "battery_cycles",
+    "battery2_soh_percent",
+    "battery2_cycles",
+)
 
 
 def by_name(name: str) -> Register:

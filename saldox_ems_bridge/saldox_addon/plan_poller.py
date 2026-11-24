@@ -10,6 +10,13 @@ Gepubliceerde entities (slug standaard `saldox_plan`):
   sensor.{slug}_naive_cost_eur       — kosten zonder optimalisatie
   sensor.{slug}_next_action          — eerstvolgende geplande actie (tekst)
   sensor.{slug}_battery_soc_pct      — geplande batterij SoC nu (%)
+  sensor.{slug}_battery_capacity_kwh — totale accucapaciteit volgens Saldox (kWh)
+  sensor.{slug}_battery_pack{N}_capacity_kwh — capaciteit per pack (kWh)
+
+De capaciteits-sensors komen NIET uit de omvormer: de Sofar heeft geen capaciteitsregister
+(het Solarman-profiel leest uit het configblok alleen DOD 0x104D, EOD 0x104E en EPS-buffer
+0x1052). Ze komen terug uit /api/ha/device-config, waar Saldox ze per pack bijhoudt. Het
+totaal volgt dezelfde regel als de planner, zodat HA niet iets anders toont dan het plan.
 
 Per-uur plan-sensors (voor terugkijken/plan-vs-gemeten; HA-recorder bewaart de historie):
   sensor.{slug}_consumption          — gepland verbruik dit uur (W)      — LIVE (last-write-wins)
@@ -32,6 +39,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import traceback
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -39,6 +47,7 @@ from typing import Any, Callable
 import aiohttp
 
 from .ha_api import HomeAssistantClient
+from .registers import CONFIG_REGISTER_NAMES
 
 _LOG = logging.getLogger(__name__)
 
@@ -116,6 +125,27 @@ def build_telemetry_payload(readings: dict) -> dict[str, float]:
     return payload
 
 
+def build_config_registers(readings: dict) -> list[dict[str, Any]]:
+    """Bouw de payload-registers voor /api/ha/device-config uit de Modbus-readings.
+
+    Alleen de namen uit ``CONFIG_REGISTER_NAMES``, en alleen waar een waarde aanwezig is —
+    een register dat de firmware niet beantwoordt mag geen 0 worden, want serverside zou
+    ``0`` als een echte instelling tellen (een DOD van 0% betekent iets heel anders dan
+    "onbekend"). Puur/stateless zodat het direct te testen is.
+    """
+    entries: list[dict[str, Any]] = []
+    for name in CONFIG_REGISTER_NAMES:
+        entry = readings.get(name)
+        if not entry or entry.get("value") is None:
+            continue
+        entries.append({
+            "key": name,
+            "value": float(entry["value"]),
+            "unit": entry.get("unit") or None,
+        })
+    return entries
+
+
 class PlanPoller:
     """Pollt de Saldox EMS plan API en pusht samenvatting naar HA."""
 
@@ -142,6 +172,8 @@ class PlanPoller:
         self._get_hourly_usage: Callable[[], list[dict]] | None = None
         # Uur (UTC, op het hele uur) waarvoor de committed-snapshot al geschreven is.
         self._committed_hour: datetime | None = None
+        # monotonic() van de laatste configpush; None = nog nooit, dus bij start meteen.
+        self._last_config_push: float | None = None
 
     def set_hourly_usage_source(self, fn: Callable[[], list[dict]]) -> None:
         """Set callback that returns completed hourly usage entries."""
@@ -387,9 +419,88 @@ class PlanPoller:
         except aiohttp.ClientError as ex:
             _LOG.warning("Telemetry push failed: %s", ex)
 
+    async def _push_device_config(self) -> None:
+        """Push de CONFIGREGISTERS van de omvormer en publiceer Saldox' accu-beeld in HA.
+
+        Traag pad: bij start en daarna 1x per _CONFIG_PUSH_SECONDS. Deze registers zijn
+        instellingen (DOD 0x104D, EOD 0x104E, EPS-buffer 0x1052) en veranderen alleen als
+        iemand ze wijzigt, dus ze horen niet in de regellus — de Modbus-bus is FC03-only en
+        bevriest bij drukte.
+
+        Het antwoord bevat de capaciteit per pack en het totaal zoals Saldox die kent. Die
+        publiceren we als HA-sensors, want in HAOS was de accucapaciteit nergens te zien: de
+        omvormer heeft er simpelweg geen register voor. Het totaal komt uit dezelfde regel als
+        de planner gebruikt, zodat HA niet iets anders toont dan waar het plan mee rekent.
+        """
+        if not self._get_readings:
+            return
+        readings = self._get_readings()
+        if not readings:
+            return
+
+        entries = build_config_registers(readings)
+
+        session = await self._get_session()
+        url = f"{self._api_url}/api/ha/device-config"
+        try:
+            async with session.post(
+                url, json={"registers": entries}, timeout=aiohttp.ClientTimeout(total=20)
+            ) as resp:
+                if resp.status != 200:
+                    _LOG.warning("Device-config push HTTP %s", resp.status)
+                    return
+                data = await resp.json()
+        except aiohttp.ClientError as ex:
+            _LOG.warning("Device-config push failed: %s", ex)
+            return
+
+        changes = data.get("changes") or []
+        if changes:
+            _LOG.info("Device-config: %s", " | ".join(str(c) for c in changes))
+        else:
+            _LOG.debug("Device-config: %d registers gepusht, geen wijzigingen", len(entries))
+
+        battery = data.get("battery") or {}
+        packs = battery.get("packs") or []
+        common = {
+            "source": "saldox-api",
+            "pack_count": len(packs),
+            "dod_percent": next((e["value"] for e in entries if e["key"] == "battery_dod_percent"), None),
+            "eps_buffer_percent": next(
+                (e["value"] for e in entries if e["key"] == "battery_eps_buffer_percent"), None),
+        }
+
+        async def write(suffix: str, value: Any, extra: dict[str, Any]) -> None:
+            await self._ha.post_state(
+                entity_id=f"sensor.{self._slug}_{suffix}",
+                state=value if value is not None else "unknown",
+                unit="kWh" if value is not None else None,
+                friendly_name=f"{self._friendly} {suffix.replace('_', ' ')}",
+                device_class="energy_storage" if value is not None else None,
+                state_class="measurement",
+                extra_attrs=extra,
+            )
+
+        await write("battery_capacity_kwh", battery.get("totalKwh"), common)
+        for pack in packs:
+            idx = pack.get("index")
+            if idx is None:
+                continue
+            await write(
+                f"battery_pack{idx}_capacity_kwh",
+                pack.get("capacityKwh"),
+                {**common, "pack_name": pack.get("name")},
+            )
+
     async def tick(self) -> None:
         # Push live readings to Saldox for pattern learning.
         await self._push_telemetry()
+
+        # Configregisters: traag, los van de telemetrie-cadans.
+        now = time.monotonic()
+        if self._last_config_push is None or (now - self._last_config_push) >= self._CONFIG_PUSH_SECONDS:
+            self._last_config_push = now
+            await self._push_device_config()
 
         plan = await self._fetch_plan()
         if plan is None:
@@ -502,6 +613,8 @@ class PlanPoller:
     # EV charging state detection thresholds.
     _EV_CHARGING_THRESHOLD_W = 100  # power above this = charging
     _CHARGING_POLL_SECONDS = 300     # 5 min while charging
+    # Configregisters zijn instellingen: 1x/24u is ruim genoeg en houdt de Modbus-bus vrij.
+    _CONFIG_PUSH_SECONDS = 86400
 
     def _is_ev_charging(self) -> bool:
         """Detect if an EV is currently charging from Modbus power readings."""

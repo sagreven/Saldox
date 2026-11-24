@@ -68,6 +68,12 @@ _SENSOR_MAP: dict[str, tuple[str, str, float]] = {
     "pv1_power_w":            ("sensor.sofar_hyd_pv1_power",               "W",  1),
     "pv2_power_w":            ("sensor.sofar_hyd_pv2_power",               "W",  1),
     "load_power_w":           ("sensor.sofar_hyd_activepower_load_sys",     "W",  1),
+    # Batterij-CONFIG (instellingen, geen metingen). Solarman leest ze uit het configblok
+    # 0x104D/0x104E/0x1052 en verst ze elke 300s — hier als terugval op het Modbus-pad.
+    # DOD/EOD = 90 betekent ontladen tot 10% SoC: dát is de echte ondergrens van dit systeem.
+    "battery_dod_percent":        ("sensor.sofar_hyd_battery_dod",          "%",  1),
+    "battery_eod_percent":        ("sensor.sofar_hyd_battery_eod",          "%",  1),
+    "battery_eps_buffer_percent": ("sensor.sofar_hyd_battery_eps_buffer",   "%",  1),
 }
 
 # Control entities for battery mode via SolarmanV2 HA services.
