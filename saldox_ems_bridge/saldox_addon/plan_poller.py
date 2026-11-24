@@ -146,6 +146,20 @@ def build_config_registers(readings: dict) -> list[dict[str, Any]]:
     return entries
 
 
+def next_config_push_at(
+    now: float, ok: bool, push_seconds: float, retry_seconds: float
+) -> float:
+    """Deadline voor de volgende configpush.
+
+    Geslaagd → volle cadans (1x/24u). Mislukt → korte retry. Dat onderscheid is de hele
+    reden dat deze functie bestaat: de eerste poging valt per definitie samen met een
+    add-on-start, en juist dan kan de server nog oude code draaien zonder het endpoint.
+    Live op 24-11-2026 kreeg die eerste push een 404 en bleef DeviceConfigSnapshots 24 uur
+    leeg, omdat de tijdstempel ook bij mislukking werd opgeschoven.
+    """
+    return now + (push_seconds if ok else retry_seconds)
+
+
 class PlanPoller:
     """Pollt de Saldox EMS plan API en pusht samenvatting naar HA."""
 
@@ -172,8 +186,10 @@ class PlanPoller:
         self._get_hourly_usage: Callable[[], list[dict]] | None = None
         # Uur (UTC, op het hele uur) waarvoor de committed-snapshot al geschreven is.
         self._committed_hour: datetime | None = None
-        # monotonic() van de laatste configpush; None = nog nooit, dus bij start meteen.
-        self._last_config_push: float | None = None
+        # monotonic()-deadline voor de volgende configpush; None = nog nooit, dus bij start meteen.
+        # Deadline i.p.v. "laatste poging", zodat een MISLUKTE push een korte retry krijgt en
+        # niet de volle dagcadans opsnoept.
+        self._next_config_push: float | None = None
 
     def set_hourly_usage_source(self, fn: Callable[[], list[dict]]) -> None:
         """Set callback that returns completed hourly usage entries."""
@@ -419,8 +435,11 @@ class PlanPoller:
         except aiohttp.ClientError as ex:
             _LOG.warning("Telemetry push failed: %s", ex)
 
-    async def _push_device_config(self) -> None:
+    async def _push_device_config(self) -> bool:
         """Push de CONFIGREGISTERS van de omvormer en publiceer Saldox' accu-beeld in HA.
+
+        Geeft True terug als de push slaagde. De caller gebruikt dat om bij mislukking snel
+        opnieuw te proberen i.p.v. een hele dag te wachten.
 
         Traag pad: bij start en daarna 1x per _CONFIG_PUSH_SECONDS. Deze registers zijn
         instellingen (DOD 0x104D, EOD 0x104E, EPS-buffer 0x1052) en veranderen alleen als
@@ -433,10 +452,12 @@ class PlanPoller:
         de planner gebruikt, zodat HA niet iets anders toont dan waar het plan mee rekent.
         """
         if not self._get_readings:
-            return
+            return False
         readings = self._get_readings()
         if not readings:
-            return
+            # Modbus levert (nog) niets — geen serverfout, maar ook niets te pushen. Snel
+            # opnieuw proberen, want dit is typisch de toestand direct na een start.
+            return False
 
         entries = build_config_registers(readings)
 
@@ -448,11 +469,11 @@ class PlanPoller:
             ) as resp:
                 if resp.status != 200:
                     _LOG.warning("Device-config push HTTP %s", resp.status)
-                    return
+                    return False
                 data = await resp.json()
         except aiohttp.ClientError as ex:
             _LOG.warning("Device-config push failed: %s", ex)
-            return
+            return False
 
         changes = data.get("changes") or []
         if changes:
@@ -492,15 +513,23 @@ class PlanPoller:
                 {**common, "pack_name": pack.get("name")},
             )
 
+        return True
+
     async def tick(self) -> None:
         # Push live readings to Saldox for pattern learning.
         await self._push_telemetry()
 
-        # Configregisters: traag, los van de telemetrie-cadans.
+        # Configregisters: traag, los van de telemetrie-cadans. Bij MISLUKKING snel opnieuw
+        # proberen i.p.v. de volle dag wachten — de eerste poging valt per definitie samen met
+        # een add-on-start, en juist dán kan de server nog oude code draaien zonder het
+        # endpoint (404). Dat gebeurde live op 24-11-2026: de add-on startte vóór de
+        # server-deploy, de push kreeg 404, en omdat de tijdstempel ook bij mislukking werd
+        # gezet bleef DeviceConfigSnapshots 24 uur leeg.
         now = time.monotonic()
-        if self._last_config_push is None or (now - self._last_config_push) >= self._CONFIG_PUSH_SECONDS:
-            self._last_config_push = now
-            await self._push_device_config()
+        if self._next_config_push is None or now >= self._next_config_push:
+            ok = await self._push_device_config()
+            self._next_config_push = next_config_push_at(
+                now, ok, self._CONFIG_PUSH_SECONDS, self._CONFIG_RETRY_SECONDS)
 
         plan = await self._fetch_plan()
         if plan is None:
@@ -615,6 +644,10 @@ class PlanPoller:
     _CHARGING_POLL_SECONDS = 300     # 5 min while charging
     # Configregisters zijn instellingen: 1x/24u is ruim genoeg en houdt de Modbus-bus vrij.
     _CONFIG_PUSH_SECONDS = 86400
+    # Mislukte push (server nog oude code → 404, netwerk weg, of Modbus nog niet warm):
+    # binnen een kwartier opnieuw. De registers zelf zijn al gelezen, dus dit kost alleen
+    # een HTTP-poging — niets op de Modbus-bus.
+    _CONFIG_RETRY_SECONDS = 900
 
     def _is_ev_charging(self) -> bool:
         """Detect if an EV is currently charging from Modbus power readings."""

@@ -5,8 +5,27 @@ planner maar de omvormer zelf: DOD/EOD = 90 betekent ontladen tot 10%. Die inste
 in het configblok (0x104D/0x104E/0x1052) en waren in Saldox niet bekend, waardoor de planner
 met een eigen, hogere SoC-vloer rekende.
 """
-from saldox_addon.plan_poller import build_config_registers
+from saldox_addon.plan_poller import build_config_registers, next_config_push_at
+from saldox_addon.plan_poller import PlanPoller
 from saldox_addon.registers import CONFIG_REGISTER_NAMES
+
+
+def test_mislukte_push_krijgt_korte_retry_geen_hele_dag():
+    # De regressie: op 24-11-2026 startte de add-on vóór de server-deploy, de eerste
+    # configpush kreeg 404, en omdat de tijdstempel ook bij mislukking werd opgeschoven
+    # bleef DeviceConfigSnapshots 24 uur leeg.
+    deadline = next_config_push_at(1000.0, ok=False, push_seconds=86400, retry_seconds=900)
+    assert deadline == 1900.0
+
+
+def test_geslaagde_push_gebruikt_de_volle_cadans():
+    deadline = next_config_push_at(1000.0, ok=True, push_seconds=86400, retry_seconds=900)
+    assert deadline == 87400.0
+
+
+def test_retry_is_substantieel_korter_dan_de_cadans():
+    # Guard tegen een toekomstige tweak die retry en cadans gelijktrekt.
+    assert PlanPoller._CONFIG_RETRY_SECONDS < PlanPoller._CONFIG_PUSH_SECONDS / 10
 
 
 def _r(**kv):
