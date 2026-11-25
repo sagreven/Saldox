@@ -96,6 +96,15 @@ def build_telemetry_payload(readings: dict) -> dict[str, float]:
         "load_power_w": "loadPowerW",
         "battery2_power_w": "bat2PowerW",
         "battery2_soc_percent": "bat2SoCPercent",
+        # Dagtellers van de omvormer (cumulatief sinds middernacht). De server (0.9.182+) slaat
+        # ze als ReadingPeriod.Daily op en neemt de laatste stand per dag — zo vullen de
+        # dashboard-tegels "kWh vandaag" i.p.v. 0,0 te tonen. De omvormer is de bron van waarheid
+        # voor energie; serverside PowerW-integratie loopt uit de pas met deze teller.
+        "today_production_kwh": "todayProductionKwh",
+        "today_import_kwh": "todayImportKwh",
+        "today_export_kwh": "todayExportKwh",
+        "battery_input_today_kwh": "batteryInputTodayKwh",
+        "battery_output_today_kwh": "batteryOutputTodayKwh",
     }
     for modbus_key, api_key in mapping.items():
         entry = readings.get(modbus_key)
