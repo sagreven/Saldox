@@ -592,6 +592,33 @@ class PlanPoller:
             extra=common,
         )
 
+        # WAARMEE REKENT DE PLANNER — laadvermogen per bron en de vloeren die echt binden.
+        #
+        # Netladen en PV-lading zijn fysiek gescheiden paden met eigen limieten. Tot 25-11-2026
+        # stond het netladen stil afgeknepen op de PV-limiet (min(PvChargeKw, AcChargeKw) = 10 i.p.v.
+        # 12 bij hh.imming), en nergens was te zien waarmee gerekend werd. Nu wel.
+        #
+        # hard_floor_kwh is de ENIGE vloer die zowel zelfverbruik als export begrenst. De
+        # evReserve-velden in de payload hangen aan de planner-export-tak die serverside bij
+        # reconcile wordt weggegooid — die binden niets en staan hier daarom niet als vloer.
+        limiet_attrs = {
+            **common,
+            "net_laden_kw": plan.get("maxGridChargeKw"),
+            "pv_laden_kw": plan.get("maxPvChargeKw"),
+            "hard_floor_kwh": plan.get("hardFloorKwh"),
+            "forward_reserve_kwh": plan.get("forwardReserveKwh"),
+        }
+        for suffix, key, unit, dclass in (
+            ("max_grid_charge_kw", "maxGridChargeKw", "kW", "power"),
+            ("max_pv_charge_kw", "maxPvChargeKw", "kW", "power"),
+            ("hard_floor_kwh", "hardFloorKwh", "kWh", "energy_storage"),
+            ("forward_reserve_kwh", "forwardReserveKwh", "kWh", "energy_storage"),
+        ):
+            await push(
+                suffix, plan.get(key), unit=unit, device_class=dclass,
+                state_class="measurement", extra=limiet_attrs,
+            )
+
         # Next action as a text sensor.
         if next_action:
             kind = next_action.get("kind", "")
